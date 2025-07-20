@@ -34,6 +34,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface Game {
   id: string;
   name: string;
+  status: 'activo' | 'demo';
+  plays: number;
+  prizesAwarded: number;
   createdAt: {
     seconds: number;
     nanoseconds: number;
@@ -138,8 +141,9 @@ export default function AdminDashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre del Juego</TableHead>
-                    <TableHead className="hidden md:table-cell">Fecha de Creación</TableHead>
                     <TableHead className="hidden md:table-cell">Estado</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Jugadas</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Premios</TableHead>
                     <TableHead>
                       <span className="sr-only">Acciones</span>
                     </TableHead>
@@ -150,11 +154,12 @@ export default function AdminDashboard() {
                     <TableRow key={game.id}>
                       <TableCell className="font-medium">{game.name}</TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {formatDate(game.createdAt)}
+                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className={game.status === 'activo' ? 'bg-green-600' : ''}>
+                          {game.status === 'activo' ? 'Activo' : 'Demo'}
+                        </Badge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant="outline">Activo</Badge>
-                      </TableCell>
+                       <TableCell className="hidden text-center md:table-cell">{game.plays || 0}</TableCell>
+                       <TableCell className="hidden text-center md:table-cell">{game.prizesAwarded || 0}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

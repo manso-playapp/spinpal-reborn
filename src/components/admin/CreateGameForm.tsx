@@ -19,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,10 +29,14 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
   name: z.string().min(3, {
     message: 'El nombre debe tener al menos 3 caracteres.',
+  }),
+  status: z.enum(['activo', 'demo'], {
+    required_error: 'Debes seleccionar un estado para el juego.',
   }),
 });
 
@@ -46,6 +51,7 @@ export default function CreateGameForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      status: 'demo',
     },
   });
 
@@ -54,6 +60,9 @@ export default function CreateGameForm() {
     try {
       await addDoc(collection(db, 'games'), {
         name: data.name,
+        status: data.status,
+        plays: 0,
+        prizesAwarded: 0,
         createdAt: serverTimestamp(),
       });
       toast({
@@ -107,6 +116,44 @@ export default function CreateGameForm() {
                       disabled={loading}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Estado del Juego</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col space-y-1"
+                      disabled={loading}
+                    >
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="demo" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Modo Demo
+                        </FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-3 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="activo" />
+                        </FormControl>
+                        <FormLabel className="font-normal">
+                          Modo Activo
+                        </FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormDescription>
+                    El modo Demo no requiere que los jugadores se registren para jugar.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
