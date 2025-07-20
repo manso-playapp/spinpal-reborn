@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, MoreHorizontal, Eye } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Eye, Trash2, Copy } from 'lucide-react';
 import Link from 'next/link';
 import {
   Table,
@@ -23,14 +23,22 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 interface Game {
   id: string;
@@ -49,6 +57,7 @@ export default function AdminDashboard() {
   const superAdminEmail = 'grupomanso@gmail.com';
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user) {
@@ -73,17 +82,23 @@ export default function AdminDashboard() {
     }
   }, [user]);
 
-  const formatDate = (timestamp: Game['createdAt']) => {
-    if (!timestamp) return 'Fecha no disponible';
-    const date = new Date(timestamp.seconds * 1000);
-    return date.toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+  const getGameUrl = (gameId: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/juego/${gameId}`;
+    }
+    return `/juego/${gameId}`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+        title: "¡Enlace Copiado!",
+        description: "El enlace público del juego ha sido copiado a tu portapapeles.",
     });
   };
 
   return (
+    <TooltipProvider>
     <div className="flex min-h-screen flex-col bg-muted/40">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
         <h1 className="font-headline text-xl font-semibold">Dashboard de Juegos</h1>
@@ -145,9 +160,7 @@ export default function AdminDashboard() {
                     <TableHead className="hidden md:table-cell">Estado</TableHead>
                     <TableHead className="hidden md:table-cell text-center">Jugadas</TableHead>
                     <TableHead className="hidden md:table-cell text-center">Premios</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Acciones</span>
-                    </TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -161,30 +174,70 @@ export default function AdminDashboard() {
                       </TableCell>
                        <TableCell className="hidden text-center md:table-cell">{game.plays || 0}</TableCell>
                        <TableCell className="hidden text-center md:table-cell">{game.prizesAwarded || 0}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              aria-haspopup="true"
-                              size="icon"
-                              variant="ghost"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                               <Link href={`/juego/${game.id}`} className="flex items-center" target="_blank">
-                                <Eye className="mr-2 h-4 w-4" /> Ver Juego
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Editar</DropdownMenuItem>
-                            <DropdownMenuItem>Ver Clientes</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <TableCell className="text-right">
+                         <div className="flex items-center justify-end gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="icon" className="h-8 w-8" disabled>
+                                        <Edit className="h-4 w-4" />
+                                        <span className="sr-only">Editar Juego</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Editar Juego (Próximamente)</p>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <AlertDialog>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="outline" size="icon" className="h-8 w-8">
+                                                <LinkIcon className="h-4 w-4" />
+                                                <span className="sr-only">Ver Link para TV</span>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Ver Link para TV</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Enlace Público del Juego</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Usa este enlace para mostrar la ruleta en una pantalla o TV.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <div className="flex items-center space-x-2">
+                                        <Input value={getGameUrl(game.id)} readOnly />
+                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(getGameUrl(game.id))}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                     <AlertDialogFooter>
+                                        <AlertDialogCancel>Cerrar</AlertDialogCancel>
+                                        <AlertDialogAction asChild>
+                                            <Link href={getGameUrl(game.id)} target="_blank">
+                                                Abrir en nueva pestaña
+                                            </Link>
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="destructive" size="icon" className="h-8 w-8" disabled>
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Eliminar Juego</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Eliminar Juego (Próximamente)</p>
+                                </TooltipContent>
+                            </Tooltip>
+                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -195,5 +248,6 @@ export default function AdminDashboard() {
         </Card>
       </main>
     </div>
+    </TooltipProvider>
   );
 }
