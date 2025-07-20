@@ -130,24 +130,22 @@ export default function CreateGameForm() {
                     </FormDescription>
                   </div>
                   <FormControl>
-                    <div className="flex flex-col items-center gap-1">
-                      <Switch
-                        checked={field.value === 'activo'}
-                        onCheckedChange={(checked) =>
-                          field.onChange(checked ? 'activo' : 'demo')
-                        }
-                        disabled={loading}
-                      />
-                      <span
-                        className={`text-xs font-medium ${
-                          field.value === 'activo'
-                            ? 'text-green-600'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {field.value === 'activo' ? 'Activo' : 'Demo'}
-                      </span>
-                    </div>
+                     <div className="flex items-center space-x-2">
+                        <span className={`text-sm font-medium ${field.value === 'demo' ? 'text-muted-foreground' : 'text-foreground'}`}>
+                          Demo
+                        </span>
+                        <Switch
+                          checked={field.value === 'activo'}
+                          onCheckedChange={(checked) =>
+                            field.onChange(checked ? 'activo' : 'demo')
+                          }
+                          disabled={loading}
+                          aria-label="Estado del juego"
+                        />
+                        <span className={`text-sm font-medium ${field.value === 'activo' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                          Activo
+                        </span>
+                      </div>
                   </FormControl>
                 </FormItem>
               )}
