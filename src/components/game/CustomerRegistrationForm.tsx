@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, limit, writeBatch } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -51,6 +51,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
   const { toast } = useToast();
   const [formState, setFormState] = useState<FormState>(FormState.NotRegistered);
   const [spinLoading, setSpinLoading] = useState(false);
+  const [customerDocId, setCustomerDocId] = useState<string | null>(null);
+
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -61,18 +63,35 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
   });
 
   const handleSpin = async () => {
+    if (!customerDocId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se encontró el ID del cliente para actualizar su estado."
+      });
+      return;
+    }
+
     setSpinLoading(true);
     try {
+      const batch = writeBatch(db);
+
+      // 1. Marcar al cliente como que ya ha jugado
+      const customerRef = doc(db, 'games', gameId, 'customers', customerDocId);
+      batch.update(customerRef, { hasPlayed: true });
+
+      // 2. Enviar la solicitud de giro a la ruleta
       const gameRef = doc(db, 'games', gameId);
-      // Actualizamos el documento del juego con una solicitud de giro.
-      // Usamos un valor aleatorio para asegurar que onSnapshot se dispare.
-      await updateDoc(gameRef, { 
-        spinRequest: { 
+      batch.update(gameRef, {
+        spinRequest: {
           timestamp: serverTimestamp(),
-          nonce: Math.random() 
-        } 
+          nonce: Math.random(),
+        },
       });
+
+      await batch.commit();
       setFormState(FormState.AlreadyPlayed);
+
     } catch (error) {
       console.error("Error requesting spin:", error);
       toast({
@@ -80,6 +99,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
         title: "Error al girar",
         description: "No se pudo iniciar el giro. Inténtalo de nuevo."
       });
+      setFormState(FormState.Error);
     } finally {
       setSpinLoading(false);
     }
@@ -89,32 +109,31 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
   const onSubmit = async (data: CustomerFormValues) => {
     setFormState(FormState.Registering);
     try {
-      // 1. Verificar si el email ya jugó en este juego
+      // Verificar si el email ya jugó en este juego
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
       const q = query(customersCollectionRef, where("email", "==", data.email), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // El usuario ya existe, comprobamos si ha jugado
-        const customerData = querySnapshot.docs[0].data();
-        if (customerData.hasPlayed) {
+        const customerDoc = querySnapshot.docs[0];
+        if (customerDoc.data().hasPlayed) {
           setFormState(FormState.AlreadyPlayed);
-          return;
         } else {
-           // Si existe pero no ha jugado, lo marcamos como registrado
-           // Esto es un caso raro, pero lo manejamos
-           setFormState(FormState.Registered);
-           return;
+          // El usuario existe pero no ha jugado, un caso raro, pero lo permitimos.
+          setCustomerDocId(customerDoc.id);
+          setFormState(FormState.Registered);
         }
+        return;
       }
 
-      // 2. Si no ha jugado, registrarlo
-      await addDoc(customersCollectionRef, {
+      // Si no ha jugado, registrarlo
+      const newCustomerDoc = await addDoc(customersCollectionRef, {
         ...data,
         registeredAt: serverTimestamp(),
-        hasPlayed: false, // Nuevo campo para controlar si ya jugó
+        hasPlayed: false,
       });
 
+      setCustomerDocId(newCustomerDoc.id);
       setFormState(FormState.Registered);
 
     } catch (error) {
@@ -123,7 +142,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
       toast({
         variant: 'destructive',
         title: 'Error en el registro',
-        description: 'Hubo un problema al registrarte. Inténtalo de nuevo.',
+        description: 'Hubo un problema al registrarte. Por favor, recarga e inténtalo de nuevo.',
       });
     }
   };

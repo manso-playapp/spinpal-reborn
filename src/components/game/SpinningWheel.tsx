@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 // Carga dinámica del componente Wheel para que solo se renderice en el cliente
 const Wheel = dynamic(() => import('react-custom-roulette').then(mod => mod.Wheel), { 
@@ -64,17 +64,25 @@ export default function SpinningWheel({ segments, gameId }: SpinningWheelProps) 
     );
   }
 
+  const handleStopSpinning = async () => {
+    setMustSpin(false);
+    // Limpiar el spinRequest en la base de datos para evitar giros repetidos al recargar
+    try {
+      const gameRef = doc(db, 'games', gameId);
+      await updateDoc(gameRef, { spinRequest: null });
+    } catch (error) {
+      console.error("Error clearing spin request:", error);
+    }
+  };
+
+
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
       <Wheel
         mustStartSpinning={mustSpin}
         prizeNumber={prizeNumber}
         data={wheelData}
-        onStopSpinning={() => {
-          setMustSpin(false);
-          // Opcional: limpiar el spinRequest en la base de datos después de girar
-          // updateDoc(doc(db, 'games', gameId), { spinRequest: null });
-        }}
+        onStopSpinning={handleStopSpinning}
         backgroundColors={['#ACBFA4', '#F4F4F2', '#D3BFA8']}
         textColors={['#000000']}
         outerBorderColor={'#8A9A80'}
@@ -87,7 +95,6 @@ export default function SpinningWheel({ segments, gameId }: SpinningWheelProps) 
         fontSize={16}
         textDistance={60}
       />
-      {/* El botón para girar manualmente se elimina, ahora es automático */}
     </div>
   );
 }
