@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, MoreHorizontal } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, MoreHorizontal, Eye } from 'lucide-react';
 import Link from 'next/link';
 import {
   Table,
@@ -28,6 +28,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -173,8 +174,14 @@ export default function AdminDashboard() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                               <Link href={`/juego/${game.id}`} className="flex items-center" target="_blank">
+                                <Eye className="mr-2 h-4 w-4" /> Ver Juego
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem>Editar</DropdownMenuItem>
                             <DropdownMenuItem>Ver Clientes</DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
