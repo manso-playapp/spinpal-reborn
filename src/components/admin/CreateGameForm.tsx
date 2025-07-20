@@ -122,28 +122,33 @@ export default function CreateGameForm() {
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem>
-                   <div className="flex items-center space-x-4 rounded-lg border p-4">
-                     <div className="flex-1 space-y-1">
-                       <FormLabel>Estado del Juego</FormLabel>
-                       <FormDescription>
-                          Activa o desactiva el juego. El modo Demo no requiere que los jugadores se registren.
-                       </FormDescription>
-                     </div>
-                     <FormControl>
-                       <div className="flex flex-col items-center gap-2">
-                         <Switch
-                           checked={field.value === 'activo'}
-                           onCheckedChange={(checked) => field.onChange(checked ? 'activo' : 'demo')}
-                           disabled={loading}
-                         />
-                         <span className={`text-xs font-medium ${field.value === 'activo' ? 'text-green-600' : 'text-muted-foreground'}`}>
-                           {field.value === 'activo' ? 'Activo' : 'Demo'}
-                         </span>
-                       </div>
-                     </FormControl>
-                   </div>
-                  <FormMessage />
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Estado del Juego</FormLabel>
+                    <FormDescription>
+                      Activa el juego para todos o mantenlo en modo Demo.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <div className="flex flex-col items-center gap-1">
+                      <Switch
+                        checked={field.value === 'activo'}
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked ? 'activo' : 'demo')
+                        }
+                        disabled={loading}
+                      />
+                      <span
+                        className={`text-xs font-medium ${
+                          field.value === 'activo'
+                            ? 'text-green-600'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {field.value === 'activo' ? 'Activo' : 'Demo'}
+                      </span>
+                    </div>
+                  </FormControl>
                 </FormItem>
               )}
             />
