@@ -39,27 +39,11 @@ const formSchema = z.object({
 
 type CustomerFormValues = z.infer<typeof formSchema>;
 
-enum FormState {
-  Loading,
-  ReadyToRegister,
-  Submitting,
-  AlreadyPlayed,
-  Success,
-  Error,
-}
-
 export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameId: string, isDemoMode: boolean }) {
   const { toast } = useToast();
-  const [formState, setFormState] = useState<FormState>(FormState.Loading);
-
-  useEffect(() => {
-    if (isDemoMode) {
-      setFormState(FormState.Success); // Directamente a la pantalla de éxito/giro para Demo
-    } else {
-      setFormState(FormState.ReadyToRegister);
-    }
-  }, [isDemoMode]);
-
+  const [hasPlayed, setHasPlayed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorOccurred, setErrorOccurred] = useState(false);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -70,7 +54,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
   });
 
   const handleDemoSpin = async () => {
-    setFormState(FormState.Submitting);
+    setIsSubmitting(true);
     try {
         const gameRef = doc(db, 'games', gameId);
         const batch = writeBatch(db);
@@ -93,15 +77,15 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
             title: "Error al girar",
             description: "No se pudo iniciar el giro de prueba."
         });
-        setFormState(FormState.Error);
+        setErrorOccurred(true);
     } finally {
-        // En modo demo, permitimos seguir girando.
-        setFormState(FormState.Success);
+        setIsSubmitting(false);
     }
   }
 
   const onSubmit = async (data: CustomerFormValues) => {
-    setFormState(FormState.Submitting);
+    setIsSubmitting(true);
+    setErrorOccurred(false);
     
     try {
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
@@ -109,25 +93,21 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        // Si el usuario ya existe (independientemente de si ha jugado o no), mostramos el mensaje.
-        setFormState(FormState.AlreadyPlayed);
+        setHasPlayed(true);
         return;
       }
 
-      // Si el usuario no existe, realizamos el registro y el giro en una sola transacción.
       const batch = writeBatch(db);
       const gameRef = doc(db, 'games', gameId);
       
-      // 1. Crear el nuevo documento de cliente. Generamos una referencia vacía para obtener un ID.
       const newCustomerRef = doc(collection(db, 'games', gameId, 'customers'));
       batch.set(newCustomerRef, {
         name: data.name,
         email: data.email.toLowerCase(),
         registeredAt: serverTimestamp(),
-        hasPlayed: true, // Lo marcamos como que ha jugado desde el momento de la creación
+        hasPlayed: true,
       });
 
-      // 2. Actualizar el juego para solicitar el giro y contar la jugada.
       batch.update(gameRef, {
         spinRequest: {
           timestamp: serverTimestamp(),
@@ -136,35 +116,39 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
         plays: increment(1),
       });
 
-      // 3. Ejecutar la transacción
       await batch.commit();
-
-      // Transición al estado final.
-      setFormState(FormState.AlreadyPlayed); // Mostramos el mensaje de que ya participó.
+      setHasPlayed(true);
 
     } catch (error) {
       console.error('Error registering customer and spinning: ', error);
-      setFormState(FormState.Error);
+      setErrorOccurred(true);
       toast({
         variant: 'destructive',
         title: 'Error en el registro',
         description: 'Hubo un problema al registrarte. Por favor, recarga e inténtalo de nuevo.',
       });
+    } finally {
+        setIsSubmitting(false);
     }
   };
-
-  if (formState === FormState.Loading) {
-    return (
-      <Card className="w-full max-w-md shadow-lg">
-        <CardContent className="pt-6 flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  
+  if (errorOccurred) {
+       return (
+       <Card className="w-full max-w-md shadow-lg">
+        <CardContent className="pt-6">
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                 Ha ocurrido un error inesperado. Por favor, recarga la página e inténtalo de nuevo.
+                </AlertDescription>
+            </Alert>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  // Pantalla para modo Demo o para después de girar en modo activo
-  if (formState === FormState.Success) {
+  if (isDemoMode) {
      return (
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
@@ -175,12 +159,10 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
         <CardContent className="flex flex-col gap-4">
           <CardTitle className="text-2xl font-headline mb-2">¡Todo listo para la acción!</CardTitle>
           <CardDescription>
-            {isDemoMode
-              ? "Estás en modo Demo. ¡Presiona el botón para hacer una prueba de giro!"
-              : "Presiona el botón para hacer girar la ruleta en la pantalla grande."}
+            Estás en modo Demo. ¡Presiona el botón para hacer una prueba de giro!
           </CardDescription>
-          <Button onClick={handleDemoSpin} disabled={formState === FormState.Submitting} size="lg" className="w-full">
-            {formState === FormState.Submitting ? (
+          <Button onClick={handleDemoSpin} disabled={isSubmitting} size="lg" className="w-full">
+            {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Enviando...
@@ -197,7 +179,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
     );
   }
   
-  if (formState === FormState.AlreadyPlayed) {
+  if (hasPlayed) {
     return (
        <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
@@ -214,24 +196,8 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
       </Card>
     );
   }
-  
-  if (formState === FormState.Error) {
-       return (
-       <Card className="w-full max-w-md shadow-lg">
-        <CardContent className="pt-6">
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                 Ha ocurrido un error inesperado. Por favor, recarga la página e inténtalo de nuevo.
-                </AlertDescription>
-            </Alert>
-        </CardContent>
-      </Card>
-    );
-  }
 
-  // Estado por defecto: Formulario de Registro para modo Activo
+  // Formulario de Registro para modo Activo
   return (
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader>
@@ -250,7 +216,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
                 <FormItem>
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input placeholder="Tu nombre y apellido" {...field} disabled={formState === FormState.Submitting} />
+                    <Input placeholder="Tu nombre y apellido" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -263,14 +229,14 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
                 <FormItem>
                   <FormLabel>Correo Electrónico</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="tu@correo.com" {...field} disabled={formState === FormState.Submitting} />
+                    <Input type="email" placeholder="tu@correo.com" {...field} disabled={isSubmitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={formState === FormState.Submitting}>
-              {formState === FormState.Submitting ? (
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Verificando...
