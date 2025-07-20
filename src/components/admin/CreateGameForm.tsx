@@ -29,15 +29,13 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 
 const formSchema = z.object({
   name: z.string().min(3, {
     message: 'El nombre debe tener al menos 3 caracteres.',
   }),
-  status: z.enum(['activo', 'demo'], {
-    required_error: 'Debes seleccionar un estado para el juego.',
-  }),
+  status: z.enum(['activo', 'demo']),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -124,36 +122,27 @@ export default function CreateGameForm() {
               control={form.control}
               name="status"
               render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Estado del Juego</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                      disabled={loading}
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="demo" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Modo Demo
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="activo" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Modo Activo
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormDescription>
-                    El modo Demo no requiere que los jugadores se registren para jugar.
-                  </FormDescription>
+                <FormItem>
+                  <div className="flex items-center space-x-4 rounded-lg border p-4">
+                     <div className="flex-1 space-y-1">
+                       <FormLabel>Estado del Juego</FormLabel>
+                       <FormDescription>
+                          Activa o desactiva el juego. El modo Demo no requiere que los jugadores se registren.
+                       </FormDescription>
+                     </div>
+                     <FormControl>
+                       <div className="flex flex-col items-center gap-2">
+                         <Switch
+                           checked={field.value === 'activo'}
+                           onCheckedChange={(checked) => field.onChange(checked ? 'activo' : 'demo')}
+                           disabled={loading}
+                         />
+                         <span className={`text-xs font-medium ${field.value === 'activo' ? 'text-green-600' : 'text-muted-foreground'}`}>
+                           {field.value === 'activo' ? 'Activo' : 'Demo'}
+                         </span>
+                       </div>
+                     </FormControl>
+                   </div>
                   <FormMessage />
                 </FormItem>
               )}
