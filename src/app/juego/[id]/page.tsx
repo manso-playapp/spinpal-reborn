@@ -56,7 +56,7 @@ export default async function GamePage({ params }: { params: { id:string } }) {
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
             <div className="w-full max-w-sm sm:max-w-md">
-              <SpinningWheel segments={game.segments} />
+              <SpinningWheel segments={game.segments} gameId={game.id} />
             </div>
           </CardContent>
         </Card>

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { db } from '@/lib/firebase/config';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 // Carga dinámica del componente Wheel para que solo se renderice en el cliente
 const Wheel = dynamic(() => import('react-custom-roulette').then(mod => mod.Wheel), { 
@@ -17,6 +18,7 @@ interface Segment {
 
 interface SpinningWheelProps {
   segments: Segment[];
+  gameId: string;
 }
 
 const formatSegmentsForWheel = (segments: Segment[]) => {
@@ -28,19 +30,31 @@ const formatSegmentsForWheel = (segments: Segment[]) => {
   }));
 };
 
-export default function SpinningWheel({ segments }: SpinningWheelProps) {
+export default function SpinningWheel({ segments, gameId }: SpinningWheelProps) {
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
 
   const wheelData = formatSegmentsForWheel(segments);
 
-  const handleSpinClick = () => {
-    if (!mustSpin && wheelData.length > 0) {
-      const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
-      setPrizeNumber(newPrizeNumber);
-      setMustSpin(true);
-    }
-  };
+  useEffect(() => {
+    if (!gameId) return;
+
+    const gameRef = doc(db, 'games', gameId);
+    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        // Escuchamos por un nuevo spinRequest
+        if (data.spinRequest && !mustSpin) {
+          const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
+          setPrizeNumber(newPrizeNumber);
+          setMustSpin(true);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [gameId, wheelData.length, mustSpin]);
+
 
   if (!wheelData.length) {
     return (
@@ -58,8 +72,8 @@ export default function SpinningWheel({ segments }: SpinningWheelProps) {
         data={wheelData}
         onStopSpinning={() => {
           setMustSpin(false);
-          // Mostramos el premio en una alerta simple
-          alert(`¡Felicidades! Ganaste: ${wheelData[prizeNumber].option}`);
+          // Opcional: limpiar el spinRequest en la base de datos después de girar
+          // updateDoc(doc(db, 'games', gameId), { spinRequest: null });
         }}
         backgroundColors={['#ACBFA4', '#F4F4F2', '#D3BFA8']}
         textColors={['#000000']}
@@ -73,9 +87,7 @@ export default function SpinningWheel({ segments }: SpinningWheelProps) {
         fontSize={16}
         textDistance={60}
       />
-      <Button onClick={handleSpinClick} disabled={mustSpin} size="lg">
-        {mustSpin ? 'Girando...' : '¡Girar la ruleta!'}
-      </Button>
+      {/* El botón para girar manualmente se elimina, ahora es automático */}
     </div>
   );
 }
