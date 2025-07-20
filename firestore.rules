@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Regla de prueba: permite leer y escribir en cualquier documento
+    // si el usuario está autenticado.
+    // ¡ADVERTENCIA! Esto es solo para desarrollo. 
+    // Deberías ajustar estas reglas para producción para que sean más seguras.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Colección para la prueba de salud de la conexión.
+    // Permite la lectura incluso sin autenticación para verificar la conexión.
+    match /health_check/{docId} {
+        allow read: if true;
+        allow write: if request.auth != null; // Solo usuarios autenticados pueden escribir
+    }
+  }
+}
