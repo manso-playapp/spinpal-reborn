@@ -69,6 +69,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
         title: "Error",
         description: "No se encontró el ID del cliente para actualizar su estado."
       });
+      setFormState(FormState.Error);
       return;
     }
 
