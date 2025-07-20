@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,11 +27,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Palette, Gift, Eye } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Palette, Gift, Eye, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '../ui/separator';
 import SpinningWheel from '../game/SpinningWheel';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 const segmentSchema = z.object({
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
@@ -41,6 +42,8 @@ const formSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   status: z.enum(['activo', 'demo']),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios para la ruleta.'),
+  backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
+  backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -50,6 +53,8 @@ interface Game {
   name: string;
   status: 'activo' | 'demo';
   segments?: { name: string }[];
+  backgroundImage?: string;
+  backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   [key: string]: any;
 }
 
@@ -65,6 +70,8 @@ export default function EditGameForm({ game }: { game: Game }) {
       name: game.name || '',
       status: game.status || 'demo',
       segments: game.segments || [{name: 'Premio 1'}, {name: 'Premio 2'}],
+      backgroundImage: game.backgroundImage || '',
+      backgroundFit: game.backgroundFit || 'cover',
     },
   });
 
@@ -73,8 +80,10 @@ export default function EditGameForm({ game }: { game: Game }) {
     name: 'segments',
   });
 
-  // Observa los cambios en los segmentos para actualizar la vista previa
+  // Observa los cambios para actualizar la vista previa
   const watchedSegments = form.watch('segments');
+  const watchedBackgroundImage = form.watch('backgroundImage');
+  const watchedBackgroundFit = form.watch('backgroundFit');
 
   const onSubmit = async (data: GameFormValues) => {
     setLoading(true);
@@ -169,6 +178,52 @@ export default function EditGameForm({ game }: { game: Game }) {
                     )}
                   />
                 </div>
+
+                <Separator />
+                
+                {/* --- Background Image --- */}
+                <div className="space-y-4">
+                    <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Imagen de Fondo</h3>
+                    <FormField
+                      control={form.control}
+                      name="backgroundImage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL de la Imagen</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://ejemplo.com/imagen.jpg" {...field} disabled={loading} />
+                          </FormControl>
+                           <FormDescription>
+                            Pega la URL de la imagen que quieres usar de fondo. Déjalo en blanco para no usar ninguna.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="backgroundFit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ajuste de la Imagen</FormLabel>
+                           <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona cómo se ajustará la imagen" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="cover">Cubrir (Cover)</SelectItem>
+                              <SelectItem value="contain">Contener (Contain)</SelectItem>
+                              <SelectItem value="fill">Rellenar (Fill)</SelectItem>
+                              <SelectItem value="none">Ninguno (None)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
                 
                 <Separator />
 
@@ -223,13 +278,24 @@ export default function EditGameForm({ game }: { game: Game }) {
         </Card>
 
         {/* Columna de Vista Previa */}
-        <Card className="lg:col-span-1 sticky top-4">
+        <Card className="lg:col-span-1 sticky top-4 overflow-hidden">
            <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Eye /> Vista Previa</CardTitle>
                 <CardDescription>Así se ve tu ruleta en la TV.</CardDescription>
             </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center pt-4">
-            <SpinningWheel segments={watchedSegments} />
+          <CardContent 
+            className="flex flex-col items-center justify-center pt-4 h-96 bg-gray-200 relative"
+            style={{
+                backgroundImage: `url(${watchedBackgroundImage})`,
+                backgroundSize: watchedBackgroundFit,
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+            }}
+          >
+             {watchedBackgroundImage && <div className="absolute inset-0 bg-black/20 z-0"></div>}
+            <div className="z-10 w-full max-w-sm">
+                <SpinningWheel segments={watchedSegments} />
+            </div>
           </CardContent>
         </Card>
       </div>
