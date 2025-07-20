@@ -15,6 +15,7 @@ async function getGameData(id: string) {
   return { 
     id: gameSnap.id, 
     name: data.name || "Juego sin nombre",
+    status: data.status || "demo",
   };
 }
 
@@ -35,7 +36,7 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
               {game.name}
             </h1>
           </div>
-        <CustomerRegistrationForm gameId={game.id} />
+        <CustomerRegistrationForm gameId={game.id} isDemoMode={game.status === 'demo'} />
       </div>
     </div>
   );

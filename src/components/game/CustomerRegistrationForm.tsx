@@ -48,29 +48,20 @@ enum FormState {
   Error,
 }
 
-export default function CustomerRegistrationForm({ gameId }: { gameId: string }) {
+export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameId: string, isDemoMode: boolean }) {
   const { toast } = useToast();
   const [formState, setFormState] = useState<FormState>(FormState.Loading);
-  const [isDemoMode, setIsDemoMode] = useState(false);
   const [spinLoading, setSpinLoading] = useState(false);
   const [customerDocId, setCustomerDocId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchGameStatus = async () => {
-      try {
-        const gameRef = doc(db, 'games', gameId);
-        const gameSnap = await getDoc(gameRef);
-        if (gameSnap.exists() && gameSnap.data().status === 'demo') {
-          setIsDemoMode(true);
-        }
-      } catch (error) {
-        console.error("Error fetching game status:", error);
-      } finally {
-        setFormState(FormState.NotRegistered);
-      }
-    };
-    fetchGameStatus();
-  }, [gameId]);
+    // Si estamos en modo demo, saltamos el registro y vamos directo a la pantalla de girar.
+    if (isDemoMode) {
+      setFormState(FormState.Registered);
+    } else {
+      setFormState(FormState.NotRegistered);
+    }
+  }, [isDemoMode]);
 
 
   const form = useForm<CustomerFormValues>({
@@ -111,7 +102,17 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
       });
 
       await batch.commit();
-      setFormState(FormState.AlreadyPlayed);
+      
+      // Si estamos en modo Demo, el jugador puede seguir girando.
+      // Si estamos en modo Activo, se le muestra que ya jugó.
+      if (isDemoMode) {
+        toast({
+          title: "¡Giro enviado!",
+          description: "La ruleta en la pantalla grande debería estar girando.",
+        });
+      } else {
+        setFormState(FormState.AlreadyPlayed);
+      }
 
     } catch (error) {
       console.error("Error requesting spin:", error);
@@ -130,12 +131,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
   const onSubmit = async (data: CustomerFormValues) => {
     setFormState(FormState.Registering);
     
-    // Si es modo demo, no verificamos ni guardamos, solo vamos a la pantalla de girar.
-    if (isDemoMode) {
-      setFormState(FormState.Registered);
-      return;
-    }
-
     try {
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
       const q = query(customersCollectionRef, where("email", "==", data.email.toLowerCase()), limit(1));
@@ -189,14 +184,16 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
      return (
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
-          <div className="mx-auto bg-green-100 rounded-full p-4 w-fit">
+          <div className="mx-auto bg-green-100 rounded-full p-4 w-fit dark:bg-green-800/50">
             <PartyPopper className="h-12 w-12 text-green-600" />
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <CardTitle className="text-2xl font-headline mb-2">¡Registro Exitoso!</CardTitle>
+          <CardTitle className="text-2xl font-headline mb-2">¡Todo listo para la acción!</CardTitle>
           <CardDescription>
-            ¡Todo listo para la acción! Presiona el botón para hacer girar la ruleta en la pantalla grande.
+            {isDemoMode
+              ? "Estás en modo Demo. ¡Presiona el botón para hacer una prueba de giro!"
+              : "Presiona el botón para hacer girar la ruleta en la pantalla grande."}
           </CardDescription>
           <Button onClick={handleSpin} disabled={spinLoading} size="lg" className="w-full">
             {spinLoading ? (
@@ -255,9 +252,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
       <CardHeader>
         <CardTitle className="font-headline text-2xl">¡Regístrate para Jugar!</CardTitle>
         <CardDescription>
-          {isDemoMode 
-            ? "Estás en modo Demo. Completa los datos para simular el registro y girar." 
-            : "Completa tus datos para participar en la ruleta."}
+          Completa tus datos para participar en la ruleta.
         </CardDescription>
       </CardHeader>
       <CardContent>
