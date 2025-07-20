@@ -4,7 +4,17 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 
-async function getGameData(id: string) {
+// Definimos una interfaz para el objeto del juego serializado
+interface SerializableGame {
+  id: string;
+  name: string;
+  status: 'activo' | 'demo';
+  segments: { name: string }[];
+  // Añadimos cualquier otro campo que pueda venir de Firestore
+  [key: string]: any;
+}
+
+async function getGameData(id: string): Promise<SerializableGame | null> {
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
 
@@ -12,13 +22,16 @@ async function getGameData(id: string) {
     return null;
   }
 
-  // Asegúrate de incluir los segmentos o un array vacío si no existen
   const data = gameSnap.data();
-  return { 
-    id: gameSnap.id, 
-    ...data,
-    segments: data.segments || [], // Garantiza que segments siempre sea un array
-  };
+  
+  // Convertimos el objeto a una cadena JSON y luego de vuelta a un objeto
+  // Esto elimina cualquier tipo de dato complejo como los Timestamps de Firebase
+  const serializableData = JSON.parse(JSON.stringify({ id: gameSnap.id, ...data }));
+
+  // Aseguramos que los segmentos sean siempre un array
+  serializableData.segments = serializableData.segments || [];
+
+  return serializableData;
 }
 
 export default async function EditGamePage({ params }: { params: { id: string } }) {
