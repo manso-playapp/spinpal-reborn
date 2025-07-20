@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { MoveRight } from 'lucide-react';
+import { MoveRight, Link as LinkIcon } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -12,11 +12,17 @@ export default function Home() {
         <p className="mt-4 max-w-xl font-body text-base text-muted-foreground md:text-lg">
           El blueprint de reconstrucción definitivo. Construido con precisión y claridad para una nueva era de interacción.
         </p>
-        <div className="mt-8">
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button asChild size="lg">
             <Link href="/login">
               Admin Login
               <MoveRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+           <Button asChild size="lg" variant="outline">
+            <Link href="/conexiones">
+              Ver Conexiones
+              <LinkIcon className="ml-2 h-5 w-5" />
             </Link>
           </Button>
         </div>
