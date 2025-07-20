@@ -42,7 +42,6 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push('/admin');
     } catch (err: any) {
-      console.error(err);
       const errorCode = err.code;
       let friendlyMessage = 'Ha ocurrido un error inesperado.';
       if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
