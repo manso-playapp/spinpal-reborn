@@ -262,5 +262,3 @@ service cloud.firestore {
     </div>
   );
 }
-
-    
