@@ -55,6 +55,8 @@ interface Game {
   segments?: { name: string }[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
+  plays?: number;
+  prizesAwarded?: number;
   [key: string]: any;
 }
 
@@ -89,7 +91,15 @@ export default function EditGameForm({ game }: { game: Game }) {
     setLoading(true);
     try {
       const gameRef = doc(db, 'games', game.id);
-      await updateDoc(gameRef, data);
+      
+      const updateData: Partial<Game> = {
+        ...data,
+        // Ensure counters are not reset if they already exist
+        plays: game.plays || 0,
+        prizesAwarded: game.prizesAwarded || 0,
+      };
+
+      await updateDoc(gameRef, updateData);
 
       toast({
         title: '¡Juego Actualizado!',
@@ -287,14 +297,14 @@ export default function EditGameForm({ game }: { game: Game }) {
             className="flex flex-col items-center justify-center pt-4 h-96 bg-gray-200 relative"
             style={{
                 backgroundImage: `url(${watchedBackgroundImage})`,
-                backgroundSize: watchedBackgroundFit,
+                backgroundSize: watchedBackgroundFit as 'cover' | 'contain' | 'fill' | 'none',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat'
             }}
           >
              {watchedBackgroundImage && <div className="absolute inset-0 bg-black/20 z-0"></div>}
             <div className="z-10 w-full max-w-sm">
-                <SpinningWheel segments={watchedSegments} />
+                <SpinningWheel segments={watchedSegments} gameId={game.id} />
             </div>
           </CardContent>
         </Card>

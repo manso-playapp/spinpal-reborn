@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, limit, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, limit, writeBatch, getDoc, increment } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -86,6 +86,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
     setSpinLoading(true);
     try {
       const batch = writeBatch(db);
+      const gameRef = doc(db, 'games', gameId);
 
       // Si no es modo demo, marcamos que el cliente ha jugado.
       if (!isDemoMode && customerDocId) {
@@ -93,12 +94,12 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
         batch.update(customerRef, { hasPlayed: true });
       }
 
-      const gameRef = doc(db, 'games', gameId);
       batch.update(gameRef, {
         spinRequest: {
           timestamp: serverTimestamp(),
           nonce: Math.random(),
         },
+        plays: increment(1), // Incrementar el contador de jugadas
       });
 
       await batch.commit();

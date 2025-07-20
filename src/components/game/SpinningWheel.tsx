@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 
@@ -32,6 +32,21 @@ const formatSegmentsForWheel = (segments: Segment[]) => {
   }));
 };
 
+// Palabras clave para identificar un segmento que NO es un premio
+const nonPrizeKeywords = ['intenta', 'suerte', 'nada', 'pierde'];
+
+const normalizeText = (text: string) => {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, ""); // Eliminar acentos
+};
+
+const isPrize = (option: string) => {
+  const normalizedOption = normalizeText(option);
+  return !nonPrizeKeywords.some(keyword => normalizedOption.includes(keyword));
+};
+
 export default function SpinningWheel({ segments, gameId, isDemoMode = false }: SpinningWheelProps) {
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
@@ -51,7 +66,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
 
         // Check for a new spin request
         if (spinRequest && spinRequest.timestamp?.toMillis() !== currentSpinRequestTime) {
-          currentSpinRequestTime = spinRequest.timestamp?.toMillis();
+          currentSpinRequestTime = spinRequest.timestamp.toMillis();
           const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
           setPrizeNumber(newPrizeNumber);
           setMustSpin(true);
@@ -73,14 +88,20 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
 
   const handleStopSpinning = async () => {
     setMustSpin(false);
+    const gameRef = doc(db, 'games', gameId);
     
-    // Always clear the spin request after a spin to prevent re-triggering.
     try {
-      const gameRef = doc(db, 'games', gameId);
-      await updateDoc(gameRef, { spinRequest: null });
+      const winningSegment = wheelData[prizeNumber];
+      const updateData: { spinRequest: null, prizesAwarded?: any } = { spinRequest: null };
+
+      // Si no es un giro de demo y el segmento es un premio, incrementamos el contador
+      if (!isDemoMode && isPrize(winningSegment.option)) {
+        updateData.prizesAwarded = increment(1);
+      }
+      
+      await updateDoc(gameRef, updateData);
     } catch (error) {
-      // It's not critical if this fails, but good to log it.
-      console.error("Error clearing spin request:", error);
+      console.error("Error updating game state after spin:", error);
     }
   };
 
