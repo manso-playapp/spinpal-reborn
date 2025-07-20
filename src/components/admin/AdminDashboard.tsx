@@ -171,8 +171,7 @@ export default function AdminDashboard() {
   const handleDownloadData = async (gameId: string, gameName: string) => {
     try {
       const customersRef = collection(db, 'games', gameId, 'customers');
-      const q = query(customersRef, orderBy('registeredAt', 'desc'));
-      const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(customersRef);
 
       if (querySnapshot.empty) {
         toast({
@@ -184,16 +183,21 @@ export default function AdminDashboard() {
       
       const customersData = querySnapshot.docs.map(doc => {
         const data = doc.data();
+        // Check if registeredAt exists and is a Firestore Timestamp before converting
+        const registrationDate = data.registeredAt && typeof data.registeredAt.toDate === 'function'
+          ? data.registeredAt.toDate().toLocaleString()
+          : 'N/A';
+          
         return {
-          nombre: data.name,
-          email: data.email,
-          fecha_registro: data.registeredAt?.toDate().toLocaleString() || 'N/A',
+          nombre: data.name || '',
+          email: data.email || '',
+          fecha_registro: registrationDate,
           ha_jugado: data.hasPlayed ? 'Sí' : 'No',
         };
       });
 
       const csv = Papa.unparse(customersData);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
