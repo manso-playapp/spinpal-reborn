@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, RotateCw } from 'lucide-react';
+import { Send, PartyPopper, RotateCw, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const formSchema = z.object({
@@ -77,11 +77,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     try {
       const batch = writeBatch(db);
 
-      // 1. Marcar al cliente como que ya ha jugado
       const customerRef = doc(db, 'games', gameId, 'customers', customerDocId);
       batch.update(customerRef, { hasPlayed: true });
 
-      // 2. Enviar la solicitud de giro a la ruleta
       const gameRef = doc(db, 'games', gameId);
       batch.update(gameRef, {
         spinRequest: {
@@ -110,26 +108,19 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
   const onSubmit = async (data: CustomerFormValues) => {
     setFormState(FormState.Registering);
     try {
-      // Verificar si el email ya jugó en este juego
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
-      const q = query(customersCollectionRef, where("email", "==", data.email), limit(1));
+      const q = query(customersCollectionRef, where("email", "==", data.email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
         const customerDoc = querySnapshot.docs[0];
-        if (customerDoc.data().hasPlayed) {
-          setFormState(FormState.AlreadyPlayed);
-        } else {
-          // El usuario existe pero no ha jugado, un caso raro, pero lo permitimos.
-          setCustomerDocId(customerDoc.id);
-          setFormState(FormState.Registered);
-        }
+        setFormState(FormState.AlreadyPlayed);
         return;
       }
 
-      // Si no ha jugado, registrarlo
       const newCustomerDoc = await addDoc(customersCollectionRef, {
-        ...data,
+        name: data.name,
+        email: data.email.toLowerCase(),
         registeredAt: serverTimestamp(),
         hasPlayed: false,
       });
@@ -178,11 +169,16 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     return (
        <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline mb-2">¡Gracias por participar!</CardTitle>
-          <CardDescription>
-            Ya has utilizado tu giro para este juego. ¡Mucha suerte la próxima vez!
-          </CardDescription>
+          <div className="mx-auto bg-amber-100 rounded-full p-4 w-fit dark:bg-amber-900/50">
+            <AlertCircle className="h-12 w-12 text-amber-600 dark:text-amber-400" />
+          </div>
         </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+            <CardTitle className="text-2xl font-headline mb-2">¡Ya has participado!</CardTitle>
+            <CardDescription>
+                Este correo electrónico ya fue utilizado para jugar en esta ruleta. ¡Gracias por participar!
+            </CardDescription>
+        </CardContent>
       </Card>
     );
   }
@@ -192,6 +188,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
        <Card className="w-full max-w-md shadow-lg">
         <CardContent className="pt-6">
             <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
                 <AlertDescription>
                  Ha ocurrido un error inesperado. Por favor, recarga la página e inténtalo de nuevo.
@@ -233,14 +230,14 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 <FormItem>
                   <FormLabel>Correo Electrónico</FormLabel>
                   <FormControl>
-                    <Input placeholder="tu@correo.com" {...field} disabled={formState === FormState.Registering} />
+                    <Input type="email" placeholder="tu@correo.com" {...field} disabled={formState === FormState.Registering} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             <Button type="submit" className="w-full" disabled={formState === FormState.Registering}>
-              {formState === FormState.Registering ? 'Registrando...' : (
+              {formState === FormState.Registering ? 'Verificando...' : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
                   Registrarme y Jugar
