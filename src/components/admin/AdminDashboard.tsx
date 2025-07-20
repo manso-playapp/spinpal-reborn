@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users } from 'lucide-react';
 import Link from 'next/link';
 import {
   Table,
@@ -299,6 +299,19 @@ export default function AdminDashboard() {
                        <TableCell className="hidden text-center md:table-cell">{game.prizesAwarded || 0}</TableCell>
                       <TableCell className="text-right">
                          <div className="flex items-center justify-end gap-2">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button asChild variant="outline" size="icon" className="h-8 w-8">
+                                        <Link href={`/admin/clientes/${game.id}`}>
+                                            <Users className="h-4 w-4" />
+                                            <span className="sr-only">Ver Clientes</span>
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Ver Clientes</p>
+                                </TooltipContent>
+                            </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button asChild variant="outline" size="icon" className="h-8 w-8">
