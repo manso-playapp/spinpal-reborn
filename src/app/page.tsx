@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { MoveRight, Link as LinkIcon } from 'lucide-react';
+import { MoveRight } from 'lucide-react';
 
 export default function Home() {
   return (
@@ -17,12 +17,6 @@ export default function Home() {
             <Link href="/login">
               Admin Login
               <MoveRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-           <Button asChild size="lg" variant="outline">
-            <Link href="/conexiones">
-              Ver Conexiones
-              <LinkIcon className="ml-2 h-5 w-5" />
             </Link>
           </Button>
         </div>

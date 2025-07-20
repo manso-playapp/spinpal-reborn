@@ -2,10 +2,12 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminDashboard() {
   const { user, signOut } = useAuth();
+  const superAdminEmail = 'grupomanso@gmail.com';
 
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -18,6 +20,16 @@ export default function AdminDashboard() {
               Crear Juego
             </span>
           </Button>
+          {user && user.email === superAdminEmail && (
+            <Button asChild size="sm" variant="outline" className="h-7 gap-1">
+              <Link href="/conexiones">
+                <LinkIcon className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Conexiones
+                </span>
+              </Link>
+            </Button>
+          )}
           <Button onClick={signOut} variant="outline" size="icon">
             <LogOut className="h-4 w-4" />
             <span className="sr-only">Logout</span>
