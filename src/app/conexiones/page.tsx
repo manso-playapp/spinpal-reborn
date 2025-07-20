@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
@@ -19,6 +19,7 @@ type ServiceStatus = {
   message: string;
   details?: string;
   actionUrl?: string;
+  isConfigured: 'yes' | 'no' | 'partial';
 };
 
 async function checkFirebaseServices(): Promise<{
@@ -29,66 +30,79 @@ async function checkFirebaseServices(): Promise<{
     auth: {
       connected: false,
       message: 'No se pudo verificar el servicio de Autenticación.',
+      isConfigured: 'no' as const,
     },
     firestore: {
       connected: false,
       message: 'No se pudo verificar el servicio de Firestore.',
+      isConfigured: 'no' as const,
     },
   };
 
-  try {
-    if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-      // Chequeo de Autenticación
-      if (auth.app) {
-        status.auth = {
-          connected: true,
-          message:
-            'El servicio de Autenticación de Firebase funciona correctamente.',
-        };
-      }
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
-      // Chequeo de Firestore
-      try {
-        await getDocs(collection(db, 'health_check'));
+  if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+    // Chequeo de Autenticación
+    if (auth.app) {
+      status.auth = {
+        connected: true,
+        message: 'El servicio de Autenticación de Firebase está conectado correctamente.',
+        details: 'Recuerda habilitar el proveedor "Correo/Contraseña" y crear un usuario administrador.',
+        isConfigured: 'yes',
+      };
+    }
+
+    // Chequeo de Firestore
+    try {
+      // Intenta escribir un documento para asegurarse de que la BD existe.
+      // Esto fallará si las reglas no lo permiten, pero confirmará la conexión.
+      const healthCheckRef = doc(db, 'health_check', 'connectivity-test');
+      await setDoc(healthCheckRef, { timestamp: new Date() });
+      const docSnap = await getDoc(healthCheckRef);
+      if (docSnap.exists()){
+         status.firestore = {
+            connected: true,
+            message: 'El servicio de Firestore funciona correctamente.',
+            details: 'La base de datos está creada y se puede escribir en ella.',
+            isConfigured: 'yes',
+          };
+      } else {
+        throw new Error("Document write failed silently");
+      }
+    } catch (error: any) {
+      if (error.code === 'permission-denied') {
         status.firestore = {
           connected: true,
-          message: 'El servicio de Firestore funciona correctamente.',
+          message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.',
+          details: 'Esto es esperado si ya configuraste las reglas de seguridad. Si es la primera vez, crea la base de datos en modo de prueba o ajusta las reglas.',
+          isConfigured: 'partial',
+          actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore/rules`,
         };
-      } catch (error: any) {
-        if (error.code === 'permission-denied') {
-          status.firestore = {
-            connected: true,
-            message: 'Conexión con Firestore exitosa, pero se denegó el permiso.',
-            details:
-              'Esto es normal si no has configurado las reglas de seguridad o habilitado la API. Sigue los pasos de configuración de abajo.',
-          };
-        } else if (
-          error.code === 'unimplemented' ||
-          error.code === 'failed-precondition'
-        ) {
-          status.firestore = {
-            connected: true,
-            message: 'Conexión correcta, pero la API de Firestore podría no estar habilitada.',
-            details:
-              'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud.',
-            actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}`,
-          };
-        } else {
-          throw error;
-        }
+      } else if (
+        error.code === 'unimplemented' ||
+        error.code === 'failed-precondition'
+      ) {
+        status.firestore = {
+          connected: false,
+          message: 'La API de Firestore no está habilitada en tu proyecto.',
+          details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud. Esto puede tardar unos minutos en reflejarse.',
+          isConfigured: 'no',
+          actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}`,
+        };
+      } else {
+        status.firestore = {
+            connected: false,
+            message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?',
+            details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Código de error: ${error.code || 'desconocido'}.`,
+            isConfigured: 'no',
+            actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore`
+        };
       }
-    } else {
-        const errorMessage = `No has configurado tus credenciales de Firebase en el archivo .env. Por favor, sigue las instrucciones de abajo.`;
-        if (!status.auth.connected) status.auth.message = errorMessage;
-        if (!status.firestore.connected) status.firestore.message = errorMessage;
     }
-  } catch (error: any) {
-    console.error('Error de conexión con Firebase:', error.code, error.message);
-    const errorMessage = `Hubo un problema al conectar con Firebase. Verifica tus credenciales en el archivo .env. Código de error: ${
-      error.code || 'desconocido'
-    }.`;
-    if (!status.auth.connected) status.auth.message = errorMessage;
-    if (!status.firestore.connected) status.firestore.message = errorMessage;
+  } else {
+      const errorMessage = `No has configurado tus credenciales de Firebase en el archivo .env. Por favor, sigue las instrucciones para obtenerlas.`;
+      status.auth = { connected: false, message: errorMessage, isConfigured: 'no' };
+      status.firestore = { connected: false, message: errorMessage, isConfigured: 'no' };
   }
 
   return status;
@@ -96,16 +110,21 @@ async function checkFirebaseServices(): Promise<{
 
 const ServiceStatusCard = ({
   title,
+  icon,
   status,
 }: {
   title: string;
+  icon: React.ReactNode;
   status: ServiceStatus;
 }) => (
-  <Card className="shadow-md">
+  <Card className={`shadow-md border-l-4 ${status.connected ? 'border-green-500' : 'border-red-500'}`}>
     <CardHeader>
       <CardTitle className="text-xl font-headline flex items-center justify-between">
-        <span>{title}</span>
-        <Badge variant={status.connected ? 'default' : 'destructive'}>
+        <div className="flex items-center gap-3">
+          {icon}
+          <span>{title}</span>
+        </div>
+        <Badge variant={status.connected ? 'default' : 'destructive'} className={status.connected ? 'bg-green-600' : ''}>
           {status.connected ? 'Conectado' : 'Desconectado'}
         </Badge>
       </CardTitle>
@@ -113,22 +132,21 @@ const ServiceStatusCard = ({
     <CardContent className="flex flex-col gap-4">
       <div className="flex items-start gap-4">
         {status.connected ? (
-          <CheckCircle2 className="h-8 w-8 text-green-500 mt-1 flex-shrink-0" />
+          <CheckCircle2 className="h-6 w-6 text-green-500 mt-1 flex-shrink-0" />
         ) : (
-          <XCircle className="h-8 w-8 text-destructive mt-1 flex-shrink-0" />
+          <XCircle className="h-6 w-6 text-destructive mt-1 flex-shrink-0" />
         )}
         <div className="flex-grow">
-          <p className="text-muted-foreground">{status.message}</p>
+          <p className="font-semibold">{status.message}</p>
           {status.details && (
-            <p className="text-sm text-muted-foreground mt-2">{status.details}</p>
+            <p className="text-sm text-muted-foreground mt-1">{status.details}</p>
           )}
         </div>
       </div>
       {status.actionUrl && (
         <Button asChild variant="outline" size="sm" className="self-start">
           <Link href={status.actionUrl} target="_blank">
-            Habilitar API de Firestore
-            <ExternalLink className="ml-2 h-4 w-4" />
+            Ir a la configuración <ExternalLink className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       )}
@@ -144,21 +162,21 @@ export default async function ConexionesPage() {
     <div className="flex min-h-screen flex-col items-center bg-background p-4 sm:p-8">
       <div className="w-full max-w-4xl space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold font-headline">Estado y Configuración</h1>
+          <h1 className="text-4xl font-bold font-headline">Estado de Conexiones</h1>
           <p className="mt-2 text-muted-foreground">
-            Verifica el estado de los servicios y sigue la guía para configurar tu proyecto.
+            Verifica que todos los servicios estén configurados y funcionando correctamente.
           </p>
         </div>
 
         <div className="space-y-4">
-          <ServiceStatusCard title="Firebase Auth" status={servicesStatus.auth} />
-          <ServiceStatusCard title="Firebase Firestore" status={servicesStatus.firestore} />
+          <ServiceStatusCard title="Firebase Auth" icon={<UserPlus />} status={servicesStatus.auth} />
+          <ServiceStatusCard title="Firebase Firestore" icon={<Database />} status={servicesStatus.firestore} />
         </div>
 
         <Separator />
 
         <div>
-            <h2 className="text-3xl font-bold font-headline text-center mb-6">Guía de Configuración</h2>
+            <h2 className="text-3xl font-bold font-headline text-center mb-6">Guía de Configuración Inicial</h2>
             <div className="space-y-8">
                 
                 <Card>
@@ -241,10 +259,11 @@ service cloud.firestore {
                         <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
                     </CardContent>
                 </Card>
-
             </div>
         </div>
       </div>
     </div>
   );
 }
+
+    
