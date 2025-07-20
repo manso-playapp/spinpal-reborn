@@ -154,7 +154,7 @@ export default function AdminDashboard() {
                     <TableRow key={game.id}>
                       <TableCell className="font-medium">{game.name}</TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className={game.status === 'activo' ? 'bg-green-600' : ''}>
+                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className={game.status === 'activo' ? 'bg-green-600 text-white' : ''}>
                           {game.status === 'activo' ? 'Activo' : 'Demo'}
                         </Badge>
                       </TableCell>

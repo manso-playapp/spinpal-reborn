@@ -123,7 +123,7 @@ export default function CreateGameForm() {
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center space-x-4 rounded-lg border p-4">
+                   <div className="flex items-center space-x-4 rounded-lg border p-4">
                      <div className="flex-1 space-y-1">
                        <FormLabel>Estado del Juego</FormLabel>
                        <FormDescription>
