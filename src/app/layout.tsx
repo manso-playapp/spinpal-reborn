@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
+import packageJson from '../../package.json';
 
 export const metadata: Metadata = {
   title: 'SpinPal Reborn',
@@ -13,6 +14,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const appVersion = packageJson.version;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -25,6 +27,9 @@ export default function RootLayout({
           {children}
           <Toaster />
         </AuthProvider>
+        <div className="fixed bottom-2 right-2 bg-background/80 text-muted-foreground text-xs px-2 py-1 rounded-md shadow">
+          v{appVersion}
+        </div>
       </body>
     </html>
   );
