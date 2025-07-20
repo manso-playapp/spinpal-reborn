@@ -42,11 +42,16 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
     if (!gameId) return;
 
     const gameRef = doc(db, 'games', gameId);
+    let currentSpinRequestTime: number | null = null;
+
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        // Check for spinRequest and that we aren't already spinning
-        if (data.spinRequest && !mustSpin) {
+        const spinRequest = data.spinRequest;
+
+        // Check for a new spin request
+        if (spinRequest && spinRequest.timestamp?.toMillis() !== currentSpinRequestTime) {
+          currentSpinRequestTime = spinRequest.timestamp?.toMillis();
           const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
           setPrizeNumber(newPrizeNumber);
           setMustSpin(true);
@@ -55,7 +60,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
     });
 
     return () => unsubscribe();
-  }, [gameId, wheelData.length, mustSpin]);
+  }, [gameId, wheelData.length]);
 
 
   const handleDemoSpin = () => {
