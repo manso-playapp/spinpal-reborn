@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 
@@ -45,6 +45,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        // Check for spinRequest and that we aren't already spinning
         if (data.spinRequest && !mustSpin) {
           const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
           setPrizeNumber(newPrizeNumber);
@@ -55,6 +56,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
 
     return () => unsubscribe();
   }, [gameId, wheelData.length, mustSpin]);
+
 
   const handleDemoSpin = () => {
     if (!mustSpin) {
@@ -67,15 +69,13 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
   const handleStopSpinning = async () => {
     setMustSpin(false);
     
-    // Solo limpiamos el request si no estamos en modo demo
-    // para que la ruleta no vuelva a girar si se refresca la página.
-    if (!isDemoMode) {
-      try {
-        const gameRef = doc(db, 'games', gameId);
-        await updateDoc(gameRef, { spinRequest: null });
-      } catch (error) {
-        console.error("Error clearing spin request:", error);
-      }
+    // Always clear the spin request after a spin to prevent re-triggering.
+    try {
+      const gameRef = doc(db, 'games', gameId);
+      await updateDoc(gameRef, { spinRequest: null });
+    } catch (error) {
+      // It's not critical if this fails, but good to log it.
+      console.error("Error clearing spin request:", error);
     }
   };
 
