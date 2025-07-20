@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -129,6 +129,23 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteGame = async (gameId: string, gameName: string) => {
+     try {
+        await deleteDoc(doc(db, "games", gameId));
+        toast({
+            title: "¡Juego Eliminado!",
+            description: `El juego "${gameName}" ha sido eliminado correctamente.`,
+        });
+    } catch (error) {
+        console.error("Error deleting game: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al eliminar",
+            description: "No se pudo eliminar el juego. Inténtalo de nuevo.",
+        });
+    }
+  }
+
   return (
     <TooltipProvider>
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -210,13 +227,15 @@ export default function AdminDashboard() {
                          <div className="flex items-center justify-end gap-2">
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-                                        <Edit className="h-4 w-4" />
-                                        <span className="sr-only">Editar Juego</span>
+                                    <Button asChild variant="outline" size="icon" className="h-8 w-8">
+                                        <Link href={`/admin/juegos/editar/${game.id}`}>
+                                            <Edit className="h-4 w-4" />
+                                            <span className="sr-only">Editar Juego</span>
+                                        </Link>
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Editar Juego (Próximamente)</p>
+                                    <p>Editar Juego</p>
                                 </TooltipContent>
                             </Tooltip>
 
@@ -270,17 +289,36 @@ export default function AdminDashboard() {
                                 </AlertDialogContent>
                             </AlertDialog>
 
-                             <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="destructive" size="icon" className="h-8 w-8" disabled>
-                                        <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Eliminar Juego</span>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Eliminar Juego (Próximamente)</p>
-                                </TooltipContent>
-                            </Tooltip>
+                             <AlertDialog>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="icon" className="h-8 w-8">
+                                                <Trash2 className="h-4 w-4" />
+                                                <span className="sr-only">Eliminar Juego</span>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Eliminar Juego</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción no se puede deshacer. Se eliminará permanentemente el juego
+                                        <span className="font-bold"> {game.name}</span> y todos sus datos asociados.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                     <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteGame(game.id, game.name)} className="bg-destructive hover:bg-destructive/90">
+                                            Sí, eliminar
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                          </div>
                       </TableCell>
                     </TableRow>
