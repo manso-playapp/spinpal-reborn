@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Eye, Trash2, Copy } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus } from 'lucide-react';
 import Link from 'next/link';
 import {
   Table,
@@ -97,6 +97,38 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleDuplicateGame = async (gameId: string) => {
+    try {
+        const gameRef = doc(db, 'games', gameId);
+        const gameSnap = await getDoc(gameRef);
+
+        if (gameSnap.exists()) {
+            const gameData = gameSnap.data();
+            const newGameData = {
+                ...gameData,
+                name: `Copia de ${gameData.name}`,
+                plays: 0,
+                prizesAwarded: 0,
+                createdAt: serverTimestamp(),
+            };
+            await addDoc(collection(db, 'games'), newGameData);
+            toast({
+                title: "¡Juego Duplicado!",
+                description: `Se ha creado una copia de "${gameData.name}".`,
+            });
+        } else {
+             throw new Error("El juego que intentas duplicar no existe.");
+        }
+    } catch (error) {
+        console.error("Error duplicating game: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al duplicar",
+            description: "No se pudo duplicar el juego. Inténtalo de nuevo.",
+        });
+    }
+  };
+
   return (
     <TooltipProvider>
     <div className="flex min-h-screen flex-col bg-muted/40">
@@ -185,6 +217,18 @@ export default function AdminDashboard() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <p>Editar Juego (Próximamente)</p>
+                                </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDuplicateGame(game.id)}>
+                                        <CopyPlus className="h-4 w-4" />
+                                        <span className="sr-only">Duplicar Juego</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Duplicar Juego</p>
                                 </TooltipContent>
                             </Tooltip>
 
