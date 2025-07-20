@@ -234,22 +234,27 @@ export default async function ConexionesPage() {
 service cloud.firestore {
   match /databases/{database}/documents {
   
-    // Cualquiera puede leer los juegos
     match /games/{gameId} {
       allow read: if true;
-      allow write: if request.auth != null; // Solo admins pueden escribir
+      // Admins pueden escribir todo el documento
+      allow write: if request.auth != null; 
+      // Jugadores pueden actualizar solo el campo 'spinRequest'
+      allow update: if request.auth == null 
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest']);
     }
 
-    // Cualquiera puede leer los clientes de un juego
     match /games/{gameId}/customers/{customerId} {
       allow read: if true;
       allow create: if true; // Cualquiera puede registrarse
-      allow update, delete: if request.auth != null; // Solo admins pueden modificar
+      // Admins pueden borrar
+      allow delete: if request.auth != null; 
+      // Jugadores pueden actualizar 'hasPlayed', Admins pueden actualizar todo
+      allow update: if request.auth != null || (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasPlayed']));
     }
     
     // Colección de prueba para verificar la conexión
     match /health_check/{doc} {
-        allow read, write: if true;
+      allow read, write: if true;
     }
   }
 }`}</code></pre>
