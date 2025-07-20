@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, limit, writeBatch, getDoc, increment } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, writeBatch, query, where, getDocs, limit, increment } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -41,25 +41,22 @@ type CustomerFormValues = z.infer<typeof formSchema>;
 
 enum FormState {
   Loading,
-  NotRegistered,
-  Registering,
-  Registered,
+  ReadyToRegister,
+  Submitting,
   AlreadyPlayed,
+  Success,
   Error,
 }
 
 export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameId: string, isDemoMode: boolean }) {
   const { toast } = useToast();
   const [formState, setFormState] = useState<FormState>(FormState.Loading);
-  const [spinLoading, setSpinLoading] = useState(false);
-  const [customerDocId, setCustomerDocId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Si estamos en modo demo, saltamos el registro y vamos directo a la pantalla de girar.
     if (isDemoMode) {
-      setFormState(FormState.Registered);
+      setFormState(FormState.Success); // Directamente a la pantalla de éxito/giro para Demo
     } else {
-      setFormState(FormState.NotRegistered);
+      setFormState(FormState.ReadyToRegister);
     }
   }, [isDemoMode]);
 
@@ -72,65 +69,39 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
     },
   });
 
-  const handleSpin = async () => {
-    if (!customerDocId && !isDemoMode) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "No se encontró el ID del cliente para actualizar su estado."
-      });
-      setFormState(FormState.Error);
-      return;
-    }
-
-    setSpinLoading(true);
+  const handleDemoSpin = async () => {
+    setFormState(FormState.Submitting);
     try {
-      const batch = writeBatch(db);
-      const gameRef = doc(db, 'games', gameId);
-
-      // Si no es modo demo, marcamos que el cliente ha jugado.
-      if (!isDemoMode && customerDocId) {
-        const customerRef = doc(db, 'games', gameId, 'customers', customerDocId);
-        batch.update(customerRef, { hasPlayed: true });
-      }
-
-      batch.update(gameRef, {
-        spinRequest: {
-          timestamp: serverTimestamp(),
-          nonce: Math.random(),
-        },
-        plays: increment(1), // Incrementar el contador de jugadas
-      });
-
-      await batch.commit();
-      
-      // Si estamos en modo Demo, el jugador puede seguir girando.
-      // Si estamos en modo Activo, se le muestra que ya jugó.
-      if (isDemoMode) {
-        toast({
-          title: "¡Giro enviado!",
-          description: "La ruleta en la pantalla grande debería estar girando.",
+        const gameRef = doc(db, 'games', gameId);
+        const batch = writeBatch(db);
+        batch.update(gameRef, {
+            spinRequest: {
+                timestamp: serverTimestamp(),
+                nonce: Math.random(),
+            },
+            plays: increment(1),
         });
-      } else {
-        setFormState(FormState.AlreadyPlayed);
-      }
-
-    } catch (error) {
-      console.error("Error requesting spin:", error);
-      toast({
-        variant: "destructive",
-        title: "Error al girar",
-        description: "No se pudo iniciar el giro. Inténtalo de nuevo."
-      });
-      setFormState(FormState.Error);
+        await batch.commit();
+        toast({
+            title: "¡Giro enviado!",
+            description: "La ruleta en la pantalla grande debería estar girando.",
+        });
+    } catch(error) {
+        console.error("Error requesting demo spin:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al girar",
+            description: "No se pudo iniciar el giro de prueba."
+        });
+        setFormState(FormState.Error);
     } finally {
-      setSpinLoading(false);
+        // En modo demo, permitimos seguir girando.
+        setFormState(FormState.Success);
     }
-  };
-
+  }
 
   const onSubmit = async (data: CustomerFormValues) => {
-    setFormState(FormState.Registering);
+    setFormState(FormState.Submitting);
     
     try {
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
@@ -138,30 +109,41 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const customerDoc = querySnapshot.docs[0];
-        if (customerDoc.data().hasPlayed) {
-          setFormState(FormState.AlreadyPlayed);
-          return;
-        } else {
-          // Si existe pero no ha jugado (caso raro), le dejamos jugar
-          setCustomerDocId(customerDoc.id);
-          setFormState(FormState.Registered);
-        }
+        // Si el usuario ya existe (independientemente de si ha jugado o no), mostramos el mensaje.
+        setFormState(FormState.AlreadyPlayed);
         return;
       }
 
-      const newCustomerDoc = await addDoc(customersCollectionRef, {
+      // Si el usuario no existe, realizamos el registro y el giro en una sola transacción.
+      const batch = writeBatch(db);
+      const gameRef = doc(db, 'games', gameId);
+      
+      // 1. Crear el nuevo documento de cliente. Generamos una referencia vacía para obtener un ID.
+      const newCustomerRef = doc(collection(db, 'games', gameId, 'customers'));
+      batch.set(newCustomerRef, {
         name: data.name,
         email: data.email.toLowerCase(),
         registeredAt: serverTimestamp(),
-        hasPlayed: false,
+        hasPlayed: true, // Lo marcamos como que ha jugado desde el momento de la creación
       });
 
-      setCustomerDocId(newCustomerDoc.id);
-      setFormState(FormState.Registered);
+      // 2. Actualizar el juego para solicitar el giro y contar la jugada.
+      batch.update(gameRef, {
+        spinRequest: {
+          timestamp: serverTimestamp(),
+          nonce: Math.random(),
+        },
+        plays: increment(1),
+      });
+
+      // 3. Ejecutar la transacción
+      await batch.commit();
+
+      // Transición al estado final.
+      setFormState(FormState.AlreadyPlayed); // Mostramos el mensaje de que ya participó.
 
     } catch (error) {
-      console.error('Error registering customer: ', error);
+      console.error('Error registering customer and spinning: ', error);
       setFormState(FormState.Error);
       toast({
         variant: 'destructive',
@@ -181,7 +163,8 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
     )
   }
 
-  if (formState === FormState.Registered) {
+  // Pantalla para modo Demo o para después de girar en modo activo
+  if (formState === FormState.Success) {
      return (
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
@@ -196,8 +179,8 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
               ? "Estás en modo Demo. ¡Presiona el botón para hacer una prueba de giro!"
               : "Presiona el botón para hacer girar la ruleta en la pantalla grande."}
           </CardDescription>
-          <Button onClick={handleSpin} disabled={spinLoading} size="lg" className="w-full">
-            {spinLoading ? (
+          <Button onClick={handleDemoSpin} disabled={formState === FormState.Submitting} size="lg" className="w-full">
+            {formState === FormState.Submitting ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Enviando...
@@ -225,7 +208,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">¡Ya has participado!</CardTitle>
             <CardDescription>
-                Este correo electrónico ya fue utilizado para jugar en esta ruleta. ¡Gracias por participar!
+                Este correo electrónico ya fue utilizado para jugar. ¡Gracias por participar!
             </CardDescription>
         </CardContent>
       </Card>
@@ -248,6 +231,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
     );
   }
 
+  // Estado por defecto: Formulario de Registro para modo Activo
   return (
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader>
@@ -266,7 +250,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
                 <FormItem>
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input placeholder="Tu nombre y apellido" {...field} disabled={formState === FormState.Registering} />
+                    <Input placeholder="Tu nombre y apellido" {...field} disabled={formState === FormState.Submitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -279,14 +263,14 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
                 <FormItem>
                   <FormLabel>Correo Electrónico</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="tu@correo.com" {...field} disabled={formState === FormState.Registering} />
+                    <Input type="email" placeholder="tu@correo.com" {...field} disabled={formState === FormState.Submitting} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={formState === FormState.Registering}>
-              {formState === FormState.Registering ? (
+            <Button type="submit" className="w-full" disabled={formState === FormState.Submitting}>
+              {formState === FormState.Submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Verificando...
