@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gamepad2 } from 'lucide-react';
 import SpinningWheel from '@/components/game/SpinningWheel';
+import QRCodeDisplay from '@/components/game/QRCodeDisplay';
+import { Separator } from '@/components/ui/separator';
 
 async function getGameData(id: string) {
   const gameRef = doc(db, 'games', id);
@@ -39,11 +41,13 @@ export default async function GamePage({ params }: { params: { id:string } }) {
 
   return (
     <div 
-      className="flex min-h-screen w-full items-center justify-center bg-background p-4"
+      className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 lg:flex-row lg:gap-8"
       style={backgroundStyles}
     >
-      <div className={`w-full h-full flex items-center justify-center ${game.backgroundImage ? 'bg-black/20' : ''}`}>
-        <Card className="w-full max-w-2xl text-center shadow-lg bg-card/90 backdrop-blur-sm">
+      <div className={`w-full h-full flex flex-col items-center justify-center lg:flex-row lg:gap-8 ${game.backgroundImage ? 'bg-black/20' : ''}`}>
+        
+        {/* Columna de la Ruleta */}
+        <Card className="w-full max-w-2xl text-center shadow-lg bg-card/90 backdrop-blur-sm mb-8 lg:mb-0">
           <CardHeader>
             <CardTitle className="font-headline text-4xl flex items-center justify-center gap-4">
               <Gamepad2 className="h-10 w-10" />
@@ -51,15 +55,28 @@ export default async function GamePage({ params }: { params: { id:string } }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
-            <p className="text-muted-foreground mb-8">
-              ¡Prepárate para girar la ruleta!
-            </p>
             <div className="w-full max-w-sm sm:max-w-md">
               <SpinningWheel segments={game.segments} />
             </div>
-            {/* Aquí irá el QR más adelante */}
           </CardContent>
         </Card>
+
+        {/* Columna del QR */}
+        <Card className="w-full max-w-sm text-center shadow-lg bg-card/90 backdrop-blur-sm">
+           <CardHeader>
+             <CardTitle className="font-headline text-2xl">
+                ¡Escanea para Jugar!
+             </CardTitle>
+           </CardHeader>
+           <CardContent className="flex flex-col items-center justify-center gap-4">
+              <QRCodeDisplay gameId={game.id} />
+              <Separator />
+              <p className="text-muted-foreground text-sm">
+                Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte.
+              </p>
+           </CardContent>
+        </Card>
+
       </div>
     </div>
   );
