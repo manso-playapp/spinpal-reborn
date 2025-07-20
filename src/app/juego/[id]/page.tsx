@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gamepad2 } from 'lucide-react';
+import SpinningWheel from '@/components/game/SpinningWheel';
 
 async function getGameData(id: string) {
   const gameRef = doc(db, 'games', id);
@@ -12,7 +13,12 @@ async function getGameData(id: string) {
     return null;
   }
 
-  return { id: gameSnap.id, ...gameSnap.data() };
+  const data = gameSnap.data();
+  return { 
+    id: gameSnap.id, 
+    ...data,
+    segments: data.segments || [], // Asegura que segments siempre sea un array
+  };
 }
 
 export default async function GamePage({ params }: { params: { id: string } }) {
@@ -31,11 +37,14 @@ export default async function GamePage({ params }: { params: { id: string } }) {
             {game.name}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
+        <CardContent className="flex flex-col items-center justify-center">
+          <p className="text-muted-foreground mb-8">
             ¡Prepárate para girar la ruleta!
           </p>
-          {/* Aquí irán la ruleta y el QR más adelante */}
+          <div className="w-full max-w-sm sm:max-w-md">
+            <SpinningWheel segments={game.segments} />
+          </div>
+          {/* Aquí irá el QR más adelante */}
         </CardContent>
       </Card>
     </div>
