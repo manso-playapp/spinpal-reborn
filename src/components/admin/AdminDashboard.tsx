@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download } from 'lucide-react';
 import Link from 'next/link';
 import {
   Table,
@@ -38,6 +38,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import Papa from 'papaparse';
 
 
 interface Game {
@@ -144,7 +145,76 @@ export default function AdminDashboard() {
             description: "No se pudo eliminar el juego. Inténtalo de nuevo.",
         });
     }
-  }
+  };
+
+  const handleResetCounters = async (gameId: string, gameName: string) => {
+    try {
+      const gameRef = doc(db, 'games', gameId);
+      await updateDoc(gameRef, {
+        plays: 0,
+        prizesAwarded: 0,
+      });
+      toast({
+        title: '¡Contadores Reseteados!',
+        description: `Las jugadas y premios de "${gameName}" se han restablecido a 0.`,
+      });
+    } catch (error) {
+      console.error('Error resetting counters: ', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al resetear',
+        description: 'No se pudieron restablecer los contadores. Inténtalo de nuevo.',
+      });
+    }
+  };
+
+  const handleDownloadData = async (gameId: string, gameName: string) => {
+    try {
+      const customersRef = collection(db, 'games', gameId, 'customers');
+      const q = query(customersRef, orderBy('registeredAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        toast({
+          title: 'No hay datos para descargar',
+          description: 'Aún no se ha registrado ningún cliente en este juego.',
+        });
+        return;
+      }
+      
+      const customersData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          nombre: data.name,
+          email: data.email,
+          fecha_registro: data.registeredAt?.toDate().toLocaleString() || 'N/A',
+          ha_jugado: data.hasPlayed ? 'Sí' : 'No',
+        };
+      });
+
+      const csv = Papa.unparse(customersData);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `datos_${gameName.replace(/ /g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+       toast({
+          title: '¡Descarga Iniciada!',
+          description: `Se están descargando los datos de "${gameName}".`,
+      });
+
+    } catch (error) {
+      console.error('Error downloading data: ', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error al descargar',
+        description: 'No se pudieron descargar los datos. Inténtalo de nuevo.',
+      });
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -236,6 +306,48 @@ export default function AdminDashboard() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <p>Editar Juego</p>
+                                </TooltipContent>
+                            </Tooltip>
+                            
+                             <AlertDialog>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="outline" size="icon" className="h-8 w-8">
+                                                <RotateCcw className="h-4 w-4" />
+                                                <span className="sr-only">Resetear Contadores</span>
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Resetear Contadores</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Resetear contadores?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción restablecerá las jugadas y premios de <span className="font-bold">{game.name}</span> a 0. No se puede deshacer.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                     <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleResetCounters(game.id, game.name)}>
+                                            Sí, resetear
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDownloadData(game.id, game.name)}>
+                                        <Download className="h-4 w-4" />
+                                        <span className="sr-only">Descargar Datos</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Descargar Datos (CSV)</p>
                                 </TooltipContent>
                             </Tooltip>
 
