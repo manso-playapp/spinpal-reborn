@@ -39,7 +39,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
   const wheelData = formatSegmentsForWheel(segments);
 
   useEffect(() => {
-    if (!gameId || isDemoMode) return;
+    if (!gameId) return;
 
     const gameRef = doc(db, 'games', gameId);
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
@@ -54,7 +54,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
     });
 
     return () => unsubscribe();
-  }, [gameId, wheelData.length, mustSpin, isDemoMode]);
+  }, [gameId, wheelData.length, mustSpin]);
 
   const handleDemoSpin = () => {
     if (!mustSpin) {
@@ -68,6 +68,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
     setMustSpin(false);
     
     // Solo limpiamos el request si no estamos en modo demo
+    // para que la ruleta no vuelva a girar si se refresca la página.
     if (!isDemoMode) {
       try {
         const gameRef = doc(db, 'games', gameId);

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, limit, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc, query, where, getDocs, limit, writeBatch, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, RotateCw, AlertCircle } from 'lucide-react';
+import { Send, PartyPopper, RotateCw, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const formSchema = z.object({
@@ -40,6 +40,7 @@ const formSchema = z.object({
 type CustomerFormValues = z.infer<typeof formSchema>;
 
 enum FormState {
+  Loading,
   NotRegistered,
   Registering,
   Registered,
@@ -49,9 +50,27 @@ enum FormState {
 
 export default function CustomerRegistrationForm({ gameId }: { gameId: string }) {
   const { toast } = useToast();
-  const [formState, setFormState] = useState<FormState>(FormState.NotRegistered);
+  const [formState, setFormState] = useState<FormState>(FormState.Loading);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [spinLoading, setSpinLoading] = useState(false);
   const [customerDocId, setCustomerDocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchGameStatus = async () => {
+      try {
+        const gameRef = doc(db, 'games', gameId);
+        const gameSnap = await getDoc(gameRef);
+        if (gameSnap.exists() && gameSnap.data().status === 'demo') {
+          setIsDemoMode(true);
+        }
+      } catch (error) {
+        console.error("Error fetching game status:", error);
+      } finally {
+        setFormState(FormState.NotRegistered);
+      }
+    };
+    fetchGameStatus();
+  }, [gameId]);
 
 
   const form = useForm<CustomerFormValues>({
@@ -63,7 +82,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
   });
 
   const handleSpin = async () => {
-    if (!customerDocId) {
+    if (!customerDocId && !isDemoMode) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -77,8 +96,11 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     try {
       const batch = writeBatch(db);
 
-      const customerRef = doc(db, 'games', gameId, 'customers', customerDocId);
-      batch.update(customerRef, { hasPlayed: true });
+      // Si no es modo demo, marcamos que el cliente ha jugado.
+      if (!isDemoMode && customerDocId) {
+        const customerRef = doc(db, 'games', gameId, 'customers', customerDocId);
+        batch.update(customerRef, { hasPlayed: true });
+      }
 
       const gameRef = doc(db, 'games', gameId);
       batch.update(gameRef, {
@@ -107,6 +129,13 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
   const onSubmit = async (data: CustomerFormValues) => {
     setFormState(FormState.Registering);
+    
+    // Si es modo demo, no verificamos ni guardamos, solo vamos a la pantalla de girar.
+    if (isDemoMode) {
+      setFormState(FormState.Registered);
+      return;
+    }
+
     try {
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
       const q = query(customersCollectionRef, where("email", "==", data.email.toLowerCase()), limit(1));
@@ -114,7 +143,14 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
       if (!querySnapshot.empty) {
         const customerDoc = querySnapshot.docs[0];
-        setFormState(FormState.AlreadyPlayed);
+        if (customerDoc.data().hasPlayed) {
+          setFormState(FormState.AlreadyPlayed);
+          return;
+        } else {
+          // Si existe pero no ha jugado (caso raro), le dejamos jugar
+          setCustomerDocId(customerDoc.id);
+          setFormState(FormState.Registered);
+        }
         return;
       }
 
@@ -139,6 +175,16 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     }
   };
 
+  if (formState === FormState.Loading) {
+    return (
+      <Card className="w-full max-w-md shadow-lg">
+        <CardContent className="pt-6 flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   if (formState === FormState.Registered) {
      return (
       <Card className="w-full max-w-md text-center shadow-lg">
@@ -153,7 +199,12 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             ¡Todo listo para la acción! Presiona el botón para hacer girar la ruleta en la pantalla grande.
           </CardDescription>
           <Button onClick={handleSpin} disabled={spinLoading} size="lg" className="w-full">
-            {spinLoading ? 'Enviando...' : (
+            {spinLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Enviando...
+              </>
+            ) : (
               <>
                 <RotateCw className="mr-2 h-5 w-5" />
                 ¡Girar la ruleta!
@@ -204,7 +255,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
       <CardHeader>
         <CardTitle className="font-headline text-2xl">¡Regístrate para Jugar!</CardTitle>
         <CardDescription>
-          Completa tus datos para participar en la ruleta.
+          {isDemoMode 
+            ? "Estás en modo Demo. Completa los datos para simular el registro y girar." 
+            : "Completa tus datos para participar en la ruleta."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -237,7 +290,12 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
               )}
             />
             <Button type="submit" className="w-full" disabled={formState === FormState.Registering}>
-              {formState === FormState.Registering ? 'Verificando...' : (
+              {formState === FormState.Registering ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
                   Registrarme y Jugar

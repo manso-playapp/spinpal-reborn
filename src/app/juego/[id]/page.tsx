@@ -60,7 +60,7 @@ export default async function GamePage({ params }: { params: { id:string } }) {
                 <Alert variant="default" className="text-left bg-yellow-100/80 border-yellow-300 dark:bg-yellow-900/80 dark:border-yellow-700">
                     <AlertTitle className="font-semibold">Modo Demo</AlertTitle>
                     <AlertDescription>
-                        Esta ruleta está en modo de prueba. Los giros no requieren registro.
+                        Esta ruleta está en modo de prueba. Puedes girarla directamente o probar el flujo del QR. Los registros no se guardan.
                     </AlertDescription>
                 </Alert>
             )}
@@ -76,24 +76,22 @@ export default async function GamePage({ params }: { params: { id:string } }) {
           </CardContent>
         </Card>
 
-        {/* Columna del QR (solo en modo Activo) */}
-        {game.status === 'activo' && (
-             <Card className="w-full max-w-sm text-center shadow-lg bg-card/90 backdrop-blur-sm">
-               <CardHeader>
-                 <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
-                    <QrCode />
-                    ¡Escanea para Jugar!
-                 </CardTitle>
-               </CardHeader>
-               <CardContent className="flex flex-col items-center justify-center gap-4">
-                  <QRCodeDisplay gameId={game.id} />
-                  <Separator />
-                  <p className="text-muted-foreground text-sm">
-                    Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte.
-                  </p>
-               </CardContent>
-            </Card>
-        )}
+        {/* Columna del QR */}
+         <Card className="w-full max-w-sm text-center shadow-lg bg-card/90 backdrop-blur-sm">
+           <CardHeader>
+             <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
+                <QrCode />
+                ¡Escanea para Jugar!
+             </CardTitle>
+           </CardHeader>
+           <CardContent className="flex flex-col items-center justify-center gap-4">
+              <QRCodeDisplay gameId={game.id} />
+              <Separator />
+              <p className="text-muted-foreground text-sm">
+                Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
+              </p>
+           </CardContent>
+        </Card>
 
       </div>
     </div>
