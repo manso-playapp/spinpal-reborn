@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Wheel } from 'react-custom-roulette';
+import { Button } from '@/components/ui/button';
 
 interface Segment {
   name: string;
@@ -29,8 +30,6 @@ export default function SpinningWheel({ segments }: SpinningWheelProps) {
     setWheelData(formattedSegments);
   }, [segments]);
 
-
-  // Por ahora, la ruleta no girará. Esto lo implementaremos más adelante.
   const handleSpinClick = () => {
     if (!mustSpin && wheelData.length > 0) {
       const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
@@ -48,14 +47,15 @@ export default function SpinningWheel({ segments }: SpinningWheelProps) {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center">
+    <div className="relative flex flex-col items-center justify-center gap-8">
       <Wheel
         mustStartSpinning={mustSpin}
         prizeNumber={prizeNumber}
         data={wheelData}
         onStopSpinning={() => {
           setMustSpin(false);
-          // Aquí manejaremos la lógica del premio más adelante
+          // Mostramos el premio en una alerta simple
+          alert(`¡Felicidades! Ganaste: ${wheelData[prizeNumber].option}`);
         }}
         backgroundColors={['#ACBFA4', '#F4F4F2', '#D3BFA8']}
         textColors={['#000000']}
@@ -69,7 +69,9 @@ export default function SpinningWheel({ segments }: SpinningWheelProps) {
         fontSize={16}
         textDistance={60}
       />
-      {/* El botón para girar se añadirá más adelante */}
+      <Button onClick={handleSpinClick} disabled={mustSpin} size="lg">
+        {mustSpin ? 'Girando...' : '¡Girar la ruleta!'}
+      </Button>
     </div>
   );
 }
