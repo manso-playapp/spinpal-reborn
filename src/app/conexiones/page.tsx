@@ -54,8 +54,6 @@ async function checkFirebaseServices(): Promise<{
 
     // Chequeo de Firestore
     try {
-      // Intenta escribir un documento para asegurarse de que la BD existe.
-      // Esto fallará si las reglas no lo permiten, pero confirmará la conexión.
       const healthCheckRef = doc(db, 'health_check', 'connectivity-test');
       await setDoc(healthCheckRef, { timestamp: new Date() });
       const docSnap = await getDoc(healthCheckRef);
@@ -70,33 +68,32 @@ async function checkFirebaseServices(): Promise<{
         throw new Error("Document write failed silently");
       }
     } catch (error: any) {
-      if (error.code === 'permission-denied') {
-        status.firestore = {
-          connected: true,
-          message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.',
-          details: 'Esto es esperado si ya configuraste las reglas de seguridad. Si es la primera vez, crea la base de datos en modo de prueba o ajusta las reglas.',
-          isConfigured: 'partial',
-          actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore/rules`,
-        };
-      } else if (
-        error.code === 'unimplemented' ||
-        error.code === 'failed-precondition'
-      ) {
-        status.firestore = {
-          connected: false,
-          message: 'La API de Firestore no está habilitada en tu proyecto.',
-          details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud. Esto puede tardar unos minutos en reflejarse.',
-          isConfigured: 'no',
-          actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}`,
-        };
-      } else {
-        status.firestore = {
-            connected: false,
-            message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?',
-            details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Código de error: ${error.code || 'desconocido'}.`,
-            isConfigured: 'no',
-            actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore`
-        };
+        const errorMessage = (error.message || '').toLowerCase();
+        
+        if (errorMessage.includes('firestore api has not been used') || error.code === 'unimplemented' || error.code === 'failed-precondition') {
+             status.firestore = {
+                connected: false,
+                message: 'La API de Firestore no está habilitada en tu proyecto.',
+                details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud. Esto puede tardar unos minutos en reflejarse.',
+                isConfigured: 'no',
+                actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}`,
+            };
+        } else if (error.code === 'permission-denied') {
+            status.firestore = {
+                connected: true,
+                message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.',
+                details: 'Esto es esperado si ya configuraste las reglas de seguridad. Si es la primera vez, crea la base de datos en modo de prueba o ajusta las reglas.',
+                isConfigured: 'partial',
+                actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore/rules`,
+            };
+        } else {
+            status.firestore = {
+                connected: false,
+                message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?',
+                details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Si ya la creaste, puede que la API de Firestore no esté habilitada (ver arriba). Código de error: ${error.code || 'desconocido'}.`,
+                isConfigured: 'no',
+                actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore`
+            };
       }
     }
   } else {
@@ -117,7 +114,7 @@ const ServiceStatusCard = ({
   icon: React.ReactNode;
   status: ServiceStatus;
 }) => (
-  <Card className={`shadow-md border-l-4 ${status.connected ? 'border-green-500' : 'border-red-500'}`}>
+  <Card className={`shadow-md border-l-4 ${status.isConfigured === 'yes' ? 'border-green-500' : (status.isConfigured === 'partial' ? 'border-yellow-500' : 'border-red-500')}`}>
     <CardHeader>
       <CardTitle className="text-xl font-headline flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -131,10 +128,10 @@ const ServiceStatusCard = ({
     </CardHeader>
     <CardContent className="flex flex-col gap-4">
       <div className="flex items-start gap-4">
-        {status.connected ? (
+        {status.isConfigured === 'yes' ? (
           <CheckCircle2 className="h-6 w-6 text-green-500 mt-1 flex-shrink-0" />
         ) : (
-          <XCircle className="h-6 w-6 text-destructive mt-1 flex-shrink-0" />
+          <XCircle className={`h-6 w-6 ${status.isConfigured === 'partial' ? 'text-yellow-500' : 'text-destructive'} mt-1 flex-shrink-0`} />
         )}
         <div className="flex-grow">
           <p className="font-semibold">{status.message}</p>
