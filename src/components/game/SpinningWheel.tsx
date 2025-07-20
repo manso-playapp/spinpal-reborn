@@ -88,20 +88,29 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
 
   const handleStopSpinning = async () => {
     setMustSpin(false);
-    const gameRef = doc(db, 'games', gameId);
     
-    try {
-      const winningSegment = wheelData[prizeNumber];
-      const updateData: { spinRequest: null, prizesAwarded?: any } = { spinRequest: null };
+    // Solo actualizamos la base de datos si NO estamos en modo demo
+    // y si la acción de parada fue iniciada por una solicitud de Firestore
+    if (!isDemoMode) {
+        const gameRef = doc(db, 'games', gameId);
+        try {
+            const winningSegment = wheelData[prizeNumber];
+            const updateData: { prizesAwarded?: any } = {};
 
-      // Si no es un giro de demo y el segmento es un premio, incrementamos el contador
-      if (!isDemoMode && isPrize(winningSegment.option)) {
-        updateData.prizesAwarded = increment(1);
-      }
-      
-      await updateDoc(gameRef, updateData);
-    } catch (error) {
-      console.error("Error updating game state after spin:", error);
+            if (isPrize(winningSegment.option)) {
+                updateData.prizesAwarded = increment(1);
+            }
+            
+            // Siempre intentamos limpiar la solicitud de giro si hay algo que actualizar
+            // o si la ruleta se detuvo (para evitar giros repetidos)
+            await updateDoc(gameRef, { 
+                ...updateData,
+                spinRequest: null 
+            });
+
+        } catch (error) {
+            console.error("Error updating game state after spin:", error);
+        }
     }
   };
 

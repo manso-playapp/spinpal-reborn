@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -54,22 +54,21 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
   });
 
   const handleDemoSpin = async () => {
+    // Esta función ahora se activa desde la página del juego, no aquí.
+    // Sin embargo, si el jugador escanea el QR en modo demo, debe poder solicitar un giro.
     setIsSubmitting(true);
     try {
         const gameRef = doc(db, 'games', gameId);
+        // En modo demo, solo solicitamos el giro, no guardamos datos de cliente.
         const batch = writeBatch(db);
         batch.update(gameRef, {
             spinRequest: {
                 timestamp: serverTimestamp(),
                 nonce: Math.random(),
-            },
-            plays: increment(1),
+            }
         });
         await batch.commit();
-        toast({
-            title: "¡Giro enviado!",
-            description: "La ruleta en la pantalla grande debería estar girando.",
-        });
+        setHasPlayed(true); // Para mostrar mensaje de éxito/gracias
     } catch(error) {
         console.error("Error requesting demo spin:", error);
         toast({
@@ -147,6 +146,24 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
       </Card>
     );
   }
+  
+  if (hasPlayed) {
+    return (
+       <Card className="w-full max-w-md text-center shadow-lg">
+        <CardHeader>
+          <div className="mx-auto bg-green-100 rounded-full p-4 w-fit dark:bg-green-800/50">
+            <PartyPopper className="h-12 w-12 text-green-600" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+            <CardTitle className="text-2xl font-headline mb-2">¡Giro solicitado!</CardTitle>
+            <CardDescription>
+                La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!
+            </CardDescription>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isDemoMode) {
      return (
@@ -174,24 +191,6 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
               </>
             )}
           </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  if (hasPlayed) {
-    return (
-       <Card className="w-full max-w-md text-center shadow-lg">
-        <CardHeader>
-          <div className="mx-auto bg-amber-100 rounded-full p-4 w-fit dark:bg-amber-900/50">
-            <AlertCircle className="h-12 w-12 text-amber-600 dark:text-amber-400" />
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-            <CardTitle className="text-2xl font-headline mb-2">¡Ya has participado!</CardTitle>
-            <CardDescription>
-                Este correo electrónico ya fue utilizado para jugar. ¡Gracias por participar!
-            </CardDescription>
         </CardContent>
       </Card>
     );
