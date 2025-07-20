@@ -1,8 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Wheel } from 'react-custom-roulette';
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Carga dinámica del componente Wheel para que solo se renderice en el cliente
+const Wheel = dynamic(() => import('react-custom-roulette').then(mod => mod.Wheel), { 
+  ssr: false,
+  loading: () => <Skeleton className="w-[350px] h-[350px] rounded-full" /> 
+});
 
 interface Segment {
   name: string;
@@ -13,22 +20,19 @@ interface SpinningWheelProps {
 }
 
 const formatSegmentsForWheel = (segments: Segment[]) => {
+  if (!segments || segments.length === 0) {
+    return [];
+  }
   return segments.map((segment) => ({
     option: segment.name,
-    // Aquí podrías agregar colores y otros estilos más adelante
   }));
 };
 
 export default function SpinningWheel({ segments }: SpinningWheelProps) {
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
-  const [wheelData, setWheelData] = useState<{ option: string }[]>([]);
 
-  useEffect(() => {
-    // Para evitar problemas de hidratación, procesamos los segmentos en el cliente
-    const formattedSegments = formatSegmentsForWheel(segments);
-    setWheelData(formattedSegments);
-  }, [segments]);
+  const wheelData = formatSegmentsForWheel(segments);
 
   const handleSpinClick = () => {
     if (!mustSpin && wheelData.length > 0) {
