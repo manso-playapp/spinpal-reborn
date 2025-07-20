@@ -2,31 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer base {
   :root {
-    --background: 60 11% 95%;
+    --background: 40 10% 96%; /* #F4F4F2 */
     --foreground: 89 21% 11%;
-    --card: 0 0% 100%;
+    --card: 40 10% 98%;
     --card-foreground: 89 21% 11%;
-    --popover: 0 0% 100%;
+    --popover: 40 10% 98%;
     --popover-foreground: 89 21% 11%;
-    --primary: 89 21% 31%;
-    --primary-foreground: 60 11% 95%;
-    --secondary: 96 13% 80%;
+    --primary: 95 13% 66%; /* #ACBFA4 */
+    --primary-foreground: 89 21% 11%;
+    --secondary: 35 27% 85%; /* Lighter accent for secondary */
     --secondary-foreground: 89 21% 11%;
-    --muted: 60 11% 90%;
+    --muted: 40 10% 90%;
     --muted-foreground: 89 21% 31%;
-    --accent: 35 27% 85%;
+    --accent: 35 27% 82%; /* #D3BFA8 */
     --accent-foreground: 89 21% 11%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 60 11% 88%;
-    --input: 60 11% 88%;
-    --ring: 89 21% 31%;
+    --border: 95 13% 88%;
+    --input: 95 13% 88%;
+    --ring: 95 13% 66%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -44,24 +40,24 @@ body {
   }
   .dark {
     --background: 89 21% 10%;
-    --foreground: 60 11% 95%;
+    --foreground: 40 10% 96%;
     --card: 89 21% 12%;
-    --card-foreground: 60 11% 95%;
+    --card-foreground: 40 10% 96%;
     --popover: 89 21% 10%;
-    --popover-foreground: 60 11% 95%;
-    --primary: 96 13% 67%;
+    --popover-foreground: 40 10% 96%;
+    --primary: 95 13% 66%;
     --primary-foreground: 89 21% 11%;
     --secondary: 35 27% 75%;
     --secondary-foreground: 89 21% 11%;
     --muted: 89 21% 15%;
-    --muted-foreground: 60 11% 60%;
-    --accent: 96 13% 30%;
-    --accent-foreground: 60 11% 95%;
+    --muted-foreground: 40 10% 60%;
+    --accent: 95 13% 30%;
+    --accent-foreground: 40 10% 96%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 89 21% 20%;
     --input: 89 21% 20%;
-    --ring: 96 13% 67%;
+    --ring: 95 13% 66%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -83,6 +79,10 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-headline;
   }
 }
