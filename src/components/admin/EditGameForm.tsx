@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,11 +39,13 @@ import SpinningWheel from '../game/SpinningWheel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const segmentSchema = z.object({
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
   probability: z.coerce.number().min(0, "Debe ser >= 0").max(100, "Debe ser <= 100").optional(),
+  isRealPrize: z.boolean().optional(),
 });
 
 const formSchema = z.object({
@@ -63,7 +65,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
-  segments?: { name: string; probability?: number }[];
+  segments?: { name: string; probability?: number; isRealPrize?: boolean }[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   registrationTitle?: string;
@@ -85,7 +87,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments || [{name: 'Premio 1', probability: 50}, {name: 'Premio 2', probability: 50}],
+      segments: game.segments || [{name: 'Premio 1', probability: 50, isRealPrize: true}, {name: 'Premio 2', probability: 50, isRealPrize: true}],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
@@ -163,7 +165,7 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const addSegment = () => {
     if (newSegmentName.trim()) {
-      append({ name: newSegmentName.trim(), probability: 0 });
+      append({ name: newSegmentName.trim(), probability: 0, isRealPrize: false });
       setNewSegmentName('');
     }
   };
@@ -262,10 +264,11 @@ export default function EditGameForm({ game }: { game: Game }) {
                           </div>
                           
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
+                            <div className="flex items-center gap-4 px-1 text-xs font-medium text-muted-foreground">
                                 <div className="w-6"></div>
                                 <div className="flex-grow">Nombre del Premio</div>
-                                <div className="w-24 text-center">Probabilidad %</div>
+                                <div className="w-28 text-center">Probabilidad %</div>
+                                <div className="w-24 text-center">Premio Real</div>
                                 <div className="w-10"></div> {/* Espacio para botones */}
                             </div>
                             <DndContext 
@@ -296,9 +299,21 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                     type="number" 
                                                     value={controllerField.value ?? ''}
                                                     onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
-                                                    className="w-24 text-center"
+                                                    className="w-28 text-center"
                                                     placeholder="%"
                                                 />
+                                            )}
+                                        />
+                                        <Controller
+                                            control={form.control}
+                                            name={`segments.${index}.isRealPrize`}
+                                            render={({ field: controllerField }) => (
+                                                <div className="w-24 flex justify-center">
+                                                    <Checkbox
+                                                        checked={controllerField.value}
+                                                        onCheckedChange={controllerField.onChange}
+                                                    />
+                                                </div>
                                             )}
                                         />
                                         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
