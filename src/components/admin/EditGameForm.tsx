@@ -763,17 +763,21 @@ export default function EditGameForm({ game }: { game: Game }) {
                           <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
                         </TabsList>
                         <TabsContent value="roulette" className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[500px]">
-                            <SpinningWheel
-                                segments={watchedFormData.segments}
-                                gameId={game.id}
-                                isDemoMode={true}
-                                showDemoButton={true}
-                                config={currentConfig}
-                            />
+                           <div className="w-full max-w-md">
+                                <SpinningWheel
+                                    segments={watchedFormData.segments}
+                                    gameId={game.id}
+                                    isDemoMode={true}
+                                    showDemoButton={true}
+                                    config={currentConfig}
+                                />
+                            </div>
                         </TabsContent>
                         <TabsContent value="game" className="mt-4 p-2 min-h-[500px] flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden">
-                          <div className="w-full h-full transform scale-[0.8] flex items-center justify-center">
-                            <div className="relative w-[281px] h-[500px] rounded-lg overflow-hidden flex flex-col items-center justify-center" style={backgroundPreviewStyles}>
+                           <div
+                              className="relative w-[281px] h-[500px] rounded-lg overflow-hidden flex flex-col items-center justify-center transform scale-[0.8]"
+                              style={backgroundPreviewStyles}
+                            >
                                 <div 
                                   className="flex flex-col items-center justify-center w-full"
                                   style={{ gap: `${watchedFormData.rouletteQrGap}px` }}
@@ -811,7 +815,6 @@ export default function EditGameForm({ game }: { game: Game }) {
                                   </Card>
                                 </div>
                               </div>
-                            </div>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
