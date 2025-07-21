@@ -28,7 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Palette, Gift, Eye, Image as ImageIcon, FileText, Settings } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Palette, Gift, Eye, Image as ImageIcon, FileText, Settings, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import SpinningWheel from '../game/SpinningWheel';
@@ -88,7 +88,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, swap } = useFieldArray({
     control: form.control,
     name: 'segments',
   });
@@ -224,20 +224,28 @@ export default function EditGameForm({ game }: { game: Game }) {
                               </Button>
                           </div>
                           
-                          <div className="space-y-2 pr-2">
+                          <div className="space-y-2">
                               {fields.map((field, index) => (
-                                  <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md bg-background">
+                                  <div key={field.id} className="flex items-center gap-2 p-1 border rounded-md bg-background">
                                     <Controller
                                         control={form.control}
                                         name={`segments.${index}.name`}
                                         render={({ field: controllerField }) => (
-                                            <Input {...controllerField} className="border-none focus-visible:ring-0" />
+                                            <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0" />
                                         )}
                                     />
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={loading}>
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                          <span className="sr-only">Eliminar</span>
+                                    <div className="flex flex-col">
+                                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index - 1)} disabled={index === 0 || loading}>
+                                          <ArrowUp className="h-4 w-4" />
                                       </Button>
+                                       <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index + 1)} disabled={index === fields.length - 1 || loading}>
+                                          <ArrowDown className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                        <span className="sr-only">Eliminar</span>
+                                    </Button>
                                   </div>
                               ))}
                           </div>
