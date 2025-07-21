@@ -742,7 +742,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                   </div>
                                   {/* Columna del QR */}
                                   <Card 
-                                    className="w-full max-w-[240px] text-center shadow-lg bg-card/90 backdrop-blur-sm"
+                                    className="w-full max-w-[240px] text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
                                     style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
                                    >
                                     <CardHeader>
@@ -753,7 +753,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     </CardHeader>
                                     <CardContent className="flex flex-col items-center justify-center gap-2">
                                         <QRCodeDisplay gameId={game.id} scale={0.6} />
-                                        <p className="text-muted-foreground text-xs px-2">
+                                        <p className="text-xs px-2">
                                           Abre la cámara de tu teléfono para registrarte y jugar.
                                         </p>
                                     </CardContent>

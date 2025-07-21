@@ -76,7 +76,7 @@ export default async function GamePage({ params }: { params: { id:string } }) {
 
         {/* Columna del QR */}
          <Card 
-          className="w-full max-w-sm text-center shadow-lg bg-card/90 backdrop-blur-sm"
+          className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
           style={{ transform: `scale(${game.qrCodeScale})` }}
          >
            <CardHeader>
@@ -87,8 +87,8 @@ export default async function GamePage({ params }: { params: { id:string } }) {
            </CardHeader>
            <CardContent className="flex flex-col items-center justify-center gap-4">
               <QRCodeDisplay gameId={game.id} />
-              <Separator />
-              <p className="text-muted-foreground text-sm">
+              <Separator className="bg-white/20"/>
+              <p className="text-sm">
                 Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
               </p>
            </CardContent>
