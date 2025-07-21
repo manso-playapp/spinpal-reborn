@@ -124,6 +124,8 @@ export default function EditGameForm({ game }: { game: Game }) {
           innerBorderWidth: 15,
           radiusLineColor: '#cccccc',
           radiusLineWidth: 1,
+          fontColor: '#000000',
+          fontSize: 20,
         },
       },
     },
@@ -559,6 +561,38 @@ export default function EditGameForm({ game }: { game: Game }) {
                                       render={({ field }) => (
                                           <FormItem>
                                               <FormLabel>Ancho (px)</FormLabel>
+                                              <FormControl>
+                                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
+                                              </FormControl>
+                                              <FormMessage />
+                                          </FormItem>
+                                      )}
+                                  />
+                                </div>
+                            </div>
+
+                             <div className="space-y-4 p-4 border rounded-lg">
+                                <h4 className="font-semibold">Tipografía de los Premios</h4>
+                                 <div className="grid grid-cols-2 gap-4">
+                                  <FormField
+                                      control={form.control}
+                                      name="config.wheel.fontColor"
+                                      render={({ field }) => (
+                                          <FormItem>
+                                              <FormLabel>Color</FormLabel>
+                                              <FormControl>
+                                                  <Input type="color" {...field} className="w-full h-10 p-1" />
+                                              </FormControl>
+                                              <FormMessage />
+                                          </FormItem>
+                                      )}
+                                  />
+                                  <FormField
+                                      control={form.control}
+                                      name="config.wheel.fontSize"
+                                      render={({ field }) => (
+                                          <FormItem>
+                                              <FormLabel>Tamaño (px)</FormLabel>
                                               <FormControl>
                                                   <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
                                               </FormControl>
