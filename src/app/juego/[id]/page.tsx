@@ -25,6 +25,7 @@ async function getGameData(id: string) {
     backgroundImage: data.backgroundImage || '',
     backgroundFit: data.backgroundFit || 'cover',
     qrCodeScale: data.qrCodeScale || 1,
+    rouletteScale: data.rouletteScale || 1,
     rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
     rouletteQrGap: data.rouletteQrGap || 32,
     config: {
@@ -68,7 +69,9 @@ export default async function GamePage({ params }: { params: { id:string } }) {
           {/* Columna de la Ruleta */}
           <div 
             className="w-full max-w-2xl text-center flex flex-col items-center justify-center"
-            style={{ transform: `translateY(${game.rouletteVerticalOffset}px)` }}
+            style={{ 
+              transform: `translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})` 
+            }}
           >
               <div className="w-full max-w-sm sm:max-w-md">
                 <SpinningWheel 

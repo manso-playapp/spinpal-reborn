@@ -76,7 +76,8 @@ const formSchema = z.object({
   centerImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   centerScale: z.number().min(0.1).max(2).optional(),
   qrCodeScale: z.number().min(0.1).max(2).optional(),
-  rouletteVerticalOffset: z.number().min(-200).max(200).optional(),
+  rouletteScale: z.number().min(0.1).max(2).optional(),
+  rouletteVerticalOffset: z.number().min(-500).max(500).optional(),
   rouletteQrGap: z.number().min(0).max(200).optional(),
 });
 
@@ -99,6 +100,7 @@ interface Game {
   centerImage?: string;
   centerScale?: number;
   qrCodeScale?: number;
+  rouletteScale?: number;
   rouletteVerticalOffset?: number;
   rouletteQrGap?: number;
   [key: string]: any;
@@ -148,6 +150,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       centerImage: game.centerImage || '',
       centerScale: game.centerScale || 1,
       qrCodeScale: game.qrCodeScale || 1,
+      rouletteScale: game.rouletteScale || 1,
       rouletteVerticalOffset: game.rouletteVerticalOffset || 0,
       rouletteQrGap: game.rouletteQrGap || 32,
     },
@@ -636,6 +639,25 @@ export default function EditGameForm({ game }: { game: Game }) {
                       <CardContent className="space-y-8">
                         <FormField
                             control={form.control}
+                            name="rouletteScale"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Escala de la Ruleta ({field.value?.toFixed(2)})</FormLabel>
+                                <FormControl>
+                                    <Slider
+                                    defaultValue={[1]}
+                                    value={[field.value ?? 1]}
+                                    onValueChange={(val) => field.onChange(val[0])}
+                                    max={2}
+                                    min={0.1}
+                                    step={0.05}
+                                    />
+                                </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
                             name="rouletteVerticalOffset"
                             render={({ field }) => (
                                 <FormItem>
@@ -645,8 +667,8 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     defaultValue={[0]}
                                     value={[field.value ?? 0]}
                                     onValueChange={(val) => field.onChange(val[0])}
-                                    max={200}
-                                    min={-200}
+                                    max={500}
+                                    min={-500}
                                     step={1}
                                     />
                                 </FormControl>
@@ -775,16 +797,21 @@ export default function EditGameForm({ game }: { game: Game }) {
                         </TabsContent>
                         <TabsContent value="game" className="mt-4 p-2 min-h-[500px] flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden">
                            <div
-                              className="relative w-[281px] h-[500px] rounded-lg overflow-hidden flex flex-col items-center justify-center transform scale-[0.8]"
-                              style={backgroundPreviewStyles}
+                              className="w-[281px] h-[500px] flex justify-center items-center transform scale-[0.8] origin-center"
                             >
+                              <div 
+                                className="relative w-full h-full rounded-lg overflow-hidden flex flex-col items-center justify-center"
+                                style={backgroundPreviewStyles}
+                              >
                                 <div 
                                   className="flex flex-col items-center justify-center w-full"
                                   style={{ gap: `${watchedFormData.rouletteQrGap}px` }}
                                 >
                                   <div 
                                     className="w-full max-w-2xl text-center flex flex-col items-center justify-center"
-                                    style={{ transform: `translateY(${watchedFormData.rouletteVerticalOffset}px)` }}
+                                    style={{ 
+                                      transform: `translateY(${watchedFormData.rouletteVerticalOffset}px) scale(${watchedFormData.rouletteScale})` 
+                                    }}
                                   >
                                     <div className="w-full max-w-sm sm:max-w-md">
                                       <SpinningWheel 
@@ -815,6 +842,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                   </Card>
                                 </div>
                               </div>
+                            </div>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
