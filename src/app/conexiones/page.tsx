@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -22,9 +22,10 @@ type ServiceStatus = {
   isConfigured: 'yes' | 'no' | 'partial';
 };
 
-async function checkFirebaseServices(): Promise<{
+async function checkServices(): Promise<{
   auth: ServiceStatus;
   firestore: ServiceStatus;
+  gemini: ServiceStatus;
 }> {
   const status = {
     auth: {
@@ -37,9 +38,26 @@ async function checkFirebaseServices(): Promise<{
       message: 'No se pudo verificar el servicio de Firestore.',
       isConfigured: 'no' as const,
     },
+    gemini: {
+      connected: false,
+      message: 'La clave de API de Gemini no está configurada.',
+      details: 'Añade tu clave al archivo .env para habilitar las funciones de IA.',
+      isConfigured: 'no' as const,
+    }
   };
 
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  // Chequeo de Gemini API Key
+  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
+      status.gemini = {
+        connected: true,
+        message: 'La clave de API de Gemini está configurada correctamente.',
+        details: '¡Todo listo para integrar funciones de IA en tu aplicación!',
+        isConfigured: 'yes',
+      };
+  }
+
 
   if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
     // Chequeo de Autenticación
@@ -137,6 +155,7 @@ const ServiceStatusCard = ({
           <p className="font-semibold">{status.message}</p>
           {status.details && (
             <p className="text-sm text-muted-foreground mt-1">{status.details}</p>
+
           )}
         </div>
       </div>
@@ -152,7 +171,7 @@ const ServiceStatusCard = ({
 );
 
 export default async function ConexionesPage() {
-  const servicesStatus = await checkFirebaseServices();
+  const servicesStatus = await checkServices();
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
   return (
@@ -166,6 +185,7 @@ export default async function ConexionesPage() {
         </div>
 
         <div className="space-y-4">
+          <ServiceStatusCard title="Gemini API" icon={<Sparkles />} status={servicesStatus.gemini} />
           <ServiceStatusCard title="Firebase Auth" icon={<UserPlus />} status={servicesStatus.auth} />
           <ServiceStatusCard title="Firebase Firestore" icon={<Database />} status={servicesStatus.firestore} />
         </div>
@@ -267,3 +287,5 @@ service cloud.firestore {
     </div>
   );
 }
+
+  
