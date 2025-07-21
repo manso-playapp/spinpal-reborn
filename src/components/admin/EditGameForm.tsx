@@ -303,8 +303,8 @@ export default function EditGameForm({ game }: { game: Game }) {
                             <div className="flex items-center gap-4 px-1 text-xs font-medium text-muted-foreground">
                                 <div className="w-6"></div>
                                 <div className="flex-grow">Nombre del Premio</div>
-                                <div className="w-28 text-center">Probabilidad %</div>
-                                <div className="w-24 text-center">Premio Real</div>
+                                <div className="w-48 text-center">Probabilidad %</div>
+                                <div className="w-20 text-center">Premio Real</div>
                                 <div className="w-10"></div> {/* Espacio para botones */}
                             </div>
                             <DndContext 
@@ -320,7 +320,9 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     <SortableItem key={field.id} id={field.id}>
                                         {(listeners) => (
                                             <div className="flex items-center gap-2 p-1 border rounded-md bg-background hover:bg-muted/50">
-                                                <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" {...listeners} />
+                                                <button type="button" {...listeners} className="cursor-grab p-1">
+                                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                                </button>
                                                 <Controller
                                                     control={form.control}
                                                     name={`segments.${index}.name`}
@@ -329,7 +331,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                     )}
                                                 />
                                                 
-                                                <div className="w-28">
+                                                <div className="w-48">
                                                     <Controller
                                                         control={form.control}
                                                         name={`segments.${index}.probability`}
@@ -363,7 +365,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                     control={form.control}
                                                     name={`segments.${index}.isRealPrize`}
                                                     render={({ field: controllerField }) => (
-                                                        <div className="w-24 flex justify-center">
+                                                        <div className="w-20 flex justify-center">
                                                             <Checkbox
                                                                 checked={!!controllerField.value}
                                                                 onCheckedChange={controllerField.onChange}
