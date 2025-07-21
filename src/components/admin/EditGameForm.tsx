@@ -723,6 +723,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 segments={watchedFormData.segments}
                                 gameId={game.id}
                                 isDemoMode={true}
+                                showDemoButton={true}
                                 config={currentConfig}
                             />
                         </TabsContent>

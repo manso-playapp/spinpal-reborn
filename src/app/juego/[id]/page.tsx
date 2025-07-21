@@ -6,7 +6,6 @@ import { QrCode } from 'lucide-react';
 import SpinningWheel from '@/components/game/SpinningWheel';
 import QRCodeDisplay from '@/components/game/QRCodeDisplay';
 import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 async function getGameData(id: string) {
   const gameRef = doc(db, 'games', id);
@@ -51,19 +50,16 @@ export default async function GamePage({ params }: { params: { id:string } }) {
 
   return (
     <div 
-      className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 lg:flex-row lg:gap-8"
+      className="relative flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 lg:flex-row lg:gap-8 overflow-hidden"
       style={backgroundStyles}
     >
+        {game.status === 'demo' && (
+            <div className="absolute top-0 left-0 bg-yellow-500 text-black px-8 py-1 text-sm font-bold shadow-lg transform -rotate-45 -translate-x-8 translate-y-4">
+                DEMO
+            </div>
+        )}
         {/* Columna de la Ruleta */}
         <div className="w-full max-w-2xl text-center mb-8 lg:mb-0 flex flex-col items-center justify-center">
-             {game.status === 'demo' && (
-                <Alert variant="default" className="text-left bg-yellow-100/80 border-yellow-300 dark:bg-yellow-900/80 dark:border-yellow-700 max-w-md mb-4 shadow-lg">
-                    <AlertTitle className="font-semibold">Modo Demo</AlertTitle>
-                    <AlertDescription>
-                        Esta ruleta está en modo de prueba. Puedes girarla directamente o probar el flujo del QR. Los registros no se guardan.
-                    </AlertDescription>
-                </Alert>
-            )}
             <div className="w-full max-w-sm sm:max-w-md">
               <SpinningWheel 
                 segments={game.segments} 

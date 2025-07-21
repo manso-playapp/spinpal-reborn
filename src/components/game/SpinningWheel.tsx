@@ -31,6 +31,7 @@ interface SpinningWheelProps {
   segments: Segment[];
   gameId: string;
   isDemoMode?: boolean;
+  showDemoButton?: boolean;
   config?: {
     borderImage?: string;
     borderScale?: number;
@@ -42,7 +43,7 @@ interface SpinningWheelProps {
 const VIEWBOX_SIZE = 500;
 const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
 
-export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, config = {} }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, showDemoButton = false, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -278,7 +279,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         )}
       </div>
 
-      {isDemoMode && (
+      {isDemoMode && showDemoButton && (
         <Button onClick={handleSpinClick} disabled={isSpinning}>
           <RotateCw className="mr-2 h-4 w-4" />
           {isSpinning ? 'Girando...' : 'Girar en modo Demo'}
