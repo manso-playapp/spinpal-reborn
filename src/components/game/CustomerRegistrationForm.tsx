@@ -39,7 +39,14 @@ const formSchema = z.object({
 
 type CustomerFormValues = z.infer<typeof formSchema>;
 
-export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameId: string, isDemoMode: boolean }) {
+interface CustomerRegistrationFormProps {
+  gameId: string;
+  isDemoMode: boolean;
+  successMessage?: string;
+}
+
+
+export default function CustomerRegistrationForm({ gameId, isDemoMode, successMessage }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [hasPlayed, setHasPlayed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,35 +59,6 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
       email: '',
     },
   });
-
-  const handleDemoSpin = async () => {
-    // Esta función ahora se activa desde la página del juego, no aquí.
-    // Sin embargo, si el jugador escanea el QR en modo demo, debe poder solicitar un giro.
-    setIsSubmitting(true);
-    try {
-        const gameRef = doc(db, 'games', gameId);
-        // En modo demo, solo solicitamos el giro, no guardamos datos de cliente.
-        const batch = writeBatch(db);
-        batch.update(gameRef, {
-            spinRequest: {
-                timestamp: serverTimestamp(),
-                nonce: Math.random(),
-            }
-        });
-        await batch.commit();
-        setHasPlayed(true); // Para mostrar mensaje de éxito/gracias
-    } catch(error) {
-        console.error("Error requesting demo spin:", error);
-        toast({
-            variant: "destructive",
-            title: "Error al girar",
-            description: "No se pudo iniciar el giro de prueba."
-        });
-        setErrorOccurred(true);
-    } finally {
-        setIsSubmitting(false);
-    }
-  }
 
   const onSubmit = async (data: CustomerFormValues) => {
     setIsSubmitting(true);
@@ -158,7 +136,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">¡Giro solicitado!</CardTitle>
             <CardDescription>
-                La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!
+                {successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!'}
             </CardDescription>
         </CardContent>
       </Card>
@@ -178,19 +156,6 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode }: { gameI
           <CardDescription>
             Estás en modo Demo. ¡Presiona el botón para hacer una prueba de giro!
           </CardDescription>
-          <Button onClick={handleDemoSpin} disabled={isSubmitting} size="lg" className="w-full">
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <RotateCw className="mr-2 h-5 w-5" />
-                ¡Girar la ruleta!
-              </>
-            )}
-          </Button>
         </CardContent>
       </Card>
     );

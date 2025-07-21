@@ -16,6 +16,8 @@ async function getGameData(id: string) {
     id: gameSnap.id, 
     name: data.name || "Juego sin nombre",
     status: data.status || "demo",
+    registrationTitle: data.registrationTitle || `Estás jugando a`,
+    registrationSubtitle: data.registrationSubtitle,
   };
 }
 
@@ -31,12 +33,15 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
       <div className="w-full max-w-md">
          <div className="flex flex-col items-center justify-center mb-6 text-center">
             <Gamepad2 className="h-12 w-12 text-primary mb-4" />
-            <p className="text-muted-foreground">Estás jugando a</p>
+            <p className="text-muted-foreground">{game.registrationTitle}</p>
             <h1 className="font-headline text-3xl font-bold">
               {game.name}
             </h1>
+            {game.registrationSubtitle && (
+                <p className="text-muted-foreground mt-2">{game.registrationSubtitle}</p>
+            )}
           </div>
-        <CustomerRegistrationForm gameId={game.id} isDemoMode={game.status === 'demo'} />
+        <CustomerRegistrationForm gameId={game.id} isDemoMode={game.status === 'demo'} successMessage={game.successMessage} />
       </div>
     </div>
   );
