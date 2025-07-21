@@ -57,7 +57,9 @@ const formSchema = z.object({
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   successMessage: z.string().optional(),
-  // Eliminamos la configuración de la ruleta del schema
+  config: z.object({
+    wheel: z.object({}).optional(),
+  }).optional(),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -96,6 +98,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+      config: game.config || { wheel: {} },
     },
   });
 
@@ -135,10 +138,8 @@ export default function EditGameForm({ game }: { game: Game }) {
       
       const updateData: Partial<Game> = {
         ...dataToSave,
-        // Conservamos los contadores existentes
         plays: game.plays || 0,
         prizesAwarded: game.prizesAwarded || 0,
-        // Re-añadimos el objeto de configuración, puede ser uno por defecto o el último guardado
         config: game.config || {}, 
       };
 
