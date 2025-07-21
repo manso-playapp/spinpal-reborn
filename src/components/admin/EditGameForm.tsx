@@ -10,6 +10,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
+import { cn } from '@/lib/utils';
 
 
 import { Button } from '@/components/ui/button';
@@ -103,6 +104,13 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedSegments = form.watch('segments');
+
+  const totalRealPrizesProbability = watchedSegments.reduce((acc, segment) => {
+    if (segment.isRealPrize) {
+      return acc + (Number(segment.probability) || 0);
+    }
+    return acc;
+  }, 0);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -345,6 +353,12 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 ))}
                               </SortableContext>
                             </DndContext>
+                            <div className={cn(
+                                "text-right font-medium text-sm pr-2",
+                                totalRealPrizesProbability > 100 && "text-destructive"
+                              )}>
+                              Probabilidad Total de Premios Reales: {totalRealPrizesProbability.toFixed(0)}%
+                            </div>
                           </div>
                           {form.formState.errors.segments && (
                               <p className="text-sm font-medium text-destructive">{form.formState.errors.segments.message || form.formState.errors.segments.root?.message}</p>
@@ -492,3 +506,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
+
+    
