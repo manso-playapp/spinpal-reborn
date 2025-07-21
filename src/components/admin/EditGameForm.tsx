@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -110,23 +110,23 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments || [{name: 'Premio 1', color: getRandomColor(), probability: 50, isRealPrize: true}, {name: 'Premio 2', color: getRandomColor(), probability: 50, isRealPrize: false}],
+      segments: game.segments || [{name: 'Premio 1', color: '#FFDD00', probability: 50, isRealPrize: true}, {name: 'Premio 2', color: '#B5D5E2', probability: 50, isRealPrize: false}],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
       config: {
-        wheel: game.config?.wheel || {
-          outerBorderColor: '#FFD700',
-          outerBorderWidth: 10,
-          innerBorderColor: '#F0E68C',
-          innerBorderWidth: 15,
-          radiusLineColor: '#CD853F',
-          radiusLineWidth: 1,
-          fontColor: '#000000',
-          fontSize: 20,
-          textDistance: 75,
+        wheel: {
+          outerBorderColor: game.config?.wheel?.outerBorderColor || '#FFFF00',
+          outerBorderWidth: game.config?.wheel?.outerBorderWidth || 10,
+          innerBorderColor: game.config?.wheel?.innerBorderColor || '#FFFFAA',
+          innerBorderWidth: game.config?.wheel?.innerBorderWidth || 15,
+          radiusLineColor: game.config?.wheel?.radiusLineColor || '#A52A2A',
+          radiusLineWidth: game.config?.wheel?.radiusLineWidth || 1,
+          fontColor: game.config?.wheel?.fontColor || '#000000',
+          fontSize: game.config?.wheel?.fontSize || 20,
+          textDistance: game.config?.wheel?.textDistance || 75,
         },
       },
     },
@@ -462,172 +462,161 @@ export default function EditGameForm({ game }: { game: Game }) {
               </TabsContent>
 
               <TabsContent value="wheel">
-                 <Card>
+                <Card>
                     <CardHeader>
                         <CardTitle>Personalización de la Ruleta</CardTitle>
                         <CardDescription>Ajusta el aspecto visual de la ruleta para que coincida con tu marca.</CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                        <div className="space-y-6">
-                            <div className="space-y-4 p-4 border rounded-lg">
-                                <h4 className="font-semibold">Borde Exterior</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.outerBorderColor"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Color</FormLabel>
-                                              <FormControl>
-                                                  <Input type="color" {...field} className="w-full h-10 p-1" />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.outerBorderWidth"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Ancho (px)</FormLabel>
-                                              <FormControl>
-                                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                </div>
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                            {/* Columna de Controles */}
+                            <div className="space-y-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Borde Exterior</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="config.wheel.outerBorderColor"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Color</FormLabel>
+                                                    <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="config.wheel.outerBorderWidth"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Ancho (px)</FormLabel>
+                                                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Borde Interior</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="config.wheel.innerBorderColor"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Color</FormLabel>
+                                                    <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="config.wheel.innerBorderWidth"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Ancho (px)</FormLabel>
+                                                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Líneas Radiales</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="config.wheel.radiusLineColor"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Color</FormLabel>
+                                                    <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="config.wheel.radiusLineWidth"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Ancho (px)</FormLabel>
+                                                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </CardContent>
+                                </Card>
+
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-lg">Tipografía de los Premios</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField
+                                                control={form.control}
+                                                name="config.wheel.fontColor"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Color</FormLabel>
+                                                        <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name="config.wheel.fontSize"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Tamaño (px)</FormLabel>
+                                                        <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </div>
+                                        <FormField
+                                            control={form.control}
+                                            name="config.wheel.textDistance"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Distancia del Texto</FormLabel>
+                                                    <FormControl>
+                                                      <div className="flex items-center gap-4">
+                                                          <Slider
+                                                              min={50}
+                                                              max={90}
+                                                              step={1}
+                                                              value={[field.value || 75]}
+                                                              onValueChange={(vals) => field.onChange(vals[0])}
+                                                              className="w-full"
+                                                          />
+                                                          <span className="font-mono text-sm w-8 text-center">{field.value}</span>
+                                                      </div>
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </CardContent>
+                                </Card>
                             </div>
 
-                            <div className="space-y-4 p-4 border rounded-lg">
-                                <h4 className="font-semibold">Borde Interior</h4>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.innerBorderColor"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Color</FormLabel>
-                                              <FormControl>
-                                                  <Input type="color" {...field} className="w-full h-10 p-1" />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.innerBorderWidth"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Ancho (px)</FormLabel>
-                                              <FormControl>
-                                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-4 p-4 border rounded-lg">
-                                <h4 className="font-semibold">Líneas Radiales</h4>
-                                 <div className="grid grid-cols-2 gap-4">
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.radiusLineColor"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Color</FormLabel>
-                                              <FormControl>
-                                                  <Input type="color" {...field} className="w-full h-10 p-1" />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.radiusLineWidth"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Ancho (px)</FormLabel>
-                                              <FormControl>
-                                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                </div>
-                            </div>
-
-                             <div className="space-y-4 p-4 border rounded-lg">
-                                <h4 className="font-semibold">Tipografía de los Premios</h4>
-                                 <div className="grid grid-cols-2 gap-4">
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.fontColor"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Color</FormLabel>
-                                              <FormControl>
-                                                  <Input type="color" {...field} className="w-full h-10 p-1" />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                  <FormField
-                                      control={form.control}
-                                      name="config.wheel.fontSize"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>Tamaño (px)</FormLabel>
-                                              <FormControl>
-                                                  <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} />
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                                </div>
-                                <FormField
-                                    control={form.control}
-                                    name="config.wheel.textDistance"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Distancia del Texto</FormLabel>
-                                            <FormControl>
-                                                <div className="flex items-center gap-4">
-                                                    <Slider
-                                                        min={50}
-                                                        max={90}
-                                                        step={1}
-                                                        value={[field.value || 75]}
-                                                        onValueChange={(vals) => field.onChange(vals[0])}
-                                                        className="w-full"
-                                                    />
-                                                    <span className="font-mono text-sm w-8 text-center">{field.value}</span>
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
+                            {/* Columna de Vista Previa */}
+                            <div className="sticky top-4 flex justify-center items-center p-4 bg-muted/50 rounded-md">
+                                <SpinningWheel
+                                    segments={watchedSegments}
+                                    gameId={game.id}
+                                    isDemoMode={true}
+                                    config={watchedConfig?.wheel}
                                 />
                             </div>
-                        </div>
-
-                        <div className="flex justify-center items-center p-4 bg-muted/50 rounded-md sticky top-4">
-                           <SpinningWheel
-                             segments={watchedSegments}
-                             gameId={game.id}
-                             isDemoMode={true}
-                             config={watchedConfig?.wheel}
-                           />
                         </div>
                     </CardContent>
                 </Card>

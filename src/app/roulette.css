@@ -86,16 +86,5 @@
     width: 100%;
     height: 100%;
     position: absolute;
-}
-
-/* Base styles for the segment color - uses clip-path */
-.roulette-segment-inner::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: var(--segment-color);
-  clip-path: polygon(50% 50%, 100% 0, 100% 100%); /* Default wedge shape, will be overridden */
+    background-color: var(--segment-color);
 }
