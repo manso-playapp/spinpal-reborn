@@ -11,6 +11,7 @@ interface Segment {
   name: string;
   probability?: number;
   color?: string;
+  isRealPrize?: boolean;
 }
 
 interface SpinningWheelProps {
@@ -57,31 +58,44 @@ const GoldPin = () => (
     </svg>
 )
 
-export default function SpinningWheel({ segments, gameId, isDemoMode = false }: SpinningWheelProps) {
-  const [mustSpin, setMustSpin] = useState(false);
-  const [prizeNumber, setPrizeNumber] = useState(0);
+export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
 
-  const segmentCount = useMemo(() => segments.length, [segments]);
-  const segmentAngle = useMemo(() => 360 / segmentCount, [segmentCount]);
+  const segments = useMemo(() => {
+    const totalProb = initialSegments.reduce((sum, s) => sum + (s.probability || 0), 0);
+    if (totalProb <= 0) {
+      const equalProb = 100 / initialSegments.length;
+      return initialSegments.map(s => ({ ...s, probability: equalProb }));
+    }
+    if (Math.abs(totalProb - 100) > 0.01) {
+        const scale = 100 / totalProb;
+        return initialSegments.map(s => ({...s, probability: (s.probability || 0) * scale}));
+    }
+    return initialSegments;
+  }, [initialSegments]);
+
+  const wheelData = useMemo(() => {
+    let cumulativeAngle = 0;
+    const segmentsWithAngles = segments.map(segment => {
+        const angle = (segment.probability || 0) * 3.6; // 1% = 3.6 degrees
+        const startAngle = cumulativeAngle;
+        cumulativeAngle += angle;
+        const endAngle = cumulativeAngle;
+        return { ...segment, angle, startAngle, endAngle };
+    });
+
+    return {
+        segments: segmentsWithAngles,
+        pins: segmentsWithAngles.map(s => s.endAngle),
+    };
+  }, [segments]);
 
   const calculatePrizeNumber = useCallback(() => {
-    // This logic remains the same
-    const probabilities = segments.map(s => s.probability);
-    const definedProbabilities = probabilities.filter(p => typeof p === 'number' && p >= 0) as number[];
-    const sumOfDefinedProbabilities = definedProbabilities.reduce((sum, p) => sum + p, 0);
-    const segmentsWithoutProbability = probabilities.filter(p => p === undefined || p === null).length;
-    let remainingProbability = 100 - sumOfDefinedProbabilities;
-    if (remainingProbability < 0) remainingProbability = 0;
-    const probabilityForUndefined = segmentsWithoutProbability > 0 ? remainingProbability / segmentsWithoutProbability : 0;
-    const finalProbabilities = probabilities.map(p => (p === undefined || p === null) ? probabilityForUndefined : (p as number));
-    const totalProbability = finalProbabilities.reduce((sum, p) => sum + p, 0);
-    const normalizedProbabilities = finalProbabilities.map(p => (p / totalProbability) * 100);
     const random = Math.random() * 100;
     let cumulativeProbability = 0;
-    for (let i = 0; i < normalizedProbabilities.length; i++) {
-        cumulativeProbability += normalizedProbabilities[i];
+    for (let i = 0; i < segments.length; i++) {
+        cumulativeProbability += (segments[i].probability || 0);
         if (random < cumulativeProbability) {
             return i;
         }
@@ -91,12 +105,17 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
 
   const spin = useCallback(() => {
       const newPrizeNumber = calculatePrizeNumber();
-      setPrizeNumber(newPrizeNumber);
+      const winningSegment = wheelData.segments[newPrizeNumber];
 
-      const baseRotation = 360 * 5; // 5 full spins
-      const prizeAngle = newPrizeNumber * segmentAngle;
-      const randomOffset = Math.random() * (segmentAngle * 0.8) + (segmentAngle * 0.1); // Land somewhere within the segment
-      const newRotation = baseRotation + (360 - prizeAngle) - randomOffset;
+      const baseRotation = 360 * 7; 
+      const middleOfSegment = winningSegment.startAngle + (winningSegment.angle / 2);
+      
+      const pointerCorrection = 90; // The pointer is at the top (90 deg), not at the right (0 deg)
+      const randomOffset = (Math.random() - 0.5) * winningSegment.angle * 0.8;
+      
+      const targetRotation = 360 - (middleOfSegment + randomOffset) + pointerCorrection;
+      
+      const newRotation = baseRotation + targetRotation;
       
       setRotation(prev => prev + newRotation);
       setIsSpinning(true);
@@ -104,8 +123,8 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
       setTimeout(() => {
         setIsSpinning(false);
         handleStopSpinning(newPrizeNumber);
-      }, 7000); // Must match transition duration in CSS
-  }, [calculatePrizeNumber, segmentAngle]);
+      }, 7000);
+  }, [calculatePrizeNumber, wheelData.segments]);
 
   useEffect(() => {
     if (!gameId || isDemoMode) return;
@@ -143,7 +162,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
             const winningSegment = segments[stoppedPrizeNumber];
             const updateData: { prizesAwarded?: any } = {};
 
-            if (isPrize(winningSegment.name)) {
+            if (winningSegment && isPrize(winningSegment.name)) {
                 updateData.prizesAwarded = increment(1);
             }
             
@@ -165,6 +184,15 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
       </div>
     );
   }
+  
+  function getSegmentClipPath(angle: number) {
+      if (angle > 180) {
+        return 'polygon(50% 50%, 0% 0%, 100% 0, 100% 100%, 0% 100%)';
+      }
+      const rad = (angle * Math.PI) / 180;
+      const x = 50 + 50 * Math.tan(rad - Math.PI / 2);
+      return `polygon(50% 50%, 50% 0, ${x}% 0)`;
+  }
 
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
@@ -175,15 +203,17 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
             style={{ transform: `rotate(${rotation}deg)` }}
         >
           <ul className="roulette-wheel">
-            {segments.map((segment, index) => {
-                const rotation = segmentAngle * index;
-                const textRotation = segmentAngle / 2;
+            {wheelData.segments.map((segment, index) => {
+                const textRotation = segment.angle / 2;
+                const clipPath = getSegmentClipPath(segment.angle);
+                
                 return (
                     <li 
                         key={index}
                         className="roulette-segment"
                         style={{ 
-                            transform: `rotate(${rotation}deg)`,
+                            transform: `rotate(${segment.startAngle}deg)`,
+                            clipPath: clipPath,
                             background: `radial-gradient(circle at 50% 100%, ${segment.color}BF, ${segment.color})`
                         }}
                     >
@@ -197,9 +227,9 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
                 );
             })}
           </ul>
-          {segments.map((_, index) => {
-              const lightAngle = (segmentAngle * index) * (Math.PI / 180);
-              const radius = 188; // half of container width minus padding/border
+          {wheelData.segments.map((_, index) => {
+              const lightAngle = (index * (360 / wheelData.segments.length)) * (Math.PI / 180);
+              const radius = 188;
               const x = radius * Math.cos(lightAngle) + radius;
               const y = radius * Math.sin(lightAngle) + radius;
               return (
@@ -214,8 +244,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
                   />
               );
           })}
-          {segments.map((_, index) => {
-              const pinAngle = segmentAngle * index + segmentAngle / 2;
+          {wheelData.pins.map((pinAngle, index) => {
               const radius = 150;
               return (
                   <div

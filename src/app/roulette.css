@@ -60,17 +60,17 @@
   left: 0;
   width: 100%;
   height: 100%;
-  clip-path: polygon(50% 50%, 100% 0, 100% 50%);
   transform-origin: 50% 50%;
+  overflow: hidden; /* Add this to contain the label */
 }
 
 .roulette-segment-label {
   position: absolute;
-  top: 12%;
+  top: 10%; /* Push towards the edge */
   left: 55%;
   width: 45%;
   height: 40%;
-  transform-origin: 0 0;
+  transform-origin: 0% 50%; /* Rotate from the left-center */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,7 +79,7 @@
   font-weight: 600;
   color: white;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-  padding-right: 20px;
+  padding-right: 25px; /* Adjust padding for better look */
   box-sizing: border-box;
 }
 
@@ -103,7 +103,7 @@
     left: 50%;
     width: 8px;
     height: 8px;
-    transform-origin: 50% 50%;
+    transform-origin: 0% 0%; /* Change origin for correct positioning */
     z-index: 5;
 }
 
