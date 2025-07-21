@@ -300,12 +300,12 @@ export default function EditGameForm({ game }: { game: Game }) {
                           </div>
                           
                           <div className="space-y-2">
-                            <div className="flex items-center gap-4 px-1 text-xs font-medium text-muted-foreground">
-                                <div className="w-6"></div>
-                                <div className="flex-grow">Nombre del Premio</div>
-                                <div className="w-48 text-center">Probabilidad %</div>
-                                <div className="w-20 text-center">Premio Real</div>
-                                <div className="w-10"></div> {/* Espacio para botones */}
+                            <div className="flex items-center gap-2 px-2 text-xs font-medium text-muted-foreground">
+                                <div className="w-5 flex-shrink-0"></div> {/* Espacio para el drag handle */}
+                                <div className="flex-1 min-w-0">Nombre del Premio</div>
+                                <div className="w-56 flex-shrink-0 text-center">Probabilidad %</div>
+                                <div className="w-24 flex-shrink-0 text-center">Premio Real</div>
+                                <div className="w-8 flex-shrink-0"></div> {/* Espacio para el botón de borrar */}
                             </div>
                             <DndContext 
                               sensors={sensors}
@@ -318,67 +318,73 @@ export default function EditGameForm({ game }: { game: Game }) {
                               >
                                 {fields.map((field, index) => (
                                     <SortableItem key={field.id} id={field.id}>
-                                        {(listeners) => (
-                                            <div className="flex items-center gap-2 p-1 border rounded-md bg-background hover:bg-muted/50">
-                                                <button type="button" {...listeners} className="cursor-grab p-1">
-                                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                                </button>
+                                      {(listeners) => (
+                                        <div className="flex items-center gap-2 p-1 pr-2 border rounded-md bg-background hover:bg-muted/50">
+                                            <button type="button" {...listeners} className="cursor-grab p-1 flex-shrink-0">
+                                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                            </button>
+
+                                            <div className="flex-1 min-w-0">
                                                 <Controller
                                                     control={form.control}
                                                     name={`segments.${index}.name`}
                                                     render={({ field: controllerField }) => (
-                                                        <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0 bg-transparent" />
+                                                        <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" />
                                                     )}
                                                 />
-                                                
-                                                <div className="w-48">
-                                                    <Controller
-                                                        control={form.control}
-                                                        name={`segments.${index}.probability`}
-                                                        render={({ field: controllerField }) => (
-                                                            watchedSegments[index]?.isRealPrize ? (
-                                                                <div className="flex items-center gap-2">
-                                                                    <Slider
-                                                                        value={[controllerField.value ?? 0]}
-                                                                        onValueChange={(value) => controllerField.onChange(value[0])}
-                                                                        max={100}
-                                                                        step={1}
-                                                                        className="flex-grow"
-                                                                    />
-                                                                    <span className="text-xs w-8 text-center">{controllerField.value ?? 0}%</span>
-                                                                </div>
-                                                            ) : (
-                                                                <Input 
-                                                                    type="number" 
-                                                                    value={controllerField.value ?? ''}
-                                                                    onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
-                                                                    className="w-full text-center"
-                                                                    placeholder="%"
-                                                                    disabled
+                                            </div>
+
+                                            <div className="w-56 flex-shrink-0">
+                                                <Controller
+                                                    control={form.control}
+                                                    name={`segments.${index}.probability`}
+                                                    render={({ field: controllerField }) => (
+                                                        watchedSegments[index]?.isRealPrize ? (
+                                                            <div className="flex items-center gap-2 px-2">
+                                                                <Slider
+                                                                    value={[controllerField.value ?? 0]}
+                                                                    onValueChange={(value) => controllerField.onChange(value[0])}
+                                                                    max={100}
+                                                                    step={1}
+                                                                    className="flex-grow"
                                                                 />
-                                                            )
-                                                        )}
-                                                    />
-                                                </div>
-                                                
+                                                                <span className="text-xs w-8 text-center tabular-nums">{controllerField.value?.toFixed(0) ?? 0}%</span>
+                                                            </div>
+                                                        ) : (
+                                                            <Input 
+                                                                type="text" 
+                                                                value={controllerField.value?.toFixed(2) ?? ''}
+                                                                onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
+                                                                className="w-full text-center tabular-nums"
+                                                                placeholder="%"
+                                                                disabled
+                                                            />
+                                                        )
+                                                    )}
+                                                />
+                                            </div>
+                                            
+                                            <div className="w-24 flex-shrink-0 flex justify-center">
                                                 <Controller
                                                     control={form.control}
                                                     name={`segments.${index}.isRealPrize`}
                                                     render={({ field: controllerField }) => (
-                                                        <div className="w-20 flex justify-center">
-                                                            <Checkbox
-                                                                checked={!!controllerField.value}
-                                                                onCheckedChange={controllerField.onChange}
-                                                            />
-                                                        </div>
+                                                        <Checkbox
+                                                            checked={!!controllerField.value}
+                                                            onCheckedChange={controllerField.onChange}
+                                                        />
                                                     )}
                                                 />
+                                            </div>
+
+                                            <div className="w-8 flex-shrink-0">
                                                 <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                     <span className="sr-only">Eliminar</span>
                                                 </Button>
                                             </div>
-                                        )}
+                                        </div>
+                                      )}
                                     </SortableItem>
                                 ))}
                               </SortableContext>
