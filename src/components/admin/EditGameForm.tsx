@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
 import { doc, updateDoc } from 'firebase/firestore';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
 
@@ -94,7 +94,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     },
   });
 
-  const { fields, append, remove, swap } = useFieldArray({
+  const { fields, append, remove, swap, move } = useFieldArray({
     control: form.control,
     name: 'segments',
   });
@@ -106,8 +106,17 @@ export default function EditGameForm({ game }: { game: Game }) {
     })
   );
 
-  const handleDragEnd = (event: any) => {
-    // Lógica para reordenar se implementará en el paso 5
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = fields.findIndex((field) => field.id === active.id);
+      const newIndex = fields.findIndex((field) => field.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        move(oldIndex, newIndex);
+      }
+    }
   };
 
   // Observa los cambios para actualizar la vista previa
@@ -454,3 +463,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
+
+    
