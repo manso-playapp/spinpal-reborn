@@ -315,9 +315,9 @@ export default function EditGameForm({ game }: { game: Game }) {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 px-2 text-xs font-medium text-muted-foreground">
                                 <div className="w-5 flex-shrink-0"></div> {/* Espacio para el drag handle */}
-                                <div className="w-10 flex-shrink-0 text-center">Color</div>
+                                <div className="w-[100px] flex-shrink-0">Color</div>
                                 <div className="flex-1 min-w-0">Nombre del Premio</div>
-                                <div className="w-56 flex-shrink-0 text-center">Probabilidad %</div>
+                                <div className="flex-shrink-0 w-48 text-center">Probabilidad %</div>
                                 <div className="w-24 flex-shrink-0 text-center">Premio Real</div>
                                 <div className="w-8 flex-shrink-0"></div> {/* Espacio para el botón de borrar */}
                             </div>
@@ -331,26 +331,34 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 strategy={verticalListSortingStrategy}
                               >
                                 {fields.map((field, index) => (
-                                    <SortableItem key={field.id} id={field.id}>
+                                    <SortableItem key={field.id} id={field.id} handleListeners>
                                       {(listeners) => (
                                         <div className="flex items-center gap-2 p-1 pr-2 border rounded-md bg-background hover:bg-muted/50">
                                             <button type="button" {...listeners} className="cursor-grab p-1 flex-shrink-0">
                                                 <GripVertical className="h-5 w-5 text-muted-foreground" />
                                             </button>
                                             
-                                            <div className="w-10 flex-shrink-0 flex justify-center">
-                                                <Controller
-                                                  control={form.control}
-                                                  name={`segments.${index}.color`}
-                                                  render={({ field: controllerField }) => (
-                                                    <Input 
-                                                        type="color" 
-                                                        {...controllerField}
-                                                        className="w-8 h-8 p-1 cursor-pointer"
-                                                    />
-                                                  )}
-                                                />
-                                            </div>
+                                            <Controller
+                                                control={form.control}
+                                                name={`segments.${index}.color`}
+                                                render={({ field: { onChange, value } }) => (
+                                                    <div className="w-[100px] flex-shrink-0 flex items-center gap-1">
+                                                        <Input
+                                                            type="color"
+                                                            value={value}
+                                                            onChange={onChange}
+                                                            className="w-8 h-8 p-1 cursor-pointer"
+                                                        />
+                                                        <Input
+                                                            type="text"
+                                                            value={value}
+                                                            onChange={onChange}
+                                                            className="h-8 flex-1 text-xs"
+                                                            placeholder="#HEX"
+                                                        />
+                                                    </div>
+                                                )}
+                                            />
 
                                             <div className="flex-1 min-w-0">
                                                 <Controller
@@ -362,7 +370,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                 />
                                             </div>
 
-                                            <div className="w-56 flex-shrink-0">
+                                            <div className="flex-shrink-0 w-48">
                                                 <Controller
                                                     control={form.control}
                                                     name={`segments.${index}.probability`}
