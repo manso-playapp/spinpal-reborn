@@ -473,16 +473,17 @@ export default function EditGameForm({ game }: { game: Game }) {
                                       <SortableItem key={field.id} id={field.id}>
                                         {(listeners) => (
                                           <AccordionItem value={`item-${index}`} className="border rounded-md mb-2 bg-background hover:bg-muted/50">
-                                            <AccordionTrigger className="p-2 text-sm font-medium w-full hover:no-underline">
-                                                <div className="flex items-center gap-2 flex-1">
-                                                    <Button type="button" {...listeners} className="cursor-grab p-1 h-8 w-8" variant="ghost">
-                                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                                    </Button>
+                                            <div className="flex items-center p-2 text-sm font-medium w-full">
+                                                <Button type="button" {...listeners} className="cursor-grab p-1 h-8 w-8" variant="ghost">
+                                                    <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                                </Button>
+                                                <div className="flex-1 px-2">
                                                     <Controller control={form.control} name={`segments.${index}.name`} render={({ field: controllerField }) => (
                                                       <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" onClick={(e) => e.stopPropagation()} />
                                                     )}/>
                                                 </div>
-                                                <div className="flex items-center gap-1 pr-2">
+                                                <AccordionTrigger className="p-2 hover:bg-accent rounded-md" />
+                                                <div className="flex items-center gap-1 pl-2">
                                                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); duplicateSegment(index); }}>
                                                         <CopyIcon className="h-4 w-4 text-blue-500" />
                                                     </Button>
@@ -490,7 +491,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                         <Trash2 className="h-4 w-4 text-destructive" />
                                                     </Button>
                                                 </div>
-                                            </AccordionTrigger>
+                                            </div>
                                             <AccordionContent className="p-4 border-t">
                                               <Tabs defaultValue="basic" className="w-full">
                                                 <TabsList className="grid w-full grid-cols-3">
