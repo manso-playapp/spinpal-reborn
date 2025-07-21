@@ -7,6 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
 import { doc, updateDoc } from 'firebase/firestore';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+
 
 import { Button } from '@/components/ui/button';
 import {
@@ -95,6 +98,17 @@ export default function EditGameForm({ game }: { game: Game }) {
     name: 'segments',
   });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: any) => {
+    // Lógica para reordenar se implementará en el paso 5
+  };
+
   // Observa los cambios para actualizar la vista previa
   const watchedSegments = form.watch('segments');
   const watchedBackgroundImage = form.watch('backgroundImage');
@@ -105,10 +119,8 @@ export default function EditGameForm({ game }: { game: Game }) {
     try {
       const gameRef = doc(db, 'games', game.id);
       
-      // Clone data to avoid mutating the original form state
       const dataToSave = JSON.parse(JSON.stringify(data));
 
-      // Convert undefined probabilities to null before saving
       dataToSave.segments = dataToSave.segments.map((segment: { probability: any; }) => ({
         ...segment,
         probability: segment.probability === undefined ? null : segment.probability,
@@ -245,42 +257,53 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 <div className="w-24 text-center">Probabilidad %</div>
                                 <div className="w-20"></div> {/* Espacio para botones */}
                             </div>
-                              {fields.map((field, index) => (
-                                  <div key={field.id} className="flex items-center gap-2 p-1 border rounded-md bg-background">
-                                    <Controller
-                                        control={form.control}
-                                        name={`segments.${index}.name`}
-                                        render={({ field: controllerField }) => (
-                                            <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0" />
-                                        )}
-                                    />
-                                     <Controller
-                                        control={form.control}
-                                        name={`segments.${index}.probability`}
-                                        render={({ field: controllerField }) => (
-                                            <Input 
-                                                type="number" 
-                                                value={controllerField.value ?? ''}
-                                                onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
-                                                className="w-24 text-center"
-                                                placeholder="%"
-                                            />
-                                        )}
-                                    />
-                                    <div className="flex flex-col">
-                                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index - 1)} disabled={index === 0 || loading}>
-                                          <ArrowUp className="h-4 w-4" />
-                                      </Button>
-                                       <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index + 1)} disabled={index === fields.length - 1 || loading}>
-                                          <ArrowDown className="h-4 w-4" />
+                            <DndContext 
+                              sensors={sensors}
+                              collisionDetection={closestCenter}
+                              onDragEnd={handleDragEnd}
+                            >
+                              <SortableContext
+                                items={fields.map(field => field.id)}
+                                strategy={verticalListSortingStrategy}
+                              >
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-2 p-1 border rounded-md bg-background">
+                                      <Controller
+                                          control={form.control}
+                                          name={`segments.${index}.name`}
+                                          render={({ field: controllerField }) => (
+                                              <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0" />
+                                          )}
+                                      />
+                                      <Controller
+                                          control={form.control}
+                                          name={`segments.${index}.probability`}
+                                          render={({ field: controllerField }) => (
+                                              <Input 
+                                                  type="number" 
+                                                  value={controllerField.value ?? ''}
+                                                  onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
+                                                  className="w-24 text-center"
+                                                  placeholder="%"
+                                              />
+                                          )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index - 1)} disabled={index === 0 || loading}>
+                                            <ArrowUp className="h-4 w-4" />
+                                        </Button>
+                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index + 1)} disabled={index === fields.length - 1 || loading}>
+                                            <ArrowDown className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
+                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                          <span className="sr-only">Eliminar</span>
                                       </Button>
                                     </div>
-                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                        <span className="sr-only">Eliminar</span>
-                                    </Button>
-                                  </div>
-                              ))}
+                                ))}
+                              </SortableContext>
+                            </DndContext>
                           </div>
                           {form.formState.errors.segments && (
                               <p className="text-sm font-medium text-destructive">{form.formState.errors.segments.message || form.formState.errors.segments.root?.message}</p>
