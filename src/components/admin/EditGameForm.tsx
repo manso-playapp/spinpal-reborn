@@ -43,7 +43,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 const segmentSchema = z.object({
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
-  probability: z.number().min(0).max(100).optional(),
   isRealPrize: z.boolean().optional(),
 });
 
@@ -57,9 +56,6 @@ const formSchema = z.object({
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   successMessage: z.string().optional(),
-  config: z.object({
-    wheel: z.object({}).optional(),
-  }).optional(),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -92,13 +88,12 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments || [{name: 'Premio 1', color: '#FFDD00', probability: 50, isRealPrize: true}, {name: 'Premio 2', color: '#B5D5E2', probability: 50, isRealPrize: false}],
+      segments: game.segments || [{name: 'Premio 1', color: '#FFDD00', isRealPrize: true}, {name: 'Premio 2', color: '#B5D5E2', isRealPrize: false}],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
-      config: game.config || { wheel: {} },
     },
   });
 
@@ -140,7 +135,6 @@ export default function EditGameForm({ game }: { game: Game }) {
         ...dataToSave,
         plays: game.plays || 0,
         prizesAwarded: game.prizesAwarded || 0,
-        config: game.config || {}, 
       };
 
       await updateDoc(gameRef, updateData);
@@ -164,7 +158,7 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const addSegment = () => {
     if (newSegmentName.trim()) {
-      append({ name: newSegmentName.trim(), color: getRandomColor(), probability: 0, isRealPrize: false });
+      append({ name: newSegmentName.trim(), color: getRandomColor(), isRealPrize: false });
       setNewSegmentName('');
     }
   };
@@ -284,12 +278,12 @@ export default function EditGameForm({ game }: { game: Game }) {
               
               <TabsContent value="prizes">
                 <Card>
-                  <CardContent className="p-6 space-y-6">
+                  <CardHeader>
+                    <CardTitle>Premios de la Ruleta</CardTitle>
+                    <CardDescription>Define los segmentos que aparecerán en la ruleta. Necesitas al menos 2.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
                        <div className="space-y-4">
-                          <div className="space-y-1">
-                              <h3 className="text-lg font-medium">Premios de la Ruleta</h3>
-                              <p className="text-sm text-muted-foreground">Define los segmentos que aparecerán en la ruleta. Necesitas al menos 2.</p>
-                          </div>
                           <div className="flex gap-2 mb-4">
                             <div className="grid w-full">
                                 <Label htmlFor="new-segment-name" className="sr-only">Nombre del nuevo premio</Label>
@@ -342,7 +336,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       )}
                                                   />
                                               </div>
-                                              <div className="w-48 text-center text-sm font-mono">
+                                              <div className="w-48 text-center text-sm text-muted-foreground">
                                                   {watchedSegments[index]?.isRealPrize ? 'Probabilidad basada en otros premios reales' : 'No es un premio real'}
                                               </div>
 

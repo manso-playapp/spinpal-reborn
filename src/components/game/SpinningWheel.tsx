@@ -10,111 +10,61 @@ interface Segment {
   name: string;
   color?: string;
   isRealPrize?: boolean;
-  probability?: number;
-}
-
-interface WheelConfig {
-  outerBorderColor?: string;
-  outerBorderWidth?: number;
-  innerBorderColor?: string;
-  innerBorderWidth?: number;
-  radiusLineColor?: string;
-  radiusLineWidth?: number;
-  fontColor?: string;
-  fontSize?: number;
-  textDistance?: number;
 }
 
 interface SpinningWheelProps {
   segments: Segment[];
   gameId: string;
   isDemoMode?: boolean;
-  config?: WheelConfig;
 }
 
-const getClipPath = (angle: number) => {
-  if (angle <= 0 || angle >= 360) {
-    return 'none';
-  }
-  if (angle > 180) {
-     // A trick to handle angles > 180 by creating a full circle mask and then cutting out the smaller angle.
-     // This is complex and might be better handled by two halves.
-     // For now, let's assume segments are <= 180 degrees.
-     // A simple polygon for angles > 180 won't work as it can't be concave.
-     // Let's stick to a method that works for angles up to 180 for simplicity for now.
-     // This part of the logic might need a more robust solution if segments can be > 180 degrees.
-  }
-  const rads = (angle * Math.PI) / 180;
-  const x = 50 + 50 * Math.tan(rads / 2);
 
-  // We create a triangle pointing from the center to the edge.
-  return `polygon(50% 50%, 50% 0, ${x}% 0)`;
-};
-
-
-export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, config = {} }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false }: SpinningWheelProps) {
   const [mustSpin, setMustSpin] = useState(false);
   const [rotation, setRotation] = useState(0);
 
-  const totalProbability = useMemo(() => {
-    const realPrizeSegments = initialSegments.filter(s => s.isRealPrize);
-    return realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0)
-  }, [initialSegments]);
-  
   const normalizedSegments = useMemo(() => {
     if (!initialSegments || initialSegments.length === 0) return [];
-    
+
     const realPrizeSegments = initialSegments.filter(s => s.isRealPrize);
     const nonPrizeSegments = initialSegments.filter(s => !s.isRealPrize);
 
+    // If no real prizes, distribute probability equally among all segments
     if (realPrizeSegments.length === 0) {
-        // If no real prizes, distribute probability equally among all
-        const equalProb = 100 / initialSegments.length;
-        return initialSegments.map(seg => ({ ...seg, probability: equalProb }));
+      const equalProb = 100 / initialSegments.length;
+      return initialSegments.map(seg => ({ ...seg, probability: equalProb }));
     }
 
-    if (totalProbability === 0) {
-      // If real prizes exist but have no probability, distribute equally among them
-      const equalProb = 100 / realPrizeSegments.length;
-      return initialSegments.map(seg => 
-        seg.isRealPrize ? { ...seg, probability: equalProb } : { ...seg, probability: 0 }
-      );
-    }
-    
-    // Normalize real prizes based on their probability
-    return initialSegments.map(seg => {
-      if (!seg.isRealPrize) return { ...seg, probability: 0 };
-      return { ...seg, probability: ((seg.probability || 0) / totalProbability) * 100 };
-    });
-
-  }, [initialSegments, totalProbability]);
+    // Distribute probability equally among real prize segments
+    const equalProbForPrizes = 100 / realPrizeSegments.length;
+    return initialSegments.map(seg => 
+      seg.isRealPrize 
+        ? { ...seg, probability: equalProbForPrizes } 
+        : { ...seg, probability: 0 }
+    );
+  }, [initialSegments]);
 
 
   const getWinningSegmentIndex = useCallback(() => {
-    const realPrizeIndices = initialSegments
-      .map((seg, index) => (seg.isRealPrize ? index : -1))
-      .filter(index => index !== -1);
-
-    if (realPrizeIndices.length === 0) {
-      // No real prizes, spin lands on any segment equally
-      return Math.floor(Math.random() * initialSegments.length);
-    }
-
     const random = Math.random() * 100;
     let accumulatedProb = 0;
     
-    for (let i = 0; i < initialSegments.length; i++) {
-      const segment = normalizedSegments.find(s => s.name === initialSegments[i].name);
-      if(segment && segment.isRealPrize){
-        accumulatedProb += segment.probability || 0;
-        if (random < accumulatedProb) {
-            return i;
-        }
+    // Find the winning index from normalized segments with probability
+    for (let i = 0; i < normalizedSegments.length; i++) {
+      accumulatedProb += normalizedSegments[i].probability || 0;
+      if (random < accumulatedProb) {
+        // Find the original index from initialSegments
+        const originalIndex = initialSegments.findIndex(s => s.name === normalizedSegments[i].name && s.color === normalizedSegments[i].color);
+        return originalIndex !== -1 ? originalIndex : i;
       }
     }
     
-    // Fallback to the last real prize segment
-    return realPrizeIndices[realPrizeIndices.length - 1];
+    // Fallback in case of rounding errors
+    const prizeIndices = initialSegments
+      .map((seg, index) => (seg.isRealPrize ? index : -1))
+      .filter(index => index !== -1);
+      
+    return prizeIndices.length > 0 ? prizeIndices[prizeIndices.length - 1] : Math.floor(Math.random() * initialSegments.length);
 
   }, [initialSegments, normalizedSegments]);
   
@@ -176,6 +126,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   };
 
   const segmentAngle = 360 / (initialSegments.length || 1);
+  const textDistance = '25%';
 
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
@@ -197,37 +148,31 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             </svg>
         </div>
         <div className="roulette-wheel-container" style={wheelStyle} onTransitionEnd={() => setMustSpin(false)}>
-            <div className="roulette-wheel-border" style={{
-                '--outer-border-width': `${config.outerBorderWidth || 0}px`,
-                '--inner-border-width': `${config.innerBorderWidth || 0}px`,
-                '--outer-border-color': config.outerBorderColor,
-                '--inner-border-color': config.innerBorderColor,
-            } as React.CSSProperties}></div>
+            <div className="roulette-wheel-border"></div>
           {initialSegments.map((segment, index) => {
             const currentAngle = segmentAngle * index;
             const segmentStyle = { transform: `rotate(${currentAngle}deg)` };
             
             const textAngle = -(segmentAngle / 2);
-            const textDistance = config.textDistance ? `${config.textDistance}%` : '25%'; // Use percentage for responsiveness
             
             const labelStyle: React.CSSProperties = {
                 transform: `translateX(${textDistance}) rotate(${textAngle}deg)`,
-                fontSize: `${config.fontSize || 14}px`,
-                color: config.fontColor || '#000',
                 width: '50%',
                 height: '100%',
             };
             
             const pinAngle = currentAngle - (segmentAngle/2);
+            
+            // This clip-path creates a perfect segment wedge.
+            const clipPath = `polygon(50% 50%, 100% 50%, 100% 0, 50% 0)`;
 
             return (
               <React.Fragment key={index}>
-                <div className="roulette-segment" style={segmentStyle}>
+                <div className="roulette-segment" style={{...segmentStyle, clipPath}}>
                     <div 
                       className="roulette-segment-inner" 
                       style={{
-                        '--segment-color': segment.color, 
-                        clipPath: `polygon(50% 50%, 100% 0, 100% 100%)` /* Default to half circle if calc fails */,
+                        '--segment-color': segment.color,
                         transform: `rotate(${segmentAngle}deg)`
                       }}
                     />
