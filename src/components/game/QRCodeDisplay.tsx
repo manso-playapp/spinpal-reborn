@@ -17,7 +17,7 @@ export default function QRCodeDisplay({ gameId, scale = 1 }: { gameId: string, s
 
   if (!url) {
     // Muestra un esqueleto de carga mientras se determina la URL
-    return <Skeleton style={{ height: qrSize, width: qrSize }} />;
+    return <Skeleton className="bg-gray-300" style={{ height: qrSize, width: qrSize }} />;
   }
 
   return (

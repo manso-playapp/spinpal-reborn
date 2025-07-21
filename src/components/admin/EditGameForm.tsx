@@ -718,7 +718,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                           <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
                           <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="roulette" className="mt-4">
+                        <TabsContent value="roulette" className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg">
                             <SpinningWheel
                                 segments={watchedFormData.segments}
                                 gameId={game.id}
@@ -727,9 +727,9 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 config={currentConfig}
                             />
                         </TabsContent>
-                        <TabsContent value="game" className="mt-4 p-2 border rounded-lg bg-muted/50 overflow-hidden">
-                           <div className="transform scale-[0.35] origin-top-left -translate-y-[20px] -translate-x-[20px]">
-                              <div className="w-[450px] h-[800px] flex flex-col items-center justify-around p-4" style={backgroundPreviewStyles}>
+                        <TabsContent value="game" className="mt-4 p-2 min-h-[450px] flex justify-center items-center border rounded-lg bg-muted/50 overflow-hidden">
+                           <div className="transform scale-[0.8]">
+                              <div className="w-[281px] h-[500px] flex flex-col items-center justify-around p-4" style={backgroundPreviewStyles}>
                                   <div className="w-full max-w-sm">
                                     <SpinningWheel 
                                       segments={watchedFormData.segments} 
@@ -743,16 +743,16 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
                                    >
                                     <CardHeader>
-                                      <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
-                                          <QrCode />
+                                      <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
+                                          <QrCode size={20} />
                                           ¡Escanea para Jugar!
                                       </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="flex flex-col items-center justify-center gap-4">
-                                        <QRCodeDisplay gameId={game.id} />
-                                        <Separator className="bg-white/20"/>
-                                        <p className="text-sm">
-                                          Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
+                                    <CardContent className="flex flex-col items-center justify-center gap-2 p-4">
+                                        <QRCodeDisplay gameId={game.id} scale={0.5} />
+                                        <Separator className="bg-white/20 my-1"/>
+                                        <p className="text-xs">
+                                          Abre la cámara de tu teléfono y apunta al código QR para jugar.
                                         </p>
                                     </CardContent>
                                   </Card>
