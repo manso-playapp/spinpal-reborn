@@ -38,6 +38,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const segmentSchema = z.object({
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
+  probability: z.coerce.number().min(0, "Debe ser >= 0").max(100, "Debe ser <= 100").optional(),
 });
 
 const formSchema = z.object({
@@ -57,7 +58,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
-  segments?: { name: string }[];
+  segments?: { name: string; probability?: number }[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   registrationTitle?: string;
@@ -79,7 +80,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments || [{name: 'Premio 1'}, {name: 'Premio 2'}],
+      segments: game.segments || [{name: 'Premio 1', probability: 50}, {name: 'Premio 2', probability: 50}],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
@@ -130,7 +131,7 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const addSegment = () => {
     if (newSegmentName.trim()) {
-      append({ name: newSegmentName.trim() });
+      append({ name: newSegmentName.trim(), probability: 0 });
       setNewSegmentName('');
     }
   };
@@ -210,21 +211,30 @@ export default function EditGameForm({ game }: { game: Game }) {
                               <h3 className="text-lg font-medium flex items-center gap-2"><Gift /> Premios de la Ruleta</h3>
                               <p className="text-sm text-muted-foreground">Define los segmentos que aparecerán en la ruleta. Necesitas al menos 2.</p>
                           </div>
-
-                          <div className="flex gap-2">
-                              <Input
-                                  value={newSegmentName}
-                                  onChange={(e) => setNewSegmentName(e.target.value)}
-                                  placeholder="Nombre del nuevo premio"
-                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSegment(); } }}
-                                  disabled={loading}
-                              />
-                              <Button type="button" onClick={addSegment} disabled={!newSegmentName.trim() || loading}>
-                                  <PlusCircle className="h-4 w-4 mr-2" /> Añadir
-                              </Button>
+                          
+                          <div className="flex gap-2 mb-4">
+                            <div className="grid w-full">
+                                <Label htmlFor="new-segment-name" className="sr-only">Nombre del nuevo premio</Label>
+                                <Input
+                                    id="new-segment-name"
+                                    value={newSegmentName}
+                                    onChange={(e) => setNewSegmentName(e.target.value)}
+                                    placeholder="Nombre del nuevo premio"
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSegment(); } }}
+                                    disabled={loading}
+                                />
+                            </div>
+                            <Button type="button" onClick={addSegment} disabled={!newSegmentName.trim() || loading}>
+                                <PlusCircle className="h-4 w-4 mr-2" /> Añadir
+                            </Button>
                           </div>
                           
                           <div className="space-y-2">
+                            <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
+                                <div className="flex-grow">Nombre del Premio</div>
+                                <div className="w-24 text-center">Probabilidad %</div>
+                                <div className="w-20"></div> {/* Espacio para botones */}
+                            </div>
                               {fields.map((field, index) => (
                                   <div key={field.id} className="flex items-center gap-2 p-1 border rounded-md bg-background">
                                     <Controller
@@ -232,6 +242,19 @@ export default function EditGameForm({ game }: { game: Game }) {
                                         name={`segments.${index}.name`}
                                         render={({ field: controllerField }) => (
                                             <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0" />
+                                        )}
+                                    />
+                                     <Controller
+                                        control={form.control}
+                                        name={`segments.${index}.probability`}
+                                        render={({ field: controllerField }) => (
+                                            <Input 
+                                                type="number" 
+                                                {...controllerField}
+                                                onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
+                                                className="w-24 text-center"
+                                                placeholder="%"
+                                            />
                                         )}
                                     />
                                     <div className="flex flex-col">
@@ -395,3 +418,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
+
+    
