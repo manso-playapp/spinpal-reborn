@@ -728,34 +728,33 @@ export default function EditGameForm({ game }: { game: Game }) {
                             />
                         </TabsContent>
                         <TabsContent value="game" className="mt-4 p-2 border rounded-lg bg-muted/50 overflow-hidden">
-                          <div className="transform scale-[0.6] -translate-y-[60px] -translate-x-[70px]">
-                              <div className="w-[800px] h-[450px] flex items-center justify-center p-4" style={backgroundPreviewStyles}>
+                          <div className="transform scale-[0.35] origin-top-left -translate-y-[20px] -translate-x-[20px]">
+                              <div className="w-[450px] h-[800px] flex flex-col items-center justify-around p-4" style={backgroundPreviewStyles}>
                                   {/* Columna de la Ruleta */}
-                                  <div className="w-full max-w-md text-center flex flex-col items-center justify-center">
-                                    <div className="w-full max-w-xs">
+                                  <div className="w-full max-w-sm text-center flex flex-col items-center justify-center">
                                       <SpinningWheel 
                                         segments={watchedFormData.segments}
                                         gameId={game.id} 
                                         isDemoMode={true}
                                         config={currentConfig}
                                       />
-                                    </div>
                                   </div>
                                   {/* Columna del QR */}
                                   <Card 
-                                    className="w-full max-w-[240px] text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
+                                    className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
                                     style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
                                    >
                                     <CardHeader>
-                                      <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
-                                          <QrCode className="h-5 w-5"/>
-                                          ¡Escanea!
+                                      <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
+                                          <QrCode />
+                                          ¡Escanea para Jugar!
                                       </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="flex flex-col items-center justify-center gap-2">
-                                        <QRCodeDisplay gameId={game.id} scale={0.6} />
-                                        <p className="text-xs px-2">
-                                          Abre la cámara de tu teléfono para registrarte y jugar.
+                                    <CardContent className="flex flex-col items-center justify-center gap-4">
+                                        <QRCodeDisplay gameId={game.id} />
+                                        <Separator className="bg-white/20"/>
+                                        <p className="text-sm">
+                                          Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
                                         </p>
                                     </CardContent>
                                   </Card>
