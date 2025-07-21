@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -118,14 +118,14 @@ export default function EditGameForm({ game }: { game: Game }) {
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
       config: {
         wheel: {
-          outerBorderColor: game.config?.wheel?.outerBorderColor || '#FFFF00',
+          outerBorderColor: game.config?.wheel?.outerBorderColor || '#FFD700',
           outerBorderWidth: game.config?.wheel?.outerBorderWidth || 10,
-          innerBorderColor: game.config?.wheel?.innerBorderColor || '#FFFFAA',
+          innerBorderColor: game.config?.wheel?.innerBorderColor || '#FFFACD',
           innerBorderWidth: game.config?.wheel?.innerBorderWidth || 15,
-          radiusLineColor: game.config?.wheel?.radiusLineColor || '#A52A2A',
-          radiusLineWidth: game.config?.wheel?.radiusLineWidth || 1,
+          radiusLineColor: game.config?.wheel?.radiusLineColor || '#CD853F',
+          radiusLineWidth: game.config?.wheel?.radiusLineWidth || 2,
           fontColor: game.config?.wheel?.fontColor || '#000000',
-          fontSize: game.config?.wheel?.fontSize || 20,
+          fontSize: game.config?.wheel?.fontSize || 16,
           textDistance: game.config?.wheel?.textDistance || 75,
         },
       },
@@ -469,146 +469,49 @@ export default function EditGameForm({ game }: { game: Game }) {
                     </CardHeader>
                     <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                            {/* Columna de Controles */}
-                            <div className="space-y-6">
+                           <div className="space-y-6">
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Borde Exterior</CardTitle>
-                                    </CardHeader>
+                                    <CardHeader><CardTitle className="text-lg">Borde Exterior</CardTitle></CardHeader>
                                     <CardContent className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="config.wheel.outerBorderColor"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Color</FormLabel>
-                                                    <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="config.wheel.outerBorderWidth"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Ancho (px)</FormLabel>
-                                                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <FormField control={form.control} name="config.wheel.outerBorderColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
+                                        <FormField control={form.control} name="config.wheel.outerBorderWidth" render={({ field }) => (<FormItem><FormLabel>Ancho (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
                                     </CardContent>
                                 </Card>
-
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Borde Interior</CardTitle>
-                                    </CardHeader>
+                                    <CardHeader><CardTitle className="text-lg">Borde Interior</CardTitle></CardHeader>
                                     <CardContent className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="config.wheel.innerBorderColor"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Color</FormLabel>
-                                                    <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="config.wheel.innerBorderWidth"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Ancho (px)</FormLabel>
-                                                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <FormField control={form.control} name="config.wheel.innerBorderColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
+                                        <FormField control={form.control} name="config.wheel.innerBorderWidth" render={({ field }) => (<FormItem><FormLabel>Ancho (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
                                     </CardContent>
                                 </Card>
-
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Líneas Radiales</CardTitle>
-                                    </CardHeader>
+                                    <CardHeader><CardTitle className="text-lg">Líneas Radiales</CardTitle></CardHeader>
                                     <CardContent className="grid grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="config.wheel.radiusLineColor"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Color</FormLabel>
-                                                    <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="config.wheel.radiusLineWidth"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Ancho (px)</FormLabel>
-                                                    <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <FormField control={form.control} name="config.wheel.radiusLineColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
+                                        <FormField control={form.control} name="config.wheel.radiusLineWidth" render={({ field }) => (<FormItem><FormLabel>Ancho (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
                                     </CardContent>
                                 </Card>
-
                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">Tipografía de los Premios</CardTitle>
-                                    </CardHeader>
+                                    <CardHeader><CardTitle className="text-lg">Tipografía de los Premios</CardTitle></CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
-                                            <FormField
-                                                control={form.control}
-                                                name="config.wheel.fontColor"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Color</FormLabel>
-                                                        <FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={form.control}
-                                                name="config.wheel.fontSize"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Tamaño (px)</FormLabel>
-                                                        <FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl>
-                                                    </FormItem>
-                                                )}
-                                            />
+                                            <FormField control={form.control} name="config.wheel.fontColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
+                                            <FormField control={form.control} name="config.wheel.fontSize" render={({ field }) => (<FormItem><FormLabel>Tamaño (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
                                         </div>
-                                        <FormField
-                                            control={form.control}
-                                            name="config.wheel.textDistance"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Distancia del Texto</FormLabel>
-                                                    <FormControl>
-                                                      <div className="flex items-center gap-4">
-                                                          <Slider
-                                                              min={50}
-                                                              max={90}
-                                                              step={1}
-                                                              value={[field.value || 75]}
-                                                              onValueChange={(vals) => field.onChange(vals[0])}
-                                                              className="w-full"
-                                                          />
-                                                          <span className="font-mono text-sm w-8 text-center">{field.value}</span>
-                                                      </div>
-                                                    </FormControl>
-                                                </FormItem>
-                                            )}
-                                        />
+                                        <FormField control={form.control} name="config.wheel.textDistance" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Distancia del Texto</FormLabel>
+                                                <FormControl>
+                                                    <div className="flex items-center gap-4">
+                                                        <Slider min={50} max={90} step={1} value={[field.value || 75]} onValueChange={(vals) => field.onChange(vals[0])} className="w-full" />
+                                                        <span className="font-mono text-sm w-8 text-center">{field.value}</span>
+                                                    </div>
+                                                </FormControl>
+                                            </FormItem>
+                                        )} />
                                     </CardContent>
                                 </Card>
                             </div>
-
-                            {/* Columna de Vista Previa */}
                             <div className="sticky top-4 flex justify-center items-center p-4 bg-muted/50 rounded-md">
                                 <SpinningWheel
                                     segments={watchedSegments}

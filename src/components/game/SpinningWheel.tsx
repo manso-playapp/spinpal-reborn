@@ -32,21 +32,24 @@ interface SpinningWheelProps {
   config?: WheelConfig;
 }
 
-// Function to calculate the coordinates for the clip-path polygon
 const getClipPath = (angle: number) => {
-    if (angle > 180) {
-      // Create a path for angles > 180 by layering two clip-paths
-      // This is a common technique to handle complex polygon shapes in CSS
-      return `polygon(50% 50%, 100% 0, 100% 100%, 0 100%, 0 0, 50% 0)`;
-    }
-    const rads = (angle * Math.PI) / 180;
-    const x = 50 + 50 * Math.tan(rads);
-    if (angle <= 90) {
-        return `polygon(50% 50%, 100% 0, 100% ${x}%)`;
-    }
-    // angle > 90 && angle <= 180
-    return `polygon(50% 50%, 100% 0, 100% 100%, ${100 - x}% 100%)`;
+  const rads = (angle * Math.PI) / 180;
+  let x = 50 + 50 * Math.tan(rads);
 
+  if (angle <= 90) {
+    return `polygon(50% 50%, 50% 0, 100% 0, 100% ${x}%)`;
+  }
+  if (angle > 90 && angle <= 180) {
+     x = 50 - 50 * Math.tan((angle - 90) * Math.PI / 180);
+    return `polygon(50% 50%, 50% 0, 100% 0, 100% 100%, ${x}% 100%)`;
+  }
+   if (angle > 180 && angle <= 270) {
+    x = 50 - 50 * Math.tan((angle - 180) * Math.PI / 180);
+    return `polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 ${x}%)`;
+  }
+  // angle > 270
+  x = 50 + 50 * Math.tan((angle - 270) * Math.PI / 180);
+  return `polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 0, ${x}% 0)`;
 };
 
 
@@ -57,17 +60,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const totalProbability = useMemo(() => initialSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0), [initialSegments]);
   
   const normalizedSegments = useMemo(() => {
-    if (totalProbability === 0 && initialSegments.length > 0) {
-      // If no probabilities, distribute equally
+    if (!initialSegments || initialSegments.length === 0) return [];
+    if (totalProbability === 0) {
       const equalProb = 100 / initialSegments.length;
       return initialSegments.map(seg => ({ ...seg, probability: equalProb }));
     }
-    // Normalize probabilities to sum to 100
     return initialSegments.map(seg => ({ ...seg, probability: ((seg.probability || 0) / totalProbability) * 100 }));
   }, [initialSegments, totalProbability]);
 
 
   const getWinningSegmentIndex = useCallback(() => {
+    if (normalizedSegments.length === 0) return 0;
     const random = Math.random() * 100;
     let accumulatedProb = 0;
     for (let i = 0; i < normalizedSegments.length; i++) {
@@ -81,16 +84,16 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   
   
   const handleSpinClick = useCallback(() => {
-    if (!mustSpin) {
+    if (!mustSpin && normalizedSegments.length > 0) {
       const winningIndex = getWinningSegmentIndex();
       
       let totalAngle = 0;
       for (let i = 0; i < winningIndex; i++) {
-        totalAngle += (normalizedSegments[i].probability / 100) * 360;
+        totalAngle += ((normalizedSegments[i].probability || 0) / 100) * 360;
       }
       
-      const segmentAngle = (normalizedSegments[winningIndex].probability / 100) * 360;
-      const randomAngleWithinSegment = Math.random() * segmentAngle;
+      const segmentAngle = ((normalizedSegments[winningIndex].probability || 0) / 100) * 360;
+      const randomAngleWithinSegment = Math.random() * segmentAngle * 0.8 + (segmentAngle * 0.1); // Land between 10% and 90% of segment width
       
       const targetRotation = 360 - (totalAngle + randomAngleWithinSegment);
       const fullSpins = 5 * 360;
@@ -98,7 +101,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       setRotation(rotation + fullSpins + targetRotation);
       setMustSpin(true);
 
-      // After spin, check if it was a real prize and update firestore
        if (!isDemoMode) {
         const winningSegment = initialSegments[winningIndex];
         if (winningSegment && winningSegment.isRealPrize) {
@@ -135,10 +137,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
   const wheelStyle: React.CSSProperties = {
     transform: `rotate(${rotation}deg)`,
-    borderColor: config.outerBorderColor,
-    borderWidth: `${config.outerBorderWidth || 0}px`,
-    borderStyle: 'solid',
-    boxShadow: `inset 0 0 0 ${config.innerBorderWidth || 0}px ${config.innerBorderColor || 'transparent'}`,
   };
 
   let accumulatedAngle = 0;
@@ -147,21 +145,31 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     <div className="relative flex flex-col items-center justify-center gap-8">
       <div className="roulette-container">
         <div className="roulette-pointer">
-          <svg viewBox="0 0 55 66" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M54.1223 27.5001C54.1223 42.6877 42.6877 54.1224 27.5 54.1224C12.3122 54.1224 0.877563 42.6877 0.877563 27.5001C0.877563 12.3123 12.3122 0.877686 27.5 0.877686C42.6877 0.877686 54.1223 12.3123 54.1223 27.5001Z" fill="#F0F0F0" />
-            <path d="M27.5 65.1251L54.5 27.6251H0.5L27.5 65.1251Z" className="roulette-pointer-body" />
-          </svg>
+           <svg width="60" height="72" viewBox="0 0 71 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="pointer-gold" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style={{stopColor: '#FFD700', stopOpacity: 1}} />
+                    <stop offset="100%" style={{stopColor: '#B8860B', stopOpacity: 1}} />
+                </linearGradient>
+                <filter id="pointer-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000" floodOpacity="0.4" />
+                </filter>
+            </defs>
+            <path d="M35.5 84.5L70.5 35.5H0.5L35.5 84.5Z" fill="url(#pointer-gold)" filter="url(#pointer-shadow)"/>
+            <circle cx="35.5" cy="35.5" r="25" fill="#F5F5DC" stroke="url(#pointer-gold)" strokeWidth="5"/>
+            <circle cx="35.5" cy="35.5" r="5" fill="url(#pointer-gold)" />
+            </svg>
         </div>
-        <div 
-            className="roulette-wheel-container" 
-            style={wheelStyle}
-            onTransitionEnd={() => setMustSpin(false)}
-        >
+        <div className="roulette-wheel-container" style={wheelStyle} onTransitionEnd={() => setMustSpin(false)}>
+            <div className="roulette-wheel-border" style={{
+                '--outer-border-width': `${config.outerBorderWidth || 0}px`,
+                '--inner-border-width': `${config.innerBorderWidth || 0}px`,
+                '--outer-border-color': config.outerBorderColor,
+                '--inner-border-color': config.innerBorderColor,
+            } as React.CSSProperties}></div>
           {normalizedSegments.map((segment, index) => {
             const segmentAngle = 360 * ((segment.probability || 0) / 100);
-            const segmentStyle = {
-              transform: `rotate(${accumulatedAngle}deg)`,
-            };
+            const segmentStyle = { transform: `rotate(${accumulatedAngle}deg)` };
             
             const textAngle = -(segmentAngle / 2);
             const textDistance = config.textDistance ? `${config.textDistance / 2}%` : '40%';
@@ -174,35 +182,21 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                 height: '100%',
             };
             
-            let accumulatedAngleForPin = accumulatedAngle;
+            const pinAngle = accumulatedAngle;
             accumulatedAngle += segmentAngle;
 
-            const segmentComponent = (currentAngle: number, currentClipPath: string) => (
-               <div key={index} className="roulette-segment" style={{...segmentStyle, transform: `rotate(${currentAngle}deg)`}}>
-                 <div className="roulette-segment-inner" style={{'--segment-color': segment.color, clipPath: currentClipPath} as React.CSSProperties} />
-                 <div style={{
-                     position: 'absolute',
-                     width: '100%',
-                     height: '100%',
-                     borderLeft: `${config.radiusLineWidth || 0}px solid ${config.radiusLineColor || 'transparent'}`,
-                     boxSizing: 'border-box'
-                 }}/>
-                <div className="roulette-segment-label" style={labelStyle}>
-                  <span>{segment.name}</span>
+            return (
+              <React.Fragment key={index}>
+                <div className="roulette-segment" style={segmentStyle}>
+                    <div className="roulette-segment-inner" style={{'--segment-color': segment.color, clipPath: getClipPath(segmentAngle)} as React.CSSProperties} />
+                    <div className="roulette-segment-label" style={labelStyle}>
+                        <span>{segment.name}</span>
+                    </div>
                 </div>
-              </div>
+                 <div className="roulette-pin" style={{ transform: `rotate(${pinAngle}deg)` }}></div>
+              </React.Fragment>
             );
 
-            if (segmentAngle > 180) {
-                const firstAngle = 180;
-                const secondAngle = segmentAngle - 180;
-                return <>
-                    {segmentComponent(accumulatedAngleForPin, getClipPath(firstAngle))}
-                    {segmentComponent(accumulatedAngleForPin + firstAngle, getClipPath(secondAngle))}
-                </>
-            }
-
-            return segmentComponent(accumulatedAngleForPin, getClipPath(segmentAngle));
           })}
            <div className="roulette-center"></div>
         </div>

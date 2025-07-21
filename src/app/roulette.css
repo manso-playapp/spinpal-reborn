@@ -1,6 +1,5 @@
 :root {
   --wheel-size: 400px;
-  --wheel-slice-spacing: 2px;
   --pointer-size: 50px;
 }
 
@@ -16,16 +15,10 @@
 
 .roulette-pointer {
   position: absolute;
-  top: -15px;
+  top: -20px;
   width: var(--pointer-size);
   height: calc(var(--pointer-size) * 1.2);
-  z-index: 10;
-  filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4));
-  transform-origin: bottom center;
-}
-
-.roulette-pointer-body {
-  fill: #d94848;
+  z-index: 20;
 }
 
 .roulette-wheel-container {
@@ -34,12 +27,25 @@
   border-radius: 50%;
   position: relative;
   overflow: hidden;
-  transition: transform 7s cubic-bezier(0.2, 0.8, 0.3, 1); /* Smooth spin animation */
-  box-shadow: 
-    inset 0 0 15px rgba(0, 0, 0, 0.3), /* Inner shadow for depth */
-    0 5px 15px rgba(0, 0, 0, 0.2);     /* Outer shadow */
-  background: #f0f0f0; /* Fallback color */
+  transition: transform 7s cubic-bezier(0.2, 0.8, 0.3, 1);
+  background: #f0f0f0;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(0, 0, 0, 0.3);
 }
+
+.roulette-wheel-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-sizing: border-box;
+  box-shadow: 
+    inset 0 0 0 var(--outer-border-width) var(--outer-border-color, transparent),
+    inset 0 0 0 calc(var(--outer-border-width) + var(--inner-border-width)) var(--inner-border-color, transparent),
+    inset 0 0 15px rgba(0,0,0,0.4);
+}
+
 
 .roulette-center {
   position: absolute;
@@ -47,11 +53,11 @@
   left: 50%;
   width: 15%;
   height: 15%;
-  background: radial-gradient(circle at 35% 35%, #ffffff, #c0c0c0, #a0a0a0);
+  background: radial-gradient(circle at 35% 35%, #ffffff, #dcdcdc, #a9a9a9);
   border-radius: 50%;
   transform: translate(-50%, -50%);
-  z-index: 5;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 15;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.5);
 }
 
 .roulette-segment {
@@ -62,20 +68,19 @@
   height: 100%;
   border-radius: 50%;
   overflow: hidden;
+  transform-origin: 50% 50%;
 }
 
 .roulette-segment-label {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 0;
+  left: 0;
   transform-origin: center center;
   text-align: center;
   color: var(--font-color, #000);
-  font-size: var(--font-size, 16px);
   font-weight: bold;
   font-family: 'Poppins', sans-serif;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-  padding-left: 10%; /* Push text towards the edge */
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,5 +91,23 @@
     width: 100%;
     height: 100%;
     position: absolute;
+    transform-origin: 50% 50%;
+    background-image: radial-gradient(circle at 50% 50%, 
+      rgba(255,255,255,0.2) 0%, 
+      rgba(255,255,255,0) 40%);
     background-color: var(--segment-color);
+}
+
+.roulette-pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle, #FFD700, #B8860B);
+  border-radius: 50%;
+  transform-origin: 0 0;
+  transform: translateY(-5px) translateX(-5px); /* Center the pin */
+  z-index: 10;
+  filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.5));
 }
