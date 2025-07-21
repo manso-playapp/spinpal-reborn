@@ -726,8 +726,9 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 config={currentConfig}
                             />
                         </TabsContent>
-                        <TabsContent value="game" className="mt-4 p-2 min-h-[450px] flex justify-center items-center border rounded-lg bg-muted/50 overflow-hidden">
-                           <div className="w-[281px] h-[500px] flex flex-col items-center justify-center gap-8 p-4 origin-center transform scale-[0.8]" style={backgroundPreviewStyles}>
+                        <TabsContent value="game" className="mt-4 p-2 min-h-[500px] flex justify-center items-center bg-muted/50 border rounded-lg overflow-hidden">
+                          <div className="w-[281px] h-[500px] origin-center transform scale-[0.8]">
+                             <div className="relative w-full h-full flex flex-col items-center justify-center gap-8 p-4 rounded-lg overflow-hidden" style={backgroundPreviewStyles}>
                                   <div className="w-full max-w-sm">
                                     <SpinningWheel 
                                       segments={watchedFormData.segments} 
@@ -755,6 +756,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     </CardContent>
                                   </Card>
                               </div>
+                            </div>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
