@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -149,6 +150,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedFormData = form.watch();
+  const watchedSegments = form.watch('segments');
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
     const realPrizeSegments = watchedFormData.segments.filter(s => s.isRealPrize);
@@ -695,7 +697,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                         </TabsList>
                         <TabsContent value="roulette" className="mt-4">
                             <SpinningWheel
-                                segments={watchedFormData.segments}
+                                segments={watchedSegments}
                                 gameId={game.id}
                                 isDemoMode={true}
                                 config={currentConfig}
@@ -706,24 +708,16 @@ export default function EditGameForm({ game }: { game: Game }) {
                               <div className="w-[800px] h-[450px] flex items-center justify-center p-4" style={backgroundPreviewStyles}>
                                 <div className={`w-full h-full flex items-center justify-center gap-8 ${watchedFormData.backgroundImage ? 'bg-black/20' : ''}`}>
                                   {/* Columna de la Ruleta */}
-                                  <Card className="w-full max-w-md text-center shadow-lg bg-card/90 backdrop-blur-sm">
-                                    <CardHeader>
-                                      <CardTitle className="font-headline text-xl flex items-center justify-center gap-2">
-                                        <Gamepad2 className="h-6 w-6" />
-                                        {watchedFormData.name}
-                                      </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="flex flex-col items-center justify-center">
-                                      <div className="w-full max-w-xs">
-                                        <SpinningWheel 
-                                          segments={watchedFormData.segments} 
-                                          gameId={game.id} 
-                                          isDemoMode={true}
-                                          config={currentConfig}
-                                        />
-                                      </div>
-                                    </CardContent>
-                                  </Card>
+                                  <div className="w-full max-w-md text-center flex flex-col items-center justify-center">
+                                    <div className="w-full max-w-xs">
+                                      <SpinningWheel 
+                                        segments={watchedSegments} 
+                                        gameId={game.id} 
+                                        isDemoMode={true}
+                                        config={currentConfig}
+                                      />
+                                    </div>
+                                  </div>
                                   {/* Columna del QR */}
                                   <Card className="w-full max-w-[240px] text-center shadow-lg bg-card/90 backdrop-blur-sm">
                                     <CardHeader>
