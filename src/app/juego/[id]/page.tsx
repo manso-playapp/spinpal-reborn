@@ -2,7 +2,7 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Gamepad2, QrCode } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 import SpinningWheel from '@/components/game/SpinningWheel';
 import QRCodeDisplay from '@/components/game/QRCodeDisplay';
 import { Separator } from '@/components/ui/separator';
@@ -25,6 +25,7 @@ async function getGameData(id: string) {
     segments: data.segments || [],
     backgroundImage: data.backgroundImage || '',
     backgroundFit: data.backgroundFit || 'cover',
+    qrCodeScale: data.qrCodeScale || 1,
     config: {
       borderImage: data.borderImage || '',
       borderScale: data.borderScale || 1,
@@ -53,8 +54,6 @@ export default async function GamePage({ params }: { params: { id:string } }) {
       className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 lg:flex-row lg:gap-8"
       style={backgroundStyles}
     >
-      <div className={`w-full h-full flex flex-col items-center justify-center lg:flex-row lg:gap-8 ${game.backgroundImage ? 'bg-black/20' : ''}`}>
-        
         {/* Columna de la Ruleta */}
         <div className="w-full max-w-2xl text-center mb-8 lg:mb-0 flex flex-col items-center justify-center">
              {game.status === 'demo' && (
@@ -76,7 +75,10 @@ export default async function GamePage({ params }: { params: { id:string } }) {
         </div>
 
         {/* Columna del QR */}
-         <Card className="w-full max-w-sm text-center shadow-lg bg-card/90 backdrop-blur-sm">
+         <Card 
+          className="w-full max-w-sm text-center shadow-lg bg-card/90 backdrop-blur-sm"
+          style={{ transform: `scale(${game.qrCodeScale})` }}
+         >
            <CardHeader>
              <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
                 <QrCode />
@@ -91,8 +93,6 @@ export default async function GamePage({ params }: { params: { id:string } }) {
               </p>
            </CardContent>
         </Card>
-
-      </div>
     </div>
   );
 }
