@@ -111,6 +111,32 @@ export default function EditGameForm({ game }: { game: Game }) {
     }
     return acc;
   }, 0);
+  
+  useEffect(() => {
+    const nonRealPrizeIndices = watchedSegments
+        .map((segment, index) => (segment.isRealPrize ? -1 : index))
+        .filter(index => index !== -1);
+
+    const nonRealPrizeCount = nonRealPrizeIndices.length;
+
+    if (nonRealPrizeCount === 0) return;
+
+    const remainingProbability = Math.max(0, 100 - totalRealPrizesProbability);
+    const probabilityPerNonRealPrize = nonRealPrizeCount > 0 ? remainingProbability / nonRealPrizeCount : 0;
+    
+    nonRealPrizeIndices.forEach(index => {
+        // Redondeamos para evitar decimales largos
+        const roundedProbability = Math.round(probabilityPerNonRealPrize * 100) / 100;
+        const currentFieldValue = form.getValues(`segments.${index}.probability`);
+        
+        // Solo actualizamos si el valor es diferente, para evitar renders innecesarios
+        if (currentFieldValue !== roundedProbability) {
+             form.setValue(`segments.${index}.probability`, roundedProbability, { shouldDirty: true });
+        }
+    });
+
+  }, [watchedSegments, totalRealPrizesProbability, form]);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -506,5 +532,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
-
-    
