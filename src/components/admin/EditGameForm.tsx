@@ -40,6 +40,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
+import { Separator } from '../ui/separator';
 
 
 const segmentSchema = z.object({
@@ -60,6 +61,10 @@ const formSchema = z.object({
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   successMessage: z.string().optional(),
+  borderImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
+  borderScale: z.number().min(0.1).max(2).optional(),
+  centerImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
+  centerScale: z.number().min(0.1).max(2).optional(),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -76,6 +81,10 @@ interface Game {
   successMessage?: string;
   plays?: number;
   prizesAwarded?: number;
+  borderImage?: string;
+  borderScale?: number;
+  centerImage?: string;
+  centerScale?: number;
   [key: string]: any;
 }
 
@@ -98,6 +107,10 @@ export default function EditGameForm({ game }: { game: Game }) {
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+      borderImage: game.borderImage || '',
+      borderScale: game.borderScale || 1,
+      centerImage: game.centerImage || '',
+      centerScale: game.centerScale || 1,
     },
   });
 
@@ -107,6 +120,11 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedSegments = form.watch('segments');
+  const watchedBorderImage = form.watch('borderImage');
+  const watchedBorderScale = form.watch('borderScale');
+  const watchedCenterImage = form.watch('centerImage');
+  const watchedCenterScale = form.watch('centerScale');
+
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
     const realPrizeSegments = watchedSegments.filter(s => s.isRealPrize);
@@ -186,7 +204,12 @@ export default function EditGameForm({ game }: { game: Game }) {
     }
   };
   
-  const currentSegments = form.watch('segments');
+  const currentConfig = {
+    borderImage: watchedBorderImage,
+    borderScale: watchedBorderScale,
+    centerImage: watchedCenterImage,
+    centerScale: watchedCenterScale,
+  };
 
   return (
     <div>
@@ -309,10 +332,85 @@ export default function EditGameForm({ game }: { game: Game }) {
                     <Card>
                       <CardHeader>
                         <CardTitle>Premios de la Ruleta</CardTitle>
-                        <CardDescription>Define los segmentos que aparecerán en la ruleta. Necesitas al menos 2.</CardDescription>
+                        <CardDescription>Define los segmentos, sus imágenes y sus probabilidades.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
-                          <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div className="space-y-4">
+                                    <h4 className="font-semibold">Imagen del Borde</h4>
+                                    <FormField
+                                    control={form.control}
+                                    name="borderImage"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>URL</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="https://placehold.co/500x500.png" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                    />
+                                    <FormField
+                                    control={form.control}
+                                    name="borderScale"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Escala ({field.value?.toFixed(2)})</FormLabel>
+                                        <FormControl>
+                                            <Slider
+                                            defaultValue={[1]}
+                                            value={[field.value ?? 1]}
+                                            onValueChange={(val) => field.onChange(val[0])}
+                                            max={2}
+                                            min={0.1}
+                                            step={0.05}
+                                            />
+                                        </FormControl>
+                                        </FormItem>
+                                    )}
+                                    />
+                                </div>
+                                <div className="space-y-4">
+                                     <h4 className="font-semibold">Imagen del Centro/Puntero</h4>
+                                     <FormField
+                                    control={form.control}
+                                    name="centerImage"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>URL</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="https://placehold.co/500x500.png" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                    />
+                                    <FormField
+                                    control={form.control}
+                                    name="centerScale"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Escala ({field.value?.toFixed(2)})</FormLabel>
+                                        <FormControl>
+                                            <Slider
+                                            defaultValue={[1]}
+                                            value={[field.value ?? 1]}
+                                            onValueChange={(val) => field.onChange(val[0])}
+                                            max={2}
+                                            min={0.1}
+                                            step={0.05}
+                                            />
+                                        </FormControl>
+                                        </FormItem>
+                                    )}
+                                    />
+                                </div>
+                          </div>
+                          
+                          <Separator />
+
+                          <div className="space-y-4 pt-4">
                               <div className="flex gap-2 mb-4">
                                 <div className="grid w-full">
                                     <Label htmlFor="new-segment-name" className="sr-only">Nombre del nuevo premio</Label>
@@ -400,7 +498,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                             <Slider
                                                               value={[value || 0]}
                                                               onValueChange={(vals) => onChange(vals[0])}
-                                                              max={100}
+                                                              max={100 - (realPrizeTotalProbability - (value || 0))}
                                                               step={1}
                                                               className="flex-1"
                                                             />
@@ -409,7 +507,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                         <span className="w-8">{watchedSegments[index].probability}%</span>
                                                       </>
                                                     ) : (
-                                                      <Input value={nonRealPrizeProbability} disabled className="text-center bg-muted" />
+                                                      <Input value={`${nonRealPrizeProbability}%`} disabled className="text-center bg-muted" />
                                                     )}
                                                   </div>
                                                   <div className="w-full md:w-24 flex justify-center items-center">
@@ -445,7 +543,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     </DndContext>
                                 </div>
                                 <div className="text-right font-medium text-sm text-muted-foreground mt-2">
-                                    Probabilidad Total de Premios Reales: <span className="font-bold text-foreground">{realPrizeTotalProbability}%</span>
+                                    Probabilidad Total de Premios Reales: <span className={`font-bold ${realPrizeTotalProbability > 100 ? 'text-destructive' : 'text-foreground'}`}>{realPrizeTotalProbability}%</span>
                                 </div>
                               {form.formState.errors.segments && (
                                   <p className="text-sm font-medium text-destructive">{form.formState.errors.segments.message || form.formState.errors.segments.root?.message}</p>
@@ -524,14 +622,15 @@ export default function EditGameForm({ game }: { game: Game }) {
                             Vista Previa
                         </CardTitle>
                         <CardDescription>
-                            Así se verá tu ruleta con los premios y colores actuales.
+                            Así se verá tu ruleta con la configuración actual.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <SpinningWheel
-                            segments={currentSegments}
+                            segments={watchedSegments}
                             gameId={game.id}
                             isDemoMode={true}
+                            config={currentConfig}
                         />
                     </CardContent>
                  </Card>

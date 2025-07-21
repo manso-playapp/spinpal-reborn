@@ -18,16 +18,33 @@ interface SpinningWheelProps {
   segments: Segment[];
   gameId: string;
   isDemoMode?: boolean;
-  config?: any;
+  config?: {
+    borderImage?: string;
+    borderScale?: number;
+    centerImage?: string;
+    centerScale?: number;
+  };
 }
 
 const VIEWBOX_SIZE = 500;
-const WHEEL_RADIUS = 200; // Adjusted for the image border
-const TEXT_RADIUS = 150;
+const WHEEL_RADIUS = 240;
+const TEXT_RADIUS = 180;
 
 export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  // Default images if none are provided
+  const borderImage = config?.borderImage || "https://placehold.co/500x500.png?text=Borde";
+  const centerImage = config?.centerImage || "https://placehold.co/500x500.png?text=Centro";
+  const borderScale = config?.borderScale || 1;
+  const centerScale = config?.centerScale || 1;
+
+  useEffect(() => {
+    // This ensures that the component only renders on the client, preventing hydration mismatches.
+    setShouldRender(true);
+  }, []);
 
   const normalizedSegments = useMemo(() => {
     if (!initialSegments || initialSegments.length === 0) return [];
@@ -57,13 +74,18 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const totalProb = normalizedSegments.reduce((sum, s) => sum + (s.finalProbability || 0), 0);
     const scaleFactor = totalProb > 0 ? 100 / totalProb : 0;
 
+    // Fallback for rounding errors or total probability not being exactly 100
+    if (Math.abs(totalProb - 100) > 0.1 && totalProb > 0) {
+       console.warn("Total probability is not 100, it's", totalProb, ". Scaling probabilities.");
+    }
+    
     for (let i = 0; i < normalizedSegments.length; i++) {
-        accumulatedProb += (normalizedSegments[i].finalProbability || 0) * scaleFactor;
+        accumulatedProb += (normalizedSegments[i].finalProbability || 0) * (totalProb > 100 ? 100/totalProb : 1);
         if (random < accumulatedProb) {
             return i;
         }
     }
-    return normalizedSegments.length - 1;
+    return normalizedSegments.length - 1; // Fallback
   }, [normalizedSegments]);
 
   const handleSpinClick = useCallback(() => {
@@ -111,8 +133,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const wheelStyle: React.CSSProperties = {
     transition: 'transform 7s cubic-bezier(0.2, 0.8, 0.3, 1)',
     transform: `rotate(${rotation}deg)`,
-    transformOrigin: 'center center',
   };
+
+  if (!shouldRender) {
+    return <div className="w-full max-w-md aspect-square bg-muted rounded-full animate-pulse" />;
+  }
 
   const segmentCount = normalizedSegments.length;
   const segmentAngle = 360 / segmentCount;
@@ -127,20 +152,25 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     <div className="relative flex flex-col items-center justify-center gap-8">
       <div className="relative w-full max-w-md aspect-square">
         {/* Layer 1: Border Image (Bottom) */}
-        <div className="absolute inset-0 z-0">
-            <Image
-                src="https://placehold.co/500x500.png"
-                alt="Roulette Border"
-                width={500}
-                height={500}
-                layout="responsive"
-                data-ai-hint="roulette border"
-            />
+        <div 
+          className="absolute inset-0 z-0 flex items-center justify-center"
+          style={{ transform: `scale(${borderScale})`}}
+        >
+          <Image
+            src={borderImage}
+            alt="Roulette Border"
+            width={500}
+            height={500}
+            className="object-contain"
+            data-ai-hint="roulette border"
+            unoptimized
+          />
         </div>
 
         {/* Layer 2: Spinning Segments (Middle) */}
         <div className="absolute inset-0 z-10" style={wheelStyle}>
-          <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full">
+          <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center' }}>
+            <g transform-origin="center center">
               {normalizedSegments.map((segment, index) => {
                 const startAngle = index * segmentAngle - 90;
                 const endAngle = startAngle + segmentAngle;
@@ -162,36 +192,40 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                     <defs>
                       <path id={textPathId} d={textPathData} />
                     </defs>
-                    <path d={pathData} fill={segment.color || '#ffffff'} stroke="#BDB76B" strokeWidth="1" />
+                    <path d={pathData} fill={segment.color || '#ffffff'} stroke="#000" strokeWidth="1" />
                     <text 
-                      fill="#000" 
+                      fill="#fff" 
                       fontSize="16" 
-                      fontWeight="700" 
-                      letterSpacing="0.5"
+                      fontWeight="600"
                       style={{ fontFamily: "'PT Sans', sans-serif" }}
+                      letterSpacing="0.5"
                     >
                       <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
-                          {segment.name}
+                          {segment.name.toUpperCase()}
                       </textPath>
                     </text>
                   </g>
                 );
               })}
+            </g>
           </svg>
         </div>
         
         {/* Layer 3: Center/Pointer Image (Top) */}
-        <div className="absolute inset-0 z-20 pointer-events-none">
-             <Image
-                src="https://placehold.co/500x500.png"
-                alt="Roulette Pointer and Center"
-                width={500}
-                height={500}
-                layout="responsive"
-                data-ai-hint="roulette pointer"
-            />
+        <div 
+          className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center"
+          style={{ transform: `scale(${centerScale})`}}
+        >
+          <Image
+            src={centerImage}
+            alt="Roulette Pointer and Center"
+            width={500}
+            height={500}
+            className="object-contain"
+            data-ai-hint="roulette pointer"
+            unoptimized
+          />
         </div>
-
       </div>
 
       {isDemoMode && (
