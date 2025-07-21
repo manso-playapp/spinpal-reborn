@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,8 +10,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
-import SpinningWheel from '../game/SpinningWheel';
-
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,14 +31,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Eye, Image as ImageIcon, FileText, Settings, GripVertical, Cog } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
 
 
 const segmentSchema = z.object({
@@ -51,18 +48,6 @@ const segmentSchema = z.object({
 });
 
 
-const wheelConfigSchema = z.object({
-  outerBorderColor: z.string().optional(),
-  outerBorderWidth: z.number().optional(),
-  innerBorderColor: z.string().optional(),
-  innerBorderWidth: z.number().optional(),
-  radiusLineColor: z.string().optional(),
-  radiusLineWidth: z.number().optional(),
-  fontColor: z.string().optional(),
-  fontSize: z.number().optional(),
-  textDistance: z.number().optional(),
-});
-
 const formSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   status: z.enum(['activo', 'demo']),
@@ -72,9 +57,7 @@ const formSchema = z.object({
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   successMessage: z.string().optional(),
-  config: z.object({
-    wheel: wheelConfigSchema.optional(),
-  }).optional(),
+  // Eliminamos la configuración de la ruleta del schema
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -91,9 +74,6 @@ interface Game {
   successMessage?: string;
   plays?: number;
   prizesAwarded?: number;
-  config?: {
-    wheel?: z.infer<typeof wheelConfigSchema>;
-  };
   [key: string]: any;
 }
 
@@ -116,19 +96,6 @@ export default function EditGameForm({ game }: { game: Game }) {
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
-      config: {
-        wheel: {
-          outerBorderColor: game.config?.wheel?.outerBorderColor || '#FFD700',
-          outerBorderWidth: game.config?.wheel?.outerBorderWidth || 10,
-          innerBorderColor: game.config?.wheel?.innerBorderColor || '#FFFACD',
-          innerBorderWidth: game.config?.wheel?.innerBorderWidth || 15,
-          radiusLineColor: game.config?.wheel?.radiusLineColor || '#CD853F',
-          radiusLineWidth: game.config?.wheel?.radiusLineWidth || 2,
-          fontColor: game.config?.wheel?.fontColor || '#000000',
-          fontSize: game.config?.wheel?.fontSize || 16,
-          textDistance: game.config?.wheel?.textDistance || 75,
-        },
-      },
     },
   });
 
@@ -138,10 +105,6 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedSegments = form.watch('segments');
-  const watchedConfig = form.watch('config');
-  const watchedBackgroundImage = form.watch('backgroundImage');
-  const watchedBackgroundFit = form.watch('backgroundFit');
-
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -172,8 +135,11 @@ export default function EditGameForm({ game }: { game: Game }) {
       
       const updateData: Partial<Game> = {
         ...dataToSave,
+        // Conservamos los contadores existentes
         plays: game.plays || 0,
         prizesAwarded: game.prizesAwarded || 0,
+        // Re-añadimos el objeto de configuración, puede ser uno por defecto o el último guardado
+        config: game.config || {}, 
       };
 
       await updateDoc(gameRef, updateData);
@@ -214,7 +180,7 @@ export default function EditGameForm({ game }: { game: Game }) {
           <div className="flex-1">
             <h1 className="font-headline text-2xl font-semibold">Editar Juego</h1>
             <p className="text-sm text-muted-foreground">
-              Ajusta la configuración y mira los cambios en tiempo real.
+              Ajusta la configuración y los premios de tu juego.
             </p>
           </div>
         </div>
@@ -222,12 +188,10 @@ export default function EditGameForm({ game }: { game: Game }) {
          <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <Tabs defaultValue="data" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="data"><Settings className="mr-2 h-4 w-4" />Datos</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="data"><Settings className="mr-2 h-4 w-4" />Datos Generales</TabsTrigger>
                 <TabsTrigger value="prizes"><Gift className="mr-2 h-4 w-4" />Premios</TabsTrigger>
-                <TabsTrigger value="wheel"><Cog className="mr-2 h-4 w-4" />Ruleta</TabsTrigger>
                 <TabsTrigger value="texts"><FileText className="mr-2 h-4 w-4" />Textos</TabsTrigger>
-                <TabsTrigger value="preview"><Eye className="mr-2 h-4 w-4" />Preview</TabsTrigger>
               </TabsList>
 
               <TabsContent value="data">
@@ -377,34 +341,10 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       )}
                                                   />
                                               </div>
-                                              <div className="w-48">
-                                                  {watchedSegments[index]?.isRealPrize ? (
-                                                    <Controller
-                                                      control={form.control}
-                                                      name={`segments.${index}.probability`}
-                                                      render={({ field: { onChange, value, ...rest } }) => (
-                                                        <div className="flex items-center gap-2 px-2">
-                                                            <Slider
-                                                              value={[value || 0]}
-                                                              onValueChange={(vals) => onChange(vals[0])}
-                                                              max={100}
-                                                              step={1}
-                                                              {...rest}
-                                                            />
-                                                           <span className="text-sm font-mono w-12 text-right">{(value || 0).toFixed(0)}%</span>
-                                                        </div>
-                                                      )}
-                                                    />
-                                                  ) : (
-                                                    <Input
-                                                      type="number"
-                                                      value={watchedSegments[index]?.probability || 0}
-                                                      readOnly
-                                                      disabled
-                                                      className="w-full text-center bg-transparent border-none"
-                                                    />
-                                                  )}
+                                              <div className="w-48 text-center text-sm font-mono">
+                                                  {watchedSegments[index]?.isRealPrize ? 'Probabilidad basada en otros premios reales' : 'No es un premio real'}
                                               </div>
+
                                               <div className="w-24 flex justify-center">
                                                  <Controller
                                                     control={form.control}
@@ -461,70 +401,6 @@ export default function EditGameForm({ game }: { game: Game }) {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="wheel">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Personalización de la Ruleta</CardTitle>
-                        <CardDescription>Ajusta el aspecto visual de la ruleta para que coincida con tu marca.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                           <div className="space-y-6">
-                                <Card>
-                                    <CardHeader><CardTitle className="text-lg">Borde Exterior</CardTitle></CardHeader>
-                                    <CardContent className="grid grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="config.wheel.outerBorderColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
-                                        <FormField control={form.control} name="config.wheel.outerBorderWidth" render={({ field }) => (<FormItem><FormLabel>Ancho (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle className="text-lg">Borde Interior</CardTitle></CardHeader>
-                                    <CardContent className="grid grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="config.wheel.innerBorderColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
-                                        <FormField control={form.control} name="config.wheel.innerBorderWidth" render={({ field }) => (<FormItem><FormLabel>Ancho (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle className="text-lg">Líneas Radiales</CardTitle></CardHeader>
-                                    <CardContent className="grid grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="config.wheel.radiusLineColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
-                                        <FormField control={form.control} name="config.wheel.radiusLineWidth" render={({ field }) => (<FormItem><FormLabel>Ancho (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader><CardTitle className="text-lg">Tipografía de los Premios</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={form.control} name="config.wheel.fontColor" render={({ field }) => (<FormItem><FormLabel>Color</FormLabel><FormControl><Input type="color" {...field} className="w-full h-10 p-1" /></FormControl></FormItem>)} />
-                                            <FormField control={form.control} name="config.wheel.fontSize" render={({ field }) => (<FormItem><FormLabel>Tamaño (px)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value, 10) || 0)} /></FormControl></FormItem>)} />
-                                        </div>
-                                        <FormField control={form.control} name="config.wheel.textDistance" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Distancia del Texto</FormLabel>
-                                                <FormControl>
-                                                    <div className="flex items-center gap-4">
-                                                        <Slider min={50} max={90} step={1} value={[field.value || 75]} onValueChange={(vals) => field.onChange(vals[0])} className="w-full" />
-                                                        <span className="font-mono text-sm w-8 text-center">{field.value}</span>
-                                                    </div>
-                                                </FormControl>
-                                            </FormItem>
-                                        )} />
-                                    </CardContent>
-                                </Card>
-                            </div>
-                            <div className="sticky top-4 flex justify-center items-center p-4 bg-muted/50 rounded-md">
-                                <SpinningWheel
-                                    segments={watchedSegments}
-                                    gameId={game.id}
-                                    isDemoMode={true}
-                                    config={watchedConfig?.wheel}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-              </TabsContent>
-
               <TabsContent value="texts">
                 <Card>
                   <CardHeader>
@@ -575,34 +451,6 @@ export default function EditGameForm({ game }: { game: Game }) {
                       )}
                     />
                   </CardContent>
-                </Card>
-              </TabsContent>
-
-               <TabsContent value="preview">
-                 <Card 
-                    className="overflow-hidden"
-                    style={{
-                        backgroundImage: `url(${watchedBackgroundImage})`,
-                        backgroundSize: watchedBackgroundImage ? (watchedBackgroundFit as 'cover' | 'contain' | 'fill' | 'none') : undefined,
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat'
-                    }}
-                 >
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Eye /> Vista Previa de la Ruleta</CardTitle>
-                        <CardDescription>Así se verá tu ruleta en la pantalla de juego.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center pt-4 relative">
-                        {watchedBackgroundImage && <div className="absolute inset-0 bg-black/20 z-0"></div>}
-                        <div className="z-10 w-full max-w-lg">
-                           <SpinningWheel
-                             segments={watchedSegments}
-                             gameId={game.id}
-                             isDemoMode={true}
-                             config={watchedConfig?.wheel}
-                           />
-                        </div>
-                    </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
