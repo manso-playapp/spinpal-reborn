@@ -224,7 +224,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                               </Button>
                           </div>
                           
-                          <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                          <div className="space-y-2 pr-2">
                               {fields.map((field, index) => (
                                   <div key={field.id} className="flex items-center gap-2 p-2 border rounded-md bg-background">
                                     <Controller
