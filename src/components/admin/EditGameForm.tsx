@@ -315,7 +315,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 px-2 text-xs font-medium text-muted-foreground">
                                 <div className="w-5 flex-shrink-0"></div> {/* Espacio para el drag handle */}
-                                <div className="w-[100px] flex-shrink-0">Color</div>
+                                <div className="w-32 flex-shrink-0">Color</div>
                                 <div className="flex-1 min-w-0">Nombre del Premio</div>
                                 <div className="flex-shrink-0 w-48 text-center">Probabilidad %</div>
                                 <div className="w-24 flex-shrink-0 text-center">Premio Real</div>
@@ -331,7 +331,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 strategy={verticalListSortingStrategy}
                               >
                                 {fields.map((field, index) => (
-                                    <SortableItem key={field.id} id={field.id} handleListeners>
+                                    <SortableItem key={field.id} id={field.id}>
                                       {(listeners) => (
                                         <div className="flex items-center gap-2 p-1 pr-2 border rounded-md bg-background hover:bg-muted/50">
                                             <button type="button" {...listeners} className="cursor-grab p-1 flex-shrink-0">
@@ -342,7 +342,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                 control={form.control}
                                                 name={`segments.${index}.color`}
                                                 render={({ field: { onChange, value } }) => (
-                                                    <div className="w-[100px] flex-shrink-0 flex items-center gap-1">
+                                                    <div className="w-32 flex-shrink-0 flex items-center gap-1">
                                                         <Input
                                                             type="color"
                                                             value={value}
@@ -353,7 +353,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                             type="text"
                                                             value={value}
                                                             onChange={onChange}
-                                                            className="h-8 flex-1 text-xs"
+                                                            className="h-8 flex-1 text-sm"
                                                             placeholder="#HEX"
                                                         />
                                                     </div>
