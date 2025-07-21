@@ -1,17 +1,23 @@
 'use client';
 
 import React from 'react';
-import { useSortable } from '@dnd-kit/sortable';
+import { useSortable, type DraggableSyntheticListeners } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export function SortableItem(props: { id: string, children: React.ReactNode }) {
+interface SortableItemProps {
+  id: string;
+  children: (listeners: DraggableSyntheticListeners) => React.ReactNode;
+}
+
+
+export function SortableItem({ id, children }: SortableItemProps) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: props.id });
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -19,8 +25,8 @@ export function SortableItem(props: { id: string, children: React.ReactNode }) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {props.children}
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children(listeners)}
     </div>
   );
 }
