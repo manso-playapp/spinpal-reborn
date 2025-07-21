@@ -10,12 +10,27 @@ import { Wheel } from 'react-custom-roulette';
 
 interface Segment {
   name: string;
+  color?: string;
 }
+
+interface WheelConfig {
+  outerBorderColor?: string;
+  outerBorderWidth?: number;
+  innerBorderColor?: string;
+  innerBorderWidth?: number;
+  radiusLineColor?: string;
+  radiusLineWidth?: number;
+  fontColor?: string;
+  fontSize?: number;
+  textDistance?: number;
+}
+
 
 interface SpinningWheelProps {
   segments: Segment[];
   gameId: string;
   isDemoMode?: boolean;
+  config?: WheelConfig;
 }
 
 const nonPrizeKeywords = ['intenta', 'suerte', 'nada', 'pierde'];
@@ -32,15 +47,19 @@ const isPrize = (option: string) => {
   return !nonPrizeKeywords.some(keyword => normalizedOption.includes(keyword));
 };
 
-export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, config = {} }: SpinningWheelProps) {
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
-  const [rouletteData, setRouletteData] = useState<{ option: string }[]>([]);
 
-  useEffect(() => {
-    const data = initialSegments.map(segment => ({ option: segment.name }));
-    setRouletteData(data);
-  }, [initialSegments]);
+  const rouletteData = useMemo(() => {
+    return initialSegments.map(segment => ({
+      option: segment.name,
+      style: { 
+        backgroundColor: segment.color, 
+        textColor: config.fontColor 
+      },
+    }));
+  }, [initialSegments, config.fontColor]);
 
   const handleSpinClick = useCallback(() => {
     if (!mustSpin) {
@@ -110,6 +129,16 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             prizeNumber={prizeNumber}
             data={rouletteData}
             onStopSpinning={handleStopSpinning}
+            // Pasamos la configuración visual
+            outerBorderColor={config.outerBorderColor}
+            outerBorderWidth={config.outerBorderWidth}
+            innerBorderColor={config.innerBorderColor}
+            innerBorderWidth={config.innerBorderWidth}
+            radiusLineColor={config.radiusLineColor}
+            radiusLineWidth={config.radiusLineWidth}
+            fontSize={config.fontSize}
+            textDistance={config.textDistance}
+            fontFamily="Poppins"
         />
       {isDemoMode && (
         <Button onClick={handleSpinClick} disabled={mustSpin}>

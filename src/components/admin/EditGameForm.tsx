@@ -126,6 +126,7 @@ export default function EditGameForm({ game }: { game: Game }) {
           radiusLineWidth: 1,
           fontColor: '#000000',
           fontSize: 20,
+          textDistance: 75,
         },
       },
     },
@@ -204,9 +205,9 @@ export default function EditGameForm({ game }: { game: Game }) {
   const rouletteData = useMemo(() => {
     return watchedSegments.map(segment => ({
       option: segment.name,
-      style: { backgroundColor: segment.color },
+      style: { backgroundColor: segment.color, textColor: watchedConfig?.wheel?.fontColor },
     }));
-  }, [watchedSegments]);
+  }, [watchedSegments, watchedConfig?.wheel?.fontColor]);
 
   return (
     <div>
@@ -601,6 +602,29 @@ export default function EditGameForm({ game }: { game: Game }) {
                                       )}
                                   />
                                 </div>
+                                <FormField
+                                    control={form.control}
+                                    name="config.wheel.textDistance"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Distancia del Texto</FormLabel>
+                                            <FormControl>
+                                                <div className="flex items-center gap-4">
+                                                    <Slider
+                                                        min={50}
+                                                        max={90}
+                                                        step={1}
+                                                        value={[field.value || 75]}
+                                                        onValueChange={(vals) => field.onChange(vals[0])}
+                                                        className="w-full"
+                                                    />
+                                                    <span className="font-mono text-sm w-8 text-center">{field.value}</span>
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         </div>
 
@@ -611,6 +635,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 data={rouletteData}
                                 onStopSpinning={() => {}}
                                 {...watchedConfig?.wheel}
+                                fontFamily="Poppins"
                             />
                         </div>
                     </CardContent>
@@ -693,6 +718,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 data={rouletteData}
                                 onStopSpinning={() => {}}
                                 {...watchedConfig?.wheel}
+                                fontFamily="Poppins"
                             />
                         </div>
                     </CardContent>

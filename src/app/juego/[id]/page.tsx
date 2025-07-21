@@ -25,6 +25,7 @@ async function getGameData(id: string) {
     segments: data.segments || [],
     backgroundImage: data.backgroundImage || '',
     backgroundFit: data.backgroundFit || 'cover',
+    config: data.config || {},
   };
 }
 
@@ -71,6 +72,7 @@ export default async function GamePage({ params }: { params: { id:string } }) {
                 segments={game.segments} 
                 gameId={game.id} 
                 isDemoMode={game.status === 'demo'}
+                config={game.config?.wheel}
               />
             </div>
           </CardContent>
