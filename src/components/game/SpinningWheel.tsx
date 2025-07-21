@@ -11,6 +11,7 @@ import { Wheel } from 'react-custom-roulette';
 interface Segment {
   name: string;
   color?: string;
+  isRealPrize?: boolean;
 }
 
 interface WheelConfig {
@@ -99,7 +100,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             const winningSegment = initialSegments[prizeNumber];
             const updateData: { prizesAwarded?: any } = {};
 
-            if (winningSegment && isPrize(winningSegment.name)) {
+            if (winningSegment && winningSegment.isRealPrize) {
                 updateData.prizesAwarded = increment(1);
             }
             
