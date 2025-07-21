@@ -105,8 +105,17 @@ export default function EditGameForm({ game }: { game: Game }) {
     try {
       const gameRef = doc(db, 'games', game.id);
       
+      // Clone data to avoid mutating the original form state
+      const dataToSave = JSON.parse(JSON.stringify(data));
+
+      // Convert undefined probabilities to null before saving
+      dataToSave.segments = dataToSave.segments.map((segment: { probability: any; }) => ({
+        ...segment,
+        probability: segment.probability === undefined ? null : segment.probability,
+      }));
+      
       const updateData: Partial<Game> = {
-        ...data,
+        ...dataToSave,
         plays: game.plays || 0,
         prizesAwarded: game.prizesAwarded || 0,
       };
