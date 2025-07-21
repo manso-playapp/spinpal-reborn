@@ -184,7 +184,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
                         className="roulette-segment"
                         style={{ 
                             transform: `rotate(${rotation}deg)`,
-                            background: segment.color || '#cccccc' 
+                            background: `radial-gradient(circle at 50% 100%, ${segment.color}BF, ${segment.color})`
                         }}
                     >
                         <span 
