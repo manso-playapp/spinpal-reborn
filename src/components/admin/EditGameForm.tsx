@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -42,6 +42,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
+import QRCodeDisplay from '../game/QRCodeDisplay';
 
 const segmentSchema = z.object({
   id: z.string().optional(),
@@ -49,13 +50,12 @@ const segmentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
-  // New fields
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
   fontFamily: z.string().default('PT Sans'),
   fontSize: z.number().min(4).max(40).default(16),
   lineHeight: z.number().min(0.5).max(3).default(1),
   letterSpacing: z.number().min(-5).max(10).default(0.5),
-  distanceFromCenter: z.number().min(0).max(1).default(0.7), // As a percentage of radius
+  distanceFromCenter: z.number().min(0).max(1).default(0.7),
   iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
   iconScale: z.number().min(0.1).max(2).default(1),
 });
@@ -148,16 +148,11 @@ export default function EditGameForm({ game }: { game: Game }) {
     name: 'segments',
   });
   
-  const watchedSegments = form.watch('segments');
-  const watchedBorderImage = form.watch('borderImage');
-  const watchedBorderScale = form.watch('borderScale');
-  const watchedCenterImage = form.watch('centerImage');
-  const watchedCenterScale = form.watch('centerScale');
-
+  const watchedFormData = form.watch();
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
-    const realPrizeSegments = watchedSegments.filter(s => s.isRealPrize);
-    const nonRealPrizeSegments = watchedSegments.filter(s => !s.isRealPrize);
+    const realPrizeSegments = watchedFormData.segments.filter(s => s.isRealPrize);
+    const nonRealPrizeSegments = watchedFormData.segments.filter(s => !s.isRealPrize);
 
     const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
     
@@ -171,7 +166,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       realPrizeTotalProbability,
       nonRealPrizeProbability: parseFloat(nonRealPrizeProbability.toFixed(2))
     };
-  }, [watchedSegments]);
+  }, [watchedFormData.segments]);
 
 
   const sensors = useSensors(
@@ -243,11 +238,19 @@ export default function EditGameForm({ game }: { game: Game }) {
   };
   
   const currentConfig = {
-    borderImage: watchedBorderImage,
-    borderScale: watchedBorderScale,
-    centerImage: watchedCenterImage,
-    centerScale: watchedCenterScale,
+    borderImage: watchedFormData.borderImage,
+    borderScale: watchedFormData.borderScale,
+    centerImage: watchedFormData.centerImage,
+    centerScale: watchedFormData.centerScale,
   };
+
+  const backgroundPreviewStyles: React.CSSProperties = watchedFormData.backgroundImage ? {
+    backgroundImage: `url(${watchedFormData.backgroundImage})`,
+    backgroundSize: watchedFormData.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    borderRadius: 'var(--radius)',
+  } : {};
 
   return (
     <div>
@@ -513,7 +516,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                     render={({ field }) => (
                                                       <FormItem>
                                                           <FormLabel>Probabilidad ({field.value || 0}%)</FormLabel>
-                                                          {watchedSegments[index]?.isRealPrize ? (
+                                                          {watchedFormData.segments[index]?.isRealPrize ? (
                                                               <Slider value={[field.value || 0]} onValueChange={(vals) => field.onChange(vals[0])} max={100 - (realPrizeTotalProbability - (field.value || 0))} step={1} />
                                                           ) : (
                                                               <Input value={`${nonRealPrizeProbability}%`} disabled className="text-center bg-muted" />
@@ -683,17 +686,64 @@ export default function EditGameForm({ game }: { game: Game }) {
                             <Eye className="h-5 w-5"/>
                             Vista Previa
                         </CardTitle>
-                        <CardDescription>
-                            Así se verá tu ruleta con la configuración actual.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <SpinningWheel
-                            segments={watchedSegments}
-                            gameId={game.id}
-                            isDemoMode={true}
-                            config={currentConfig}
-                        />
+                      <Tabs defaultValue="roulette" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
+                          <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="roulette" className="mt-4">
+                            <SpinningWheel
+                                segments={watchedFormData.segments}
+                                gameId={game.id}
+                                isDemoMode={true}
+                                config={currentConfig}
+                            />
+                        </TabsContent>
+                        <TabsContent value="game" className="mt-4 p-2 border rounded-lg bg-muted/50 overflow-hidden">
+                          <div className="transform scale-[0.6] -translate-y-[60px] -translate-x-[70px]">
+                              <div className="w-[800px] h-[450px] flex items-center justify-center p-4" style={backgroundPreviewStyles}>
+                                <div className={`w-full h-full flex items-center justify-center gap-8 ${watchedFormData.backgroundImage ? 'bg-black/20' : ''}`}>
+                                  {/* Columna de la Ruleta */}
+                                  <Card className="w-full max-w-md text-center shadow-lg bg-card/90 backdrop-blur-sm">
+                                    <CardHeader>
+                                      <CardTitle className="font-headline text-xl flex items-center justify-center gap-2">
+                                        <Gamepad2 className="h-6 w-6" />
+                                        {watchedFormData.name}
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-col items-center justify-center">
+                                      <div className="w-full max-w-xs">
+                                        <SpinningWheel 
+                                          segments={watchedFormData.segments} 
+                                          gameId={game.id} 
+                                          isDemoMode={true}
+                                          config={currentConfig}
+                                        />
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                  {/* Columna del QR */}
+                                  <Card className="w-full max-w-[240px] text-center shadow-lg bg-card/90 backdrop-blur-sm">
+                                    <CardHeader>
+                                      <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
+                                          <QrCode className="h-5 w-5"/>
+                                          ¡Escanea!
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-col items-center justify-center gap-2">
+                                        <QRCodeDisplay gameId={game.id} scale={0.6} />
+                                        <p className="text-muted-foreground text-xs px-2">
+                                          Abre la cámara de tu teléfono para registrarte y jugar.
+                                        </p>
+                                    </CardContent>
+                                  </Card>
+                                </div>
+                              </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
                     </CardContent>
                  </Card>
               </div>

@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import QRCode from 'qrcode.react';
 import { Skeleton } from '../ui/skeleton';
 
-export default function QRCodeDisplay({ gameId }: { gameId: string }) {
+export default function QRCodeDisplay({ gameId, scale = 1 }: { gameId: string, scale?: number }) {
   const [url, setUrl] = useState('');
+  const qrSize = 256 * scale;
 
   useEffect(() => {
     // Nos aseguramos de que este código solo se ejecute en el cliente
@@ -16,14 +17,14 @@ export default function QRCodeDisplay({ gameId }: { gameId: string }) {
 
   if (!url) {
     // Muestra un esqueleto de carga mientras se determina la URL
-    return <Skeleton className="h-[256px] w-[256px]" />;
+    return <Skeleton style={{ height: qrSize, width: qrSize }} />;
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-inner">
+    <div className="bg-white p-2 rounded-lg shadow-inner inline-block">
       <QRCode
         value={url}
-        size={256}
+        size={qrSize - (16 * scale)} // Adjust padding based on scale
         level="H"
         includeMargin={true}
       />
