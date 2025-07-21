@@ -54,7 +54,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     
     // Handle floating point inaccuracies
     const totalProb = normalizedSegments.reduce((sum, s) => sum + (s.finalProbability || 0), 0);
-    const scaleFactor = 100 / totalProb;
+    const scaleFactor = totalProb > 0 ? 100 / totalProb : 0;
 
     for (let i = 0; i < normalizedSegments.length; i++) {
         accumulatedProb += (normalizedSegments[i].finalProbability || 0) * scaleFactor;
@@ -108,7 +108,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const wheelStyle: React.CSSProperties = {
     transition: 'transform 7s cubic-bezier(0.2, 0.8, 0.3, 1)',
     transform: `rotate(${rotation}deg)`,
-    transformOrigin: '250px 250px',
+    transformOrigin: `${VIEWBOX_SIZE / 2}px ${VIEWBOX_SIZE / 2}px`,
   };
 
   const segmentCount = normalizedSegments.length;
@@ -120,9 +120,9 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     return [x, y];
   };
 
-  const borderLights = Array.from({ length: 12 }, (_, i) => {
-    const angle = i * 30; // 360 / 12 = 30
-    const [x, y] = getCoordinatesForAngle(angle, 220); // Place on the golden border
+  const borderLights = Array.from({ length: 24 }, (_, i) => {
+    const angle = i * 15; // 360 / 24 = 15
+    const [x, y] = getCoordinatesForAngle(angle, 235); // Place on the golden border
     return <circle key={`light-${i}`} cx={x} cy={y} r="4" fill="url(#gold-radial-gradient)" />;
   });
 
@@ -131,7 +131,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       <svg
         viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
         className="w-full max-w-md"
-        style={{ fontFamily: "'PT Sans', sans-serif" }}
       >
         <defs>
           <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -183,7 +182,13 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                   <path id={textPathId} d={textPathData} />
                 </defs>
                 <path d={pathData} fill={segment.color || '#ffffff'} stroke="#BDB76B" strokeWidth="1" />
-                <text fill="#000" fontSize="16" fontWeight="700" letterSpacing="0.5">
+                <text 
+                  fill="#000" 
+                  fontSize="16" 
+                  fontWeight="700" 
+                  letterSpacing="0.5"
+                  style={{ fontFamily: "'PT Sans', sans-serif" }}
+                >
                   <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
                       {segment.name}
                   </textPath>
@@ -192,15 +197,15 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             );
           })}
         </g>
+        
+        {/* Pointer - Moved BEFORE center pin to be underneath */}
+        <g transform={`translate(${VIEWBOX_SIZE / 2 - 20}, ${VIEWBOX_SIZE / 2 - 220})`}>
+          <path d="M 20 0 L 40 40 L 0 40 Z" fill="url(#gold-gradient)" filter="url(#shadow)"/>
+        </g>
 
-        {/* Center Pin */}
+        {/* Center Pin - Rendered AFTER pointer to be on top */}
         <circle cx={VIEWBOX_SIZE / 2} cy={VIEWBOX_SIZE / 2} r="35" fill="url(#gold-radial-gradient)" stroke="#B8860B" strokeWidth="2" />
         <circle cx={VIEWBOX_SIZE / 2} cy={VIEWBOX_SIZE / 2} r="30" fill="url(#gold-gradient)" />
-
-        {/* Pointer */}
-        <g transform={`translate(${VIEWBOX_SIZE / 2 - 20}, ${VIEWBOX_SIZE / 2 + 30})`}>
-          <path d="M 20 0 L 40 40 L 0 40 Z" fill="url(#gold-gradient)" filter="url(#shadow)" transform="rotate(180 20 20)"/>
-        </g>
 
       </svg>
 
