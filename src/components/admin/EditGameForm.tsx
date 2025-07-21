@@ -32,7 +32,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Palette, Gift, Eye, Image as ImageIcon, FileText, Settings, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Palette, Gift, Eye, Image as ImageIcon, FileText, Settings, GripVertical } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import SpinningWheel from '../game/SpinningWheel';
@@ -94,7 +94,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     },
   });
 
-  const { fields, append, remove, swap, move } = useFieldArray({
+  const { fields, append, remove, move } = useFieldArray({
     control: form.control,
     name: 'segments',
   });
@@ -263,9 +263,10 @@ export default function EditGameForm({ game }: { game: Game }) {
                           
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground">
+                                <div className="w-6"></div>
                                 <div className="flex-grow">Nombre del Premio</div>
                                 <div className="w-24 text-center">Probabilidad %</div>
-                                <div className="w-20"></div> {/* Espacio para botones */}
+                                <div className="w-10"></div> {/* Espacio para botones */}
                             </div>
                             <DndContext 
                               sensors={sensors}
@@ -278,12 +279,13 @@ export default function EditGameForm({ game }: { game: Game }) {
                               >
                                 {fields.map((field, index) => (
                                     <SortableItem key={field.id} id={field.id}>
-                                        <div className="flex items-center gap-2 p-1 border rounded-md bg-background">
+                                        <div className="flex items-center gap-2 p-1 border rounded-md bg-background hover:bg-muted/50">
+                                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
                                         <Controller
                                             control={form.control}
                                             name={`segments.${index}.name`}
                                             render={({ field: controllerField }) => (
-                                                <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0" />
+                                                <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0 bg-transparent" />
                                             )}
                                         />
                                         <Controller
@@ -299,14 +301,6 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                 />
                                             )}
                                         />
-                                        <div className="flex flex-col">
-                                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index - 1)} disabled={index === 0 || loading}>
-                                                <ArrowUp className="h-4 w-4" />
-                                            </Button>
-                                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index + 1)} disabled={index === fields.length - 1 || loading}>
-                                                <ArrowDown className="h-4 w-4" />
-                                            </Button>
-                                        </div>
                                         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                             <span className="sr-only">Eliminar</span>
@@ -463,5 +457,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
-
-    
