@@ -16,6 +16,7 @@ const Wheel = dynamic(() => import('react-custom-roulette').then(mod => mod.Whee
 interface Segment {
   name: string;
   probability?: number;
+  color?: string;
 }
 
 interface SpinningWheelProps {
@@ -30,6 +31,7 @@ const formatSegmentsForWheel = (segments: Segment[]) => {
   }
   return segments.map((segment) => ({
     option: segment.name,
+    style: { backgroundColor: segment.color }
   }));
 };
 
@@ -52,6 +54,10 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
   const [prizeNumber, setPrizeNumber] = useState(0);
 
   const wheelData = formatSegmentsForWheel(segments);
+  
+  const backgroundColors = segments.map(s => s.color).filter(c => !!c) as string[];
+  const finalBackgroundColors = backgroundColors.length >= 2 ? backgroundColors : ['#ACBFA4', '#F4F4F2', '#D3BFA8'];
+
 
   const calculatePrizeNumber = useCallback(() => {
     const probabilities = segments.map(s => s.probability);
@@ -158,7 +164,7 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
         prizeNumber={prizeNumber}
         data={wheelData}
         onStopSpinning={handleStopSpinning}
-        backgroundColors={['#ACBFA4', '#F4F4F2', '#D3BFA8']}
+        backgroundColors={finalBackgroundColors}
         textColors={['#000000']}
         outerBorderColor={'#8A9A80'}
         outerBorderWidth={10}

@@ -48,6 +48,7 @@ const segmentSchema = z.object({
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
   probability: z.coerce.number().min(0, "Debe ser >= 0").max(100, "Debe ser <= 100").optional(),
   isRealPrize: z.boolean().optional(),
+  color: z.string().optional(),
 });
 
 const formSchema = z.object({
@@ -67,7 +68,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
-  segments?: { name: string; probability?: number; isRealPrize?: boolean }[];
+  segments?: { name: string; probability?: number; isRealPrize?: boolean, color?: string }[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   registrationTitle?: string;
@@ -77,6 +78,15 @@ interface Game {
   prizesAwarded?: number;
   [key: string]: any;
 }
+
+const getRandomHexColor = () => {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+};
 
 export default function EditGameForm({ game }: { game: Game }) {
   const router = useRouter();
@@ -89,7 +99,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments || [{name: 'Premio 1', probability: 50, isRealPrize: true}, {name: 'Premio 2', probability: 50, isRealPrize: true}],
+      segments: game.segments?.map(s => ({...s, color: s.color || getRandomHexColor()})) || [{name: 'Premio 1', probability: 50, isRealPrize: true, color: getRandomHexColor()}, {name: 'Premio 2', probability: 50, isRealPrize: true, color: getRandomHexColor()}],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
@@ -125,11 +135,9 @@ export default function EditGameForm({ game }: { game: Game }) {
     const probabilityPerNonRealPrize = nonRealPrizeCount > 0 ? remainingProbability / nonRealPrizeCount : 0;
     
     nonRealPrizeIndices.forEach(index => {
-        // Redondeamos para evitar decimales largos
         const roundedProbability = Math.round(probabilityPerNonRealPrize * 100) / 100;
         const currentFieldValue = form.getValues(`segments.${index}.probability`);
         
-        // Solo actualizamos si el valor es diferente, para evitar renders innecesarios
         if (currentFieldValue !== roundedProbability) {
              form.setValue(`segments.${index}.probability`, roundedProbability, { shouldDirty: true });
         }
@@ -201,7 +209,12 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const addSegment = () => {
     if (newSegmentName.trim()) {
-      append({ name: newSegmentName.trim(), probability: 0, isRealPrize: false });
+      append({ 
+          name: newSegmentName.trim(), 
+          probability: 0, 
+          isRealPrize: false,
+          color: getRandomHexColor(),
+        });
       setNewSegmentName('');
     }
   };
@@ -302,6 +315,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                           <div className="space-y-2">
                             <div className="flex items-center gap-2 px-2 text-xs font-medium text-muted-foreground">
                                 <div className="w-5 flex-shrink-0"></div> {/* Espacio para el drag handle */}
+                                <div className="w-10 flex-shrink-0 text-center">Color</div>
                                 <div className="flex-1 min-w-0">Nombre del Premio</div>
                                 <div className="w-56 flex-shrink-0 text-center">Probabilidad %</div>
                                 <div className="w-24 flex-shrink-0 text-center">Premio Real</div>
@@ -323,6 +337,20 @@ export default function EditGameForm({ game }: { game: Game }) {
                                             <button type="button" {...listeners} className="cursor-grab p-1 flex-shrink-0">
                                                 <GripVertical className="h-5 w-5 text-muted-foreground" />
                                             </button>
+                                            
+                                            <div className="w-10 flex-shrink-0 flex justify-center">
+                                                <Controller
+                                                  control={form.control}
+                                                  name={`segments.${index}.color`}
+                                                  render={({ field: controllerField }) => (
+                                                    <Input 
+                                                        type="color" 
+                                                        {...controllerField}
+                                                        className="w-8 h-8 p-1 cursor-pointer"
+                                                    />
+                                                  )}
+                                                />
+                                            </div>
 
                                             <div className="flex-1 min-w-0">
                                                 <Controller
