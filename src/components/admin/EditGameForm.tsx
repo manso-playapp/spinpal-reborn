@@ -373,11 +373,11 @@ export default function EditGameForm({ game }: { game: Game }) {
         {/* Columna de Vista Previa */}
         <Card className="lg:col-span-1 sticky top-4 overflow-hidden">
            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Eye /> Vista Previa</CardTitle>
-                <CardDescription>Así se ve tu ruleta en la TV.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Eye /> Vista Previa Vertical</CardTitle>
+                <CardDescription>Así se ve tu ruleta en una TV 9:16.</CardDescription>
             </CardHeader>
           <CardContent 
-            className="flex flex-col items-center justify-center pt-4 h-96 bg-gray-200 relative"
+            className="flex flex-col items-center justify-center pt-4 bg-gray-200 relative h-[600px] max-w-sm mx-auto"
             style={{
                 backgroundImage: `url(${watchedBackgroundImage})`,
                 backgroundSize: watchedBackgroundFit as 'cover' | 'contain' | 'fill' | 'none',
@@ -386,7 +386,7 @@ export default function EditGameForm({ game }: { game: Game }) {
             }}
           >
              {watchedBackgroundImage && <div className="absolute inset-0 bg-black/20 z-0"></div>}
-            <div className="z-10 w-full max-w-sm">
+            <div className="z-10 w-full max-w-xs">
                 <SpinningWheel segments={watchedSegments} gameId={game.id} isDemoMode={true} />
             </div>
           </CardContent>
