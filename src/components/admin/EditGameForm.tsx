@@ -253,7 +253,6 @@ export default function EditGameForm({ game }: { game: Game }) {
     backgroundSize: watchedFormData.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
-    borderRadius: 'var(--radius)',
   } : {};
 
   return (
@@ -728,8 +727,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                             />
                         </TabsContent>
                         <TabsContent value="game" className="mt-4 p-2 min-h-[450px] flex justify-center items-center border rounded-lg bg-muted/50 overflow-hidden">
-                           <div className="transform scale-[0.8]">
-                              <div className="w-[281px] h-[500px] flex flex-col items-center justify-around p-4" style={backgroundPreviewStyles}>
+                           <div className="w-[281px] h-[500px] flex flex-col items-center justify-center gap-8 p-4 origin-center transform scale-[0.8]" style={backgroundPreviewStyles}>
                                   <div className="w-full max-w-sm">
                                     <SpinningWheel 
                                       segments={watchedFormData.segments} 
@@ -739,16 +737,16 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     />
                                   </div>
                                   <Card 
-                                    className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
+                                    className="w-full max-w-xs text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
                                     style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
                                    >
-                                    <CardHeader>
+                                    <CardHeader className="p-4">
                                       <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
                                           <QrCode size={20} />
                                           ¡Escanea para Jugar!
                                       </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="flex flex-col items-center justify-center gap-2 p-4">
+                                    <CardContent className="flex flex-col items-center justify-center gap-2 p-4 pt-0">
                                         <QRCodeDisplay gameId={game.id} scale={0.5} />
                                         <Separator className="bg-white/20 my-1"/>
                                         <p className="text-xs">
@@ -757,7 +755,6 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     </CardContent>
                                   </Card>
                               </div>
-                          </div>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
