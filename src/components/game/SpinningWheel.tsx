@@ -36,8 +36,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
 
-  const borderImage = config?.borderImage || "https://placehold.co/500x500.png?text=Borde";
-  const centerImage = config?.centerImage || "https://placehold.co/500x500.png?text=Centro";
+  const borderImage = config?.borderImage || "";
+  const centerImage = config?.centerImage || "";
   const borderScale = config?.borderScale || 1;
   const centerScale = config?.centerScale || 1;
 
@@ -149,7 +149,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
       <div className="relative w-full max-w-md aspect-square">
-        {/* Layer 1: Spinning Segments (Bottom) */}
+        
+        {/* Capa de Ruleta Giratoria (Abajo) */}
         <div className="absolute inset-0 z-0" style={wheelStyle}>
           <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
             <g style={{ transformOrigin: 'center center' }}>
@@ -168,6 +169,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                 const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - (segmentAngle / 2.2), TEXT_RADIUS);
                 const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + (segmentAngle / 2.2), TEXT_RADIUS);
                 const textPathData = `M ${textPathStartX},${textPathStartY} A ${TEXT_RADIUS},${TEXT_RADIUS} 0 0 1 ${textPathEndX},${textPathEndY}`;
+                
+                const nameParts = segment.name.toUpperCase().split(',');
 
                 return (
                   <g key={index}>
@@ -183,7 +186,15 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                       letterSpacing="0.5"
                     >
                       <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
-                          {segment.name.toUpperCase()}
+                        {nameParts.map((part, i) => (
+                          <tspan
+                            key={i}
+                            x={0} // Centra horizontalmente cada línea
+                            dy={i === 0 ? '-0.3em' : '1.2em'} // Ajusta la primera línea hacia arriba y las siguientes hacia abajo
+                          >
+                            {part.trim()}
+                          </tspan>
+                        ))}
                       </textPath>
                     </text>
                   </g>
@@ -193,37 +204,41 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
           </svg>
         </div>
         
-        {/* Layer 2: Border Image (Middle) */}
-        <div 
-          className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
-          style={{ transform: `scale(${borderScale})`}}
-        >
-          <Image
-            src={borderImage}
-            alt="Roulette Border"
-            width={500}
-            height={500}
-            className="object-contain"
-            data-ai-hint="roulette border"
-            unoptimized
-          />
-        </div>
+        {/* Layer 2: Border Image (Medio) */}
+        {borderImage && (
+            <div 
+            className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+            style={{ transform: `scale(${borderScale})`}}
+            >
+            <Image
+                src={borderImage}
+                alt="Roulette Border"
+                width={500}
+                height={500}
+                className="object-contain"
+                data-ai-hint="roulette border"
+                unoptimized
+            />
+            </div>
+        )}
         
-        {/* Layer 3: Center/Pointer Image (Top) */}
-        <div 
-          className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center"
-          style={{ transform: `scale(${centerScale})`}}
-        >
-          <Image
-            src={centerImage}
-            alt="Roulette Pointer and Center"
-            width={500}
-            height={500}
-            className="object-contain"
-            data-ai-hint="roulette pointer"
-            unoptimized
-          />
-        </div>
+        {/* Layer 3: Center/Pointer Image (Arriba) */}
+        {centerImage && (
+            <div 
+            className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center"
+            style={{ transform: `scale(${centerScale})`}}
+            >
+            <Image
+                src={centerImage}
+                alt="Roulette Pointer and Center"
+                width={500}
+                height={500}
+                className="object-contain"
+                data-ai-hint="roulette pointer"
+                unoptimized
+            />
+            </div>
+        )}
       </div>
 
       {isDemoMode && (
