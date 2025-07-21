@@ -10,7 +10,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
-import { Wheel } from 'react-custom-roulette';
+import SpinningWheel from '../game/SpinningWheel';
 
 
 import { Button } from '@/components/ui/button';
@@ -118,11 +118,11 @@ export default function EditGameForm({ game }: { game: Game }) {
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
       config: {
         wheel: game.config?.wheel || {
-          outerBorderColor: '#eeeeee',
+          outerBorderColor: '#FFD700',
           outerBorderWidth: 10,
-          innerBorderColor: '#dddddd',
+          innerBorderColor: '#F0E68C',
           innerBorderWidth: 15,
-          radiusLineColor: '#cccccc',
+          radiusLineColor: '#CD853F',
           radiusLineWidth: 1,
           fontColor: '#000000',
           fontSize: 20,
@@ -201,13 +201,6 @@ export default function EditGameForm({ game }: { game: Game }) {
       setNewSegmentName('');
     }
   };
-  
-  const rouletteData = useMemo(() => {
-    return watchedSegments.map(segment => ({
-      option: segment.name,
-      style: { backgroundColor: segment.color, textColor: watchedConfig?.wheel?.fontColor },
-    }));
-  }, [watchedSegments, watchedConfig?.wheel?.fontColor]);
 
   return (
     <div>
@@ -629,14 +622,12 @@ export default function EditGameForm({ game }: { game: Game }) {
                         </div>
 
                         <div className="flex justify-center items-center p-4 bg-muted/50 rounded-md sticky top-4">
-                            <Wheel
-                                mustStartSpinning={false}
-                                prizeNumber={0}
-                                data={rouletteData}
-                                onStopSpinning={() => {}}
-                                {...watchedConfig?.wheel}
-                                fontFamily="Poppins"
-                            />
+                           <SpinningWheel
+                             segments={watchedSegments}
+                             gameId={game.id}
+                             isDemoMode={true}
+                             config={watchedConfig?.wheel}
+                           />
                         </div>
                     </CardContent>
                 </Card>
@@ -712,14 +703,12 @@ export default function EditGameForm({ game }: { game: Game }) {
                     <CardContent className="flex flex-col items-center justify-center pt-4 relative">
                         {watchedBackgroundImage && <div className="absolute inset-0 bg-black/20 z-0"></div>}
                         <div className="z-10 w-full max-w-lg">
-                           <Wheel
-                                mustStartSpinning={false}
-                                prizeNumber={0}
-                                data={rouletteData}
-                                onStopSpinning={() => {}}
-                                {...watchedConfig?.wheel}
-                                fontFamily="Poppins"
-                            />
+                           <SpinningWheel
+                             segments={watchedSegments}
+                             gameId={game.id}
+                             isDemoMode={true}
+                             config={watchedConfig?.wheel}
+                           />
                         </div>
                     </CardContent>
                 </Card>

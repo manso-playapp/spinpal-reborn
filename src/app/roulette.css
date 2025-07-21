@@ -1,0 +1,101 @@
+:root {
+  --wheel-size: 400px;
+  --wheel-slice-spacing: 2px;
+  --pointer-size: 50px;
+}
+
+.roulette-container {
+  position: relative;
+  width: var(--wheel-size);
+  height: var(--wheel-size);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem auto;
+}
+
+.roulette-pointer {
+  position: absolute;
+  top: -15px;
+  width: var(--pointer-size);
+  height: calc(var(--pointer-size) * 1.2);
+  z-index: 10;
+  filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4));
+  transform-origin: bottom center;
+}
+
+.roulette-pointer-body {
+  fill: #d94848;
+}
+
+.roulette-wheel-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  transition: transform 7s cubic-bezier(0.2, 0.8, 0.3, 1); /* Smooth spin animation */
+  box-shadow: 
+    inset 0 0 15px rgba(0, 0, 0, 0.3), /* Inner shadow for depth */
+    0 5px 15px rgba(0, 0, 0, 0.2);     /* Outer shadow */
+  background: #f0f0f0; /* Fallback color */
+}
+
+.roulette-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15%;
+  height: 15%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #c0c0c0, #a0a0a0);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.roulette-segment {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.roulette-segment-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+  text-align: center;
+  color: var(--font-color, #000);
+  font-size: var(--font-size, 16px);
+  font-weight: bold;
+  font-family: 'Poppins', sans-serif;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  padding-left: 10%; /* Push text towards the edge */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.roulette-segment-inner {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+
+/* Base styles for the segment color - uses clip-path */
+.roulette-segment-inner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--segment-color);
+  clip-path: polygon(50% 50%, 100% 0, 100% 100%); /* Default wedge shape, will be overridden */
+}
