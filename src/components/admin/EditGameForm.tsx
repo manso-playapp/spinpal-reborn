@@ -34,6 +34,7 @@ import { Switch } from '@/components/ui/switch';
 import SpinningWheel from '../game/SpinningWheel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 
 
 const segmentSchema = z.object({
@@ -418,5 +419,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
-
-    
