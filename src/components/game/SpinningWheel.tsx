@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -169,8 +170,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
         {/* Layer 2: Spinning Segments (Middle) */}
         <div className="absolute inset-0 z-10" style={wheelStyle}>
-          <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center' }}>
-            <g transform-origin="center center">
+          <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
+            <g style={{ transformOrigin: 'center center' }}>
               {normalizedSegments.map((segment, index) => {
                 const startAngle = index * segmentAngle - 90;
                 const endAngle = startAngle + segmentAngle;
