@@ -36,14 +36,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
 
-  // Default images if none are provided
   const borderImage = config?.borderImage || "https://placehold.co/500x500.png?text=Borde";
   const centerImage = config?.centerImage || "https://placehold.co/500x500.png?text=Centro";
   const borderScale = config?.borderScale || 1;
   const centerScale = config?.centerScale || 1;
 
   useEffect(() => {
-    // This ensures that the component only renders on the client, preventing hydration mismatches.
     setShouldRender(true);
   }, []);
 
@@ -73,15 +71,13 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     let accumulatedProb = 0;
     
     const totalProb = normalizedSegments.reduce((sum, s) => sum + (s.finalProbability || 0), 0);
-    const scaleFactor = totalProb > 0 ? 100 / totalProb : 0;
-
-    // Fallback for rounding errors or total probability not being exactly 100
+    
     if (Math.abs(totalProb - 100) > 0.1 && totalProb > 0) {
-       console.warn("Total probability is not 100, it's", totalProb, ". Scaling probabilities.");
+       console.warn("Total probability is not 100, it's", totalProb, ". Probabilities may not be perfectly distributed.");
     }
     
     for (let i = 0; i < normalizedSegments.length; i++) {
-        accumulatedProb += (normalizedSegments[i].finalProbability || 0) * (totalProb > 100 ? 100/totalProb : 1);
+        accumulatedProb += (normalizedSegments[i].finalProbability || 0);
         if (random < accumulatedProb) {
             return i;
         }
@@ -134,6 +130,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const wheelStyle: React.CSSProperties = {
     transition: 'transform 7s cubic-bezier(0.2, 0.8, 0.3, 1)',
     transform: `rotate(${rotation}deg)`,
+    transformOrigin: 'center center',
   };
 
   if (!shouldRender) {
@@ -152,24 +149,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
       <div className="relative w-full max-w-md aspect-square">
-        {/* Layer 1: Border Image (Bottom) */}
-        <div 
-          className="absolute inset-0 z-0 flex items-center justify-center"
-          style={{ transform: `scale(${borderScale})`}}
-        >
-          <Image
-            src={borderImage}
-            alt="Roulette Border"
-            width={500}
-            height={500}
-            className="object-contain"
-            data-ai-hint="roulette border"
-            unoptimized
-          />
-        </div>
-
-        {/* Layer 2: Spinning Segments (Middle) */}
-        <div className="absolute inset-0 z-10" style={wheelStyle}>
+        {/* Layer 1: Spinning Segments (Bottom) */}
+        <div className="absolute inset-0 z-0" style={wheelStyle}>
           <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
             <g style={{ transformOrigin: 'center center' }}>
               {normalizedSegments.map((segment, index) => {
@@ -210,6 +191,22 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
               })}
             </g>
           </svg>
+        </div>
+        
+        {/* Layer 2: Border Image (Middle) */}
+        <div 
+          className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
+          style={{ transform: `scale(${borderScale})`}}
+        >
+          <Image
+            src={borderImage}
+            alt="Roulette Border"
+            width={500}
+            height={500}
+            className="object-contain"
+            data-ai-hint="roulette border"
+            unoptimized
+          />
         </div>
         
         {/* Layer 3: Center/Pointer Image (Top) */}
