@@ -56,22 +56,15 @@ export default async function GamePage({ params }: { params: { id:string } }) {
       <div className={`w-full h-full flex flex-col items-center justify-center lg:flex-row lg:gap-8 ${game.backgroundImage ? 'bg-black/20' : ''}`}>
         
         {/* Columna de la Ruleta */}
-        <Card className="w-full max-w-2xl text-center shadow-lg bg-card/90 backdrop-blur-sm mb-8 lg:mb-0">
-          <CardHeader>
-            <CardTitle className="font-headline text-4xl flex items-center justify-center gap-4">
-              <Gamepad2 className="h-10 w-10" />
-              {game.name}
-            </CardTitle>
-            {game.status === 'demo' && (
-                <Alert variant="default" className="text-left bg-yellow-100/80 border-yellow-300 dark:bg-yellow-900/80 dark:border-yellow-700">
+        <div className="w-full max-w-2xl text-center mb-8 lg:mb-0 flex flex-col items-center justify-center">
+             {game.status === 'demo' && (
+                <Alert variant="default" className="text-left bg-yellow-100/80 border-yellow-300 dark:bg-yellow-900/80 dark:border-yellow-700 max-w-md mb-4 shadow-lg">
                     <AlertTitle className="font-semibold">Modo Demo</AlertTitle>
                     <AlertDescription>
                         Esta ruleta está en modo de prueba. Puedes girarla directamente o probar el flujo del QR. Los registros no se guardan.
                     </AlertDescription>
                 </Alert>
             )}
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center">
             <div className="w-full max-w-sm sm:max-w-md">
               <SpinningWheel 
                 segments={game.segments} 
@@ -80,8 +73,7 @@ export default async function GamePage({ params }: { params: { id:string } }) {
                 config={game.config}
               />
             </div>
-          </CardContent>
-        </Card>
+        </div>
 
         {/* Columna del QR */}
          <Card className="w-full max-w-sm text-center shadow-lg bg-card/90 backdrop-blur-sm">
