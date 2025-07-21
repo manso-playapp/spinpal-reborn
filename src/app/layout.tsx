@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import './roulette.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import packageJson from '../../package.json';

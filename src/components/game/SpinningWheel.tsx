@@ -19,170 +19,181 @@ interface SpinningWheelProps {
   isDemoMode?: boolean;
 }
 
+const VIEWBOX_SIZE = 500;
+const WHEEL_RADIUS = 200;
+const TEXT_RADIUS = 150;
 
 export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false }: SpinningWheelProps) {
-  const [mustSpin, setMustSpin] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [isSpinning, setIsSpinning] = useState(false);
 
   const normalizedSegments = useMemo(() => {
     if (!initialSegments || initialSegments.length === 0) return [];
-    
+
     const realPrizeSegments = initialSegments.filter(s => s.isRealPrize);
     const nonRealPrizeSegments = initialSegments.filter(s => !s.isRealPrize);
-    
+
     const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
     const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
-    
+
     const nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
 
     return initialSegments.map(seg => ({
-        ...seg,
-        finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
+      ...seg,
+      finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
     }));
-
   }, [initialSegments]);
-
 
   const getWinningSegmentIndex = useCallback(() => {
     const random = Math.random() * 100;
     let accumulatedProb = 0;
-    
+
     for (let i = 0; i < normalizedSegments.length; i++) {
       accumulatedProb += normalizedSegments[i].finalProbability || 0;
       if (random < accumulatedProb) {
         return i;
       }
     }
-    
-    // Fallback in case of rounding errors, should point to the last segment.
     return normalizedSegments.length - 1;
-
   }, [normalizedSegments]);
-  
-  
-  const handleSpinClick = useCallback(() => {
-    if (!mustSpin && initialSegments.length > 0) {
-      const winningIndex = getWinningSegmentIndex();
-      const segmentCount = initialSegments.length;
-      
-      const segmentAngle = 360 / segmentCount;
-      const targetAngle = winningIndex * segmentAngle;
-      
-      const randomAngleWithinSegment = Math.random() * segmentAngle * 0.8 + (segmentAngle * 0.1);
-      
-      const finalAngle = 360 - (targetAngle + randomAngleWithinSegment);
-      
-      const fullSpins = 5 * 360;
-      
-      setRotation(rotation + fullSpins + finalAngle);
-      setMustSpin(true);
 
-       if (!isDemoMode) {
-        const winningSegment = initialSegments[winningIndex];
-        // Only increment prize counter if it was a "real prize"
-        if (winningSegment && winningSegment.isRealPrize) {
-          const gameRef = doc(db, 'games', gameId);
-          updateDoc(gameRef, { prizesAwarded: increment(1) }).catch(console.error);
-        }
+  const handleSpinClick = useCallback(() => {
+    if (isSpinning || normalizedSegments.length === 0) return;
+
+    setIsSpinning(true);
+    const winningIndex = getWinningSegmentIndex();
+    const segmentCount = normalizedSegments.length;
+    const segmentAngle = 360 / segmentCount;
+
+    // Angle to the middle of the winning segment
+    const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
+
+    const fullSpins = 5 * 360;
+    const finalRotation = fullSpins + targetAngle;
+
+    setRotation(prev => prev + finalRotation);
+
+    if (!isDemoMode) {
+      const winningSegment = normalizedSegments[winningIndex];
+      if (winningSegment && winningSegment.isRealPrize) {
+        const gameRef = doc(db, 'games', gameId);
+        updateDoc(gameRef, { prizesAwarded: increment(1) }).catch(console.error);
       }
     }
-  }, [mustSpin, initialSegments, rotation, getWinningSegmentIndex, isDemoMode, gameId]);
-
+  }, [isSpinning, normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex]);
 
   useEffect(() => {
     if (!gameId || isDemoMode) return;
 
     const gameRef = doc(db, 'games', gameId);
-    let currentSpinRequestTime: number | null = null;
-
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const spinRequest = data.spinRequest;
-
-        if (spinRequest && spinRequest.timestamp?.toMillis() !== currentSpinRequestTime) {
-          currentSpinRequestTime = spinRequest.timestamp.toMillis();
-          if(!mustSpin) {
-            handleSpinClick();
-          }
+      if (docSnap.exists() && docSnap.data().spinRequest) {
+        if (!isSpinning) {
+          handleSpinClick();
         }
       }
     });
     return () => unsubscribe();
-  }, [gameId, isDemoMode, handleSpinClick, mustSpin]);
-  
+  }, [gameId, isDemoMode, handleSpinClick, isSpinning]);
 
   const wheelStyle: React.CSSProperties = {
+    transition: 'transform 7s cubic-bezier(0.2, 0.8, 0.3, 1)',
     transform: `rotate(${rotation}deg)`,
   };
 
-  const segmentAngle = 360 / (initialSegments.length || 1);
-  const textDistance = '25%';
+  const segmentCount = normalizedSegments.length;
+  const segmentAngle = 360 / segmentCount;
+
+  // Function to calculate point on a circle
+  const getCoordinatesForAngle = (angle: number, radius: number) => {
+    const x = VIEWBOX_SIZE / 2 + radius * Math.cos(angle * Math.PI / 180);
+    const y = VIEWBOX_SIZE / 2 + radius * Math.sin(angle * Math.PI / 180);
+    return [x, y];
+  };
 
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
-      <div className="roulette-container" style={{'--wheel-size': '400px'} as React.CSSProperties}>
-        <div className="roulette-pointer">
-           <svg width="60" height="72" viewBox="0 0 71 85" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="pointer-gold" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style={{stopColor: '#FFD700', stopOpacity: 1}} />
-                    <stop offset="100%" style={{stopColor: '#B8860B', stopOpacity: 1}} />
-                </linearGradient>
-                <filter id="pointer-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000" floodOpacity="0.4" />
-                </filter>
-            </defs>
-            <path d="M35.5 84.5L70.5 35.5H0.5L35.5 84.5Z" fill="url(#pointer-gold)" filter="url(#pointer-shadow)"/>
-            <circle cx="35.5" cy="35.5" r="25" fill="#F5F5DC" stroke="url(#pointer-gold)" strokeWidth="5"/>
-            <circle cx="35.5" cy="35.5" r="5" fill="url(#pointer-gold)" />
-            </svg>
-        </div>
-        <div className="roulette-wheel-container" style={wheelStyle} onTransitionEnd={() => setMustSpin(false)}>
-            <div className="roulette-wheel-border"></div>
-          {initialSegments.map((segment, index) => {
-            const currentAngle = segmentAngle * index;
-            const segmentStyle = { transform: `rotate(${currentAngle}deg)` };
+      <svg
+        viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
+        className="w-full max-w-md"
+        style={{ fontFamily: "'Poppins', sans-serif" }}
+      >
+        <defs>
+          <linearGradient id="gold-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#FFD700" />
+            <stop offset="100%" stopColor="#B8860B" />
+          </linearGradient>
+           <radialGradient id="center-pin-gradient">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="30%" stopColor="#F0E68C" />
+            <stop offset="100%" stopColor="#B8860B" />
+          </radialGradient>
+          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="#000000" floodOpacity="0.3" />
+          </filter>
+        </defs>
+
+        {/* Outer Border */}
+        <circle cx={VIEWBOX_SIZE / 2} cy={VIEWBOX_SIZE / 2} r={VIEWBOX_SIZE/2 - 5} fill="url(#gold-gradient)" filter="url(#shadow)" />
+        <circle cx={VIEWBOX_SIZE / 2} cy={VIEWBOX_SIZE / 2} r={VIEWBOX_SIZE/2 - 20} fill="#F0E68C" />
+
+        <g style={wheelStyle} onTransitionEnd={() => setIsSpinning(false)}>
+          {normalizedSegments.map((segment, index) => {
+            const startAngle = index * segmentAngle;
+            const endAngle = startAngle + segmentAngle;
+
+            const [startX, startY] = getCoordinatesForAngle(startAngle, WHEEL_RADIUS);
+            const [endX, endY] = getCoordinatesForAngle(endAngle, WHEEL_RADIUS);
+
+            const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+            const pathData = `M ${VIEWBOX_SIZE / 2},${VIEWBOX_SIZE / 2} L ${startX},${startY} A ${WHEEL_RADIUS},${WHEEL_RADIUS} 0 ${largeArcFlag} 1 ${endX},${endY} Z`;
+
+            // For text path
+            const textAngleStart = startAngle;
+            const textAngleEnd = endAngle;
+            const [textStartX, textStartY] = getCoordinatesForAngle(textAngleStart, TEXT_RADIUS);
+            const [textEndX, textEndY] = getCoordinatesForAngle(textAngleEnd, TEXT_RADIUS);
             
-            const textAngle = -(segmentAngle / 2);
-            
-            const labelStyle: React.CSSProperties = {
-                transform: `translateX(${textDistance}) rotate(${textAngle}deg)`,
-                width: '50%',
-                height: '100%',
-            };
-            
-            const pinAngle = currentAngle - (segmentAngle/2);
-            
-            // This clip-path creates a perfect segment wedge.
-            const clipPath = `polygon(50% 50%, 100% 50%, 100% 0, 50% 0)`;
+            const textPathId = `text-path-${index}`;
+            const textPathData = `M ${textStartX},${textStartY} A ${TEXT_RADIUS},${TEXT_RADIUS} 0 0 1 ${textEndX},${textEndY}`;
 
             return (
-              <React.Fragment key={index}>
-                <div className="roulette-segment" style={{...segmentStyle, clipPath}}>
-                    <div 
-                      className="roulette-segment-inner" 
-                      style={{
-                        '--segment-color': segment.color,
-                        transform: `rotate(${segmentAngle}deg)`
-                      }}
-                    />
-                     <div className="roulette-segment-label" style={labelStyle}>
-                        <span>{segment.name}</span>
-                    </div>
-                </div>
-                 <div className="roulette-pin" style={{ transform: `rotate(${pinAngle}deg)` }}></div>
-              </React.Fragment>
+              <g key={index}>
+                <defs>
+                    <path id={textPathId} d={textPathData} />
+                </defs>
+                <path d={pathData} fill={segment.color || '#ffffff'} stroke="#BDB76B" strokeWidth="2" />
+                <text fill="#000" fontSize="16" fontWeight="600" textAnchor="middle">
+                    <textPath href={`#${textPathId}`} startOffset="50%">
+                        {segment.name}
+                    </textPath>
+                </text>
+              </g>
             );
-
           })}
-           <div className="roulette-center"></div>
-        </div>
-      </div>
+        </g>
+        
+         {/* Separator Pins */}
+        {normalizedSegments.map((_, index) => {
+            const angle = index * segmentAngle;
+            const [x, y] = getCoordinatesForAngle(angle, WHEEL_RADIUS);
+            return (
+                <circle key={`pin-${index}`} cx={x} cy={y} r="5" fill="url(#gold-gradient)" />
+            )
+        })}
+
+        {/* Center Pin */}
+        <circle cx={VIEWBOX_SIZE / 2} cy={VIEWBOX_SIZE / 2} r="30" fill="url(#center-pin-gradient)" />
+        <circle cx={VIEWBOX_SIZE / 2} cy={VIEWBOX_SIZE / 2} r="25" fill="url(#gold-gradient)" />
+
+        {/* Pointer */}
+        <path d={`M ${VIEWBOX_SIZE / 2 - 20} 5 L ${VIEWBOX_SIZE / 2 + 20} 5 L ${VIEWBOX_SIZE / 2} 55 Z`} fill="url(#gold-gradient)" filter="url(#shadow)" />
+      </svg>
+
       {isDemoMode && (
-        <Button onClick={handleSpinClick} disabled={mustSpin}>
+        <Button onClick={handleSpinClick} disabled={isSpinning}>
           <RotateCw className="mr-2 h-4 w-4" />
-          {mustSpin ? 'Girando...' : 'Girar en modo Demo'}
+          {isSpinning ? 'Girando...' : 'Girar en modo Demo'}
         </Button>
       )}
     </div>
