@@ -1,0 +1,116 @@
+
+.roulette-container {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.roulette-pointer {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 70px;
+  z-index: 20;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+}
+
+.roulette-wheel-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transition: transform 7s cubic-bezier(0.25, 0.1, 0.25, 1);
+  background: radial-gradient(circle at center, #8c6a0c, #c5a02d);
+  padding: 15px;
+  box-shadow: 
+    inset 0 0 10px rgba(0,0,0,0.5), 
+    0 0 10px rgba(0,0,0,0.5),
+    0 0 25px 5px rgba(255, 215, 0, 0.3);
+}
+
+.roulette-wheel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.roulette-light {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(circle at 4px 4px, #fffec7, #d4af37);
+    border-radius: 50%;
+    z-index: 10;
+    box-shadow: 0 0 5px #ffd700;
+}
+
+.roulette-segment {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(50% 50%, 100% 0, 100% 50%);
+  transform-origin: 50% 50%;
+}
+
+.roulette-segment-label {
+  position: absolute;
+  top: 12%;
+  left: 55%;
+  width: 45%;
+  height: 40%;
+  transform-origin: 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  padding-right: 20px;
+  box-sizing: border-box;
+}
+
+.roulette-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80px;
+    height: 80px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 25px 25px, #fdeec9, #d4af37, #8c6a0c);
+    border-radius: 50%;
+    border: 5px solid #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 15;
+}
+
+.roulette-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    transform-origin: 50% 50%;
+    z-index: 5;
+}
+
+.roulette-pin svg {
+    width: 8px;
+    height: 8px;
+    overflow: visible;
+    filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.5));
+}
+
