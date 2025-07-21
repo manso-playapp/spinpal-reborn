@@ -729,7 +729,8 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <TabsContent value="game" className="mt-4 p-2 min-h-[500px] flex justify-center items-center bg-muted/50 border rounded-lg overflow-hidden">
                           <div className="w-[281px] h-[500px] origin-center transform scale-[0.8]">
                              <div className="relative w-full h-full flex flex-col items-center justify-center gap-8 p-4 rounded-lg overflow-hidden" style={backgroundPreviewStyles}>
-                                  <div className="w-full max-w-sm">
+                                <div className="w-full max-w-2xl text-center flex flex-col items-center justify-center">
+                                  <div className="w-full max-w-sm sm:max-w-md">
                                     <SpinningWheel 
                                       segments={watchedFormData.segments} 
                                       gameId={game.id} 
@@ -737,24 +738,25 @@ export default function EditGameForm({ game }: { game: Game }) {
                                       config={currentConfig}
                                     />
                                   </div>
-                                  <Card 
-                                    className="w-full max-w-xs text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
-                                    style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
-                                   >
-                                    <CardHeader className="p-4">
-                                      <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
-                                          <QrCode size={20} />
-                                          ¡Escanea para Jugar!
-                                      </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="flex flex-col items-center justify-center gap-2 p-4 pt-0">
-                                        <QRCodeDisplay gameId={game.id} scale={0.5} />
-                                        <Separator className="bg-white/20 my-1"/>
-                                        <p className="text-xs">
-                                          Abre la cámara de tu teléfono y apunta al código QR para jugar.
-                                        </p>
-                                    </CardContent>
-                                  </Card>
+                                </div>
+                                <Card 
+                                  className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
+                                  style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
+                                 >
+                                  <CardHeader className="p-4">
+                                    <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
+                                        <QrCode size={20} />
+                                        ¡Escanea para Jugar!
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="flex flex-col items-center justify-center gap-2 p-4 pt-0">
+                                      <QRCodeDisplay gameId={game.id} scale={0.5} />
+                                      <Separator className="bg-white/20 my-1"/>
+                                      <p className="text-xs">
+                                        Abre la cámara de tu teléfono y apunta al código QR para jugar.
+                                      </p>
+                                  </CardContent>
+                                </Card>
                               </div>
                             </div>
                         </TabsContent>
@@ -768,3 +770,4 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
+
