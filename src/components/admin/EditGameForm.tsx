@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,12 +38,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '../ui/slider';
 
 
 const segmentSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
+  probability: z.number().optional(),
 });
 
 
@@ -88,7 +91,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments && game.segments.length > 0 ? game.segments : [{name: 'Premio 1', color: '#FFDD00', isRealPrize: true}, {name: 'No ganas', color: '#B5D5E2', isRealPrize: false}],
+      segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...s, probability: s.probability ?? 0})) : [{name: 'Premio 1', color: '#FFDD00', isRealPrize: true, probability: 10}, {name: 'No ganas', color: '#B5D5E2', isRealPrize: false, probability: 0}],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
@@ -103,6 +106,25 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedSegments = form.watch('segments');
+
+  const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
+    const realPrizeSegments = watchedSegments.filter(s => s.isRealPrize);
+    const nonRealPrizeSegments = watchedSegments.filter(s => !s.isRealPrize);
+
+    const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
+    
+    let nonRealPrizeProbability = 0;
+    if (nonRealPrizeSegments.length > 0) {
+      const remainingProbability = 100 - realPrizeTotalProbability;
+      nonRealPrizeProbability = remainingProbability > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
+    }
+    
+    return {
+      realPrizeTotalProbability,
+      nonRealPrizeProbability: parseFloat(nonRealPrizeProbability.toFixed(2))
+    };
+  }, [watchedSegments]);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -158,7 +180,7 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const addSegment = () => {
     if (newSegmentName.trim()) {
-      append({ name: newSegmentName.trim(), color: getRandomColor(), isRealPrize: false });
+      append({ name: newSegmentName.trim(), color: getRandomColor(), isRealPrize: false, probability: 0 });
       setNewSegmentName('');
     }
   };
@@ -304,10 +326,10 @@ export default function EditGameForm({ game }: { game: Game }) {
                            <div className="space-y-2">
                                 <div className="hidden md:flex items-center text-sm font-medium text-muted-foreground px-2 -mb-1">
                                     <div className="w-10 flex-shrink-0"></div>
-                                    <div className="flex-1 pl-2">Nombre</div>
+                                    <div className="w-32 flex-shrink-0 pl-2">Color</div>
+                                    <div className="flex-1 pl-2">Nombre del Premio</div>
                                     <div className="w-48 text-center">Probabilidad %</div>
                                     <div className="w-24 text-center">Premio Real</div>
-                                    <div className="w-32 text-center">Color</div>
                                     <div className="w-10 flex-shrink-0"></div>
                                 </div>
                                 <DndContext 
@@ -327,35 +349,6 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                   <GripVertical className="h-5 w-5 text-muted-foreground" />
                                               </Button>
                                               
-                                              <div className="flex-1 min-w-0 w-full">
-                                                  <Label className="md:hidden text-xs text-muted-foreground">Nombre</Label>
-                                                  <Controller
-                                                      control={form.control}
-                                                      name={`segments.${index}.name`}
-                                                      render={({ field: controllerField }) => (
-                                                          <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" />
-                                                      )}
-                                                  />
-                                              </div>
-                                              <div className="w-full md:w-48 text-center text-sm text-muted-foreground">
-                                                  <Label className="md:hidden text-xs text-muted-foreground">Probabilidad %</Label>
-                                                  <div>{watchedSegments[index]?.isRealPrize ? 'Probabilidad basada en otros premios reales' : 'No es un premio real'}</div>
-                                              </div>
-
-                                              <div className="w-full md:w-24 flex justify-center items-center">
-                                                 <Label className="md:hidden text-xs text-muted-foreground mr-2">Premio Real</Label>
-                                                 <Controller
-                                                    control={form.control}
-                                                    name={`segments.${index}.isRealPrize`}
-                                                    render={({ field: { onChange, value, ...rest } }) => (
-                                                      <Checkbox
-                                                          checked={!!value}
-                                                          onCheckedChange={onChange}
-                                                          {...rest}
-                                                      />
-                                                    )}
-                                                  />
-                                              </div>
                                               <div className="w-full md:w-32 flex items-center justify-center gap-1">
                                                 <Label className="md:hidden text-xs text-muted-foreground">Color</Label>
                                                 <Controller
@@ -379,6 +372,58 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                     )}
                                                   />
                                               </div>
+                                              
+                                              <div className="flex-1 min-w-0 w-full">
+                                                  <Label className="md:hidden text-xs text-muted-foreground">Nombre</Label>
+                                                  <Controller
+                                                      control={form.control}
+                                                      name={`segments.${index}.name`}
+                                                      render={({ field: controllerField }) => (
+                                                          <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" />
+                                                      )}
+                                                  />
+                                              </div>
+                                               <div className="w-full md:w-48 text-center text-sm text-muted-foreground flex items-center gap-2">
+                                                {watchedSegments[index]?.isRealPrize ? (
+                                                  <>
+                                                    <Controller
+                                                      control={form.control}
+                                                      name={`segments.${index}.probability`}
+                                                      render={({ field: { onChange, value } }) => (
+                                                        <Slider
+                                                          value={[value || 0]}
+                                                          onValueChange={(vals) => onChange(vals[0])}
+                                                          max={100}
+                                                          step={1}
+                                                          className="flex-1"
+                                                        />
+                                                      )}
+                                                    />
+                                                    <span className="w-8">{watchedSegments[index].probability}%</span>
+                                                  </>
+                                                ) : (
+                                                  <Input value={nonRealPrizeProbability} disabled className="text-center bg-muted" />
+                                                )}
+                                              </div>
+                                              <div className="w-full md:w-24 flex justify-center items-center">
+                                                 <Label className="md:hidden text-xs text-muted-foreground mr-2">Premio Real</Label>
+                                                 <Controller
+                                                    control={form.control}
+                                                    name={`segments.${index}.isRealPrize`}
+                                                    render={({ field: { onChange, value, ...rest } }) => (
+                                                      <Checkbox
+                                                          checked={!!value}
+                                                          onCheckedChange={(checked) => {
+                                                            onChange(checked)
+                                                            if (!checked) {
+                                                              form.setValue(`segments.${index}.probability`, 0);
+                                                            }
+                                                          }}
+                                                          {...rest}
+                                                      />
+                                                    )}
+                                                  />
+                                              </div>
                                               <div className="w-10 flex-shrink-0">
                                                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
                                                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -391,6 +436,9 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     ))}
                                   </SortableContext>
                                 </DndContext>
+                            </div>
+                            <div className="text-right font-medium text-sm text-muted-foreground mt-2">
+                                Probabilidad Total de Premios Reales: <span className="font-bold text-foreground">{realPrizeTotalProbability}%</span>
                             </div>
                           {form.formState.errors.segments && (
                               <p className="text-sm font-medium text-destructive">{form.formState.errors.segments.message || form.formState.errors.segments.root?.message}</p>

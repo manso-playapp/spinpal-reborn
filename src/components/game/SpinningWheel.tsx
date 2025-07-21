@@ -10,6 +10,7 @@ interface Segment {
   name: string;
   color?: string;
   isRealPrize?: boolean;
+  probability?: number;
 }
 
 interface SpinningWheelProps {
@@ -25,24 +26,20 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
   const normalizedSegments = useMemo(() => {
     if (!initialSegments || initialSegments.length === 0) return [];
-
+    
     const realPrizeSegments = initialSegments.filter(s => s.isRealPrize);
-    const nonPrizeSegments = initialSegments.filter(s => !s.isRealPrize);
+    const nonRealPrizeSegments = initialSegments.filter(s => !s.isRealPrize);
+    
+    const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
+    const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
+    
+    const nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
 
-    // If no real prizes, distribute probability equally among all segments
-    if (realPrizeSegments.length === 0) {
-      if (initialSegments.length === 0) return [];
-      const equalProb = 100 / initialSegments.length;
-      return initialSegments.map(seg => ({ ...seg, probability: equalProb }));
-    }
+    return initialSegments.map(seg => ({
+        ...seg,
+        finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
+    }));
 
-    // Distribute probability equally among real prize segments
-    const equalProbForPrizes = 100 / realPrizeSegments.length;
-    return initialSegments.map(seg => 
-      seg.isRealPrize 
-        ? { ...seg, probability: equalProbForPrizes } 
-        : { ...seg, probability: 0 }
-    );
   }, [initialSegments]);
 
 
@@ -50,29 +47,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const random = Math.random() * 100;
     let accumulatedProb = 0;
     
-    // Find the winning index from normalized segments with probability
     for (let i = 0; i < normalizedSegments.length; i++) {
-      accumulatedProb += normalizedSegments[i].probability || 0;
+      accumulatedProb += normalizedSegments[i].finalProbability || 0;
       if (random < accumulatedProb) {
-        // Find the original index from initialSegments
-        const originalIndex = initialSegments.findIndex(s => s.name === normalizedSegments[i].name && s.color === normalizedSegments[i].color);
-        return originalIndex !== -1 ? originalIndex : i;
+        return i;
       }
     }
     
-    // Fallback in case of rounding errors or no prize segments
-    const prizeIndices = initialSegments
-      .map((seg, index) => (seg.isRealPrize ? index : -1))
-      .filter(index => index !== -1);
-      
-    if (prizeIndices.length > 0) {
-      return prizeIndices[prizeIndices.length - 1];
-    }
-    
-    // If no real prizes, pick any segment
-    return Math.floor(Math.random() * initialSegments.length);
+    // Fallback in case of rounding errors, should point to the last segment.
+    return normalizedSegments.length - 1;
 
-  }, [initialSegments, normalizedSegments]);
+  }, [normalizedSegments]);
   
   
   const handleSpinClick = useCallback(() => {
