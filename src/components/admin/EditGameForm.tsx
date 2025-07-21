@@ -76,6 +76,8 @@ const formSchema = z.object({
   centerImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   centerScale: z.number().min(0.1).max(2).optional(),
   qrCodeScale: z.number().min(0.1).max(2).optional(),
+  rouletteVerticalOffset: z.number().min(-200).max(200).optional(),
+  rouletteQrGap: z.number().min(0).max(200).optional(),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -97,6 +99,8 @@ interface Game {
   centerImage?: string;
   centerScale?: number;
   qrCodeScale?: number;
+  rouletteVerticalOffset?: number;
+  rouletteQrGap?: number;
   [key: string]: any;
 }
 
@@ -144,6 +148,8 @@ export default function EditGameForm({ game }: { game: Game }) {
       centerImage: game.centerImage || '',
       centerScale: game.centerScale || 1,
       qrCodeScale: game.qrCodeScale || 1,
+      rouletteVerticalOffset: game.rouletteVerticalOffset || 0,
+      rouletteQrGap: game.rouletteQrGap || 32,
     },
   });
 
@@ -630,6 +636,45 @@ export default function EditGameForm({ game }: { game: Game }) {
                       <CardContent className="space-y-8">
                         <FormField
                             control={form.control}
+                            name="rouletteVerticalOffset"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Desplazamiento Vertical Ruleta ({field.value?.toFixed(0)}px)</FormLabel>
+                                <FormControl>
+                                    <Slider
+                                    defaultValue={[0]}
+                                    value={[field.value ?? 0]}
+                                    onValueChange={(val) => field.onChange(val[0])}
+                                    max={200}
+                                    min={-200}
+                                    step={1}
+                                    />
+                                </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="rouletteQrGap"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Separación Ruleta-QR ({field.value?.toFixed(0)}px)</FormLabel>
+                                <FormControl>
+                                    <Slider
+                                    defaultValue={[32]}
+                                    value={[field.value ?? 32]}
+                                    onValueChange={(val) => field.onChange(val[0])}
+                                    max={200}
+                                    min={0}
+                                    step={1}
+                                    />
+                                </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <Separator />
+                        <FormField
+                            control={form.control}
                             name="qrCodeScale"
                             render={({ field }) => (
                                 <FormItem>
@@ -717,7 +762,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                           <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
                           <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="roulette" className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg">
+                        <TabsContent value="roulette" className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[500px]">
                             <SpinningWheel
                                 segments={watchedFormData.segments}
                                 gameId={game.id}
@@ -726,37 +771,45 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 config={currentConfig}
                             />
                         </TabsContent>
-                        <TabsContent value="game" className="mt-4 p-2 min-h-[500px] flex justify-center items-center bg-muted/50 border rounded-lg overflow-hidden">
-                          <div className="w-[281px] h-[500px] origin-center transform scale-[0.8]">
-                             <div className="relative w-full h-full flex flex-col items-center justify-center gap-8 p-4 rounded-lg overflow-hidden" style={backgroundPreviewStyles}>
-                                <div className="w-full max-w-2xl text-center flex flex-col items-center justify-center">
-                                  <div className="w-full max-w-sm sm:max-w-md">
-                                    <SpinningWheel 
-                                      segments={watchedFormData.segments} 
-                                      gameId={game.id} 
-                                      isDemoMode={true}
-                                      config={currentConfig}
-                                    />
+                        <TabsContent value="game" className="mt-4 p-2 min-h-[500px] flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden">
+                          <div className="w-full h-full transform scale-[0.8] flex items-center justify-center">
+                            <div className="relative w-[281px] h-[500px] rounded-lg overflow-hidden flex flex-col items-center justify-center" style={backgroundPreviewStyles}>
+                                <div 
+                                  className="flex flex-col items-center justify-center w-full"
+                                  style={{ gap: `${watchedFormData.rouletteQrGap}px` }}
+                                >
+                                  <div 
+                                    className="w-full max-w-2xl text-center flex flex-col items-center justify-center"
+                                    style={{ transform: `translateY(${watchedFormData.rouletteVerticalOffset}px)` }}
+                                  >
+                                    <div className="w-full max-w-sm sm:max-w-md">
+                                      <SpinningWheel 
+                                        segments={watchedFormData.segments} 
+                                        gameId={game.id} 
+                                        isDemoMode={true}
+                                        config={currentConfig}
+                                      />
+                                    </div>
                                   </div>
+                                  <Card 
+                                    className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
+                                    style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
+                                   >
+                                    <CardHeader className="p-4">
+                                      <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
+                                          <QrCode size={20} />
+                                          ¡Escanea para Jugar!
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-col items-center justify-center gap-2 p-4 pt-0">
+                                        <QRCodeDisplay gameId={game.id} scale={0.5} />
+                                        <Separator className="bg-white/20 my-1"/>
+                                        <p className="text-xs">
+                                          Abre la cámara de tu teléfono y apunta al código QR para jugar.
+                                        </p>
+                                    </CardContent>
+                                  </Card>
                                 </div>
-                                <Card 
-                                  className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
-                                  style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
-                                 >
-                                  <CardHeader className="p-4">
-                                    <CardTitle className="font-headline text-lg flex items-center justify-center gap-2">
-                                        <QrCode size={20} />
-                                        ¡Escanea para Jugar!
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent className="flex flex-col items-center justify-center gap-2 p-4 pt-0">
-                                      <QRCodeDisplay gameId={game.id} scale={0.5} />
-                                      <Separator className="bg-white/20 my-1"/>
-                                      <p className="text-xs">
-                                        Abre la cámara de tu teléfono y apunta al código QR para jugar.
-                                      </p>
-                                  </CardContent>
-                                </Card>
                               </div>
                             </div>
                         </TabsContent>
@@ -770,4 +823,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
-

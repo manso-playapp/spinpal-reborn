@@ -25,6 +25,8 @@ async function getGameData(id: string) {
     backgroundImage: data.backgroundImage || '',
     backgroundFit: data.backgroundFit || 'cover',
     qrCodeScale: data.qrCodeScale || 1,
+    rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
+    rouletteQrGap: data.rouletteQrGap || 32,
     config: {
       borderImage: data.borderImage || '',
       borderScale: data.borderScale || 1,
@@ -50,7 +52,7 @@ export default async function GamePage({ params }: { params: { id:string } }) {
 
   return (
     <div 
-      className="relative flex min-h-screen w-full flex-col items-center justify-center gap-8 p-4 lg:flex-row lg:gap-8"
+      className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden"
       style={backgroundStyles}
     >
         {game.status === 'demo' && (
@@ -58,37 +60,46 @@ export default async function GamePage({ params }: { params: { id:string } }) {
                 DEMO
             </div>
         )}
-        {/* Columna de la Ruleta */}
-        <div className="w-full max-w-2xl text-center mb-8 lg:mb-0 flex flex-col items-center justify-center">
-            <div className="w-full max-w-sm sm:max-w-md">
-              <SpinningWheel 
-                segments={game.segments} 
-                gameId={game.id} 
-                isDemoMode={game.status === 'demo'}
-                config={game.config}
-              />
-            </div>
-        </div>
 
-        {/* Columna del QR */}
-         <Card 
-          className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
-          style={{ transform: `scale(${game.qrCodeScale})` }}
-         >
-           <CardHeader>
-             <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
-                <QrCode />
-                ¡Escanea para Jugar!
-             </CardTitle>
-           </CardHeader>
-           <CardContent className="flex flex-col items-center justify-center gap-4">
-              <QRCodeDisplay gameId={game.id} />
-              <Separator className="bg-white/20"/>
-              <p className="text-sm">
-                Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
-              </p>
-           </CardContent>
-        </Card>
+        <div 
+          className="flex flex-col items-center justify-center w-full"
+          style={{ gap: `${game.rouletteQrGap}px` }}
+        >
+          {/* Columna de la Ruleta */}
+          <div 
+            className="w-full max-w-2xl text-center flex flex-col items-center justify-center"
+            style={{ transform: `translateY(${game.rouletteVerticalOffset}px)` }}
+          >
+              <div className="w-full max-w-sm sm:max-w-md">
+                <SpinningWheel 
+                  segments={game.segments} 
+                  gameId={game.id} 
+                  isDemoMode={game.status === 'demo'}
+                  config={game.config}
+                />
+              </div>
+          </div>
+
+          {/* Columna del QR */}
+           <Card 
+            className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
+            style={{ transform: `scale(${game.qrCodeScale})` }}
+           >
+             <CardHeader>
+               <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
+                  <QrCode />
+                  ¡Escanea para Jugar!
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="flex flex-col items-center justify-center gap-4">
+                <QRCodeDisplay gameId={game.id} />
+                <Separator className="bg-white/20"/>
+                <p className="text-sm">
+                  Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
+                </p>
+             </CardContent>
+          </Card>
+        </div>
     </div>
   );
 }
