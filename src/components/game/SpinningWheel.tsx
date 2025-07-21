@@ -150,7 +150,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     <div className="relative flex flex-col items-center justify-center gap-8">
       <div className="relative w-full max-w-md aspect-square">
         
-        {/* Capa de Ruleta Giratoria (Abajo) */}
+        {/* Layer 1: Spinning Wheel (Bottom) */}
         <div className="absolute inset-0 z-0" style={wheelStyle}>
           <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
             <g style={{ transformOrigin: 'center center' }}>
@@ -189,8 +189,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                         {nameParts.map((part, i) => (
                           <tspan
                             key={i}
-                            x={0} // Centra horizontalmente cada línea
-                            dy={i === 0 ? '-0.3em' : '1.2em'} // Ajusta la primera línea hacia arriba y las siguientes hacia abajo
+                            x="0"
+                            dy={i === 0 ? '-0.3em' : '1.2em'}
                           >
                             {part.trim()}
                           </tspan>
@@ -204,7 +204,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
           </svg>
         </div>
         
-        {/* Layer 2: Border Image (Medio) */}
+        {/* Layer 2: Border Image (Middle) */}
         {borderImage && (
             <div 
             className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
@@ -222,7 +222,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             </div>
         )}
         
-        {/* Layer 3: Center/Pointer Image (Arriba) */}
+        {/* Layer 3: Center/Pointer Image (Top) */}
         {centerImage && (
             <div 
             className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center"
