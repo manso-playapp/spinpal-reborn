@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { Button } from '../ui/button';
@@ -9,11 +9,14 @@ import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
 
 interface Segment {
+  id?: string;
   name: string;
   color?: string;
   isRealPrize?: boolean;
   probability?: number;
+  finalProbability?: number; // Add this to the interface
 }
+
 
 interface SpinningWheelProps {
   segments: Segment[];
@@ -45,7 +48,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     setShouldRender(true);
   }, []);
 
-  const normalizedSegments = useMemo(() => {
+  // Process segments directly on each render to ensure real-time updates
+  const normalizedSegments = (() => {
     if (!initialSegments || initialSegments.length === 0) return [];
 
     const realPrizeSegments = initialSegments.filter(s => s.isRealPrize);
@@ -63,7 +67,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       ...seg,
       finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
     }));
-  }, [initialSegments]);
+  })();
+
 
   const getWinningSegmentIndex = useCallback(() => {
     if (normalizedSegments.length === 0) return 0;
@@ -151,57 +156,59 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       <div className="relative w-full max-w-md aspect-square">
         
         {/* Layer 1: Spinning Wheel (Bottom) */}
-        <div className="absolute inset-0 z-0" style={wheelStyle}>
-          <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
-            <g style={{ transformOrigin: 'center center' }}>
-              {normalizedSegments.map((segment, index) => {
-                const startAngle = index * segmentAngle - 90;
-                const endAngle = startAngle + segmentAngle;
+        <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0" style={wheelStyle}>
+              <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
+                <g style={{ transformOrigin: 'center center' }}>
+                  {normalizedSegments.map((segment, index) => {
+                    const startAngle = index * segmentAngle - 90;
+                    const endAngle = startAngle + segmentAngle;
 
-                const [startX, startY] = getCoordinatesForAngle(startAngle, WHEEL_RADIUS);
-                const [endX, endY] = getCoordinatesForAngle(endAngle, WHEEL_RADIUS);
+                    const [startX, startY] = getCoordinatesForAngle(startAngle, WHEEL_RADIUS);
+                    const [endX, endY] = getCoordinatesForAngle(endAngle, WHEEL_RADIUS);
 
-                const largeArcFlag = segmentAngle > 180 ? 1 : 0;
-                const pathData = `M ${VIEWBOX_SIZE / 2},${VIEWBOX_SIZE / 2} L ${startX},${startY} A ${WHEEL_RADIUS},${WHEEL_RADIUS} 0 ${largeArcFlag} 1 ${endX},${endY} Z`;
-                
-                const textAngle = startAngle + segmentAngle / 2;
-                const textPathId = `text-path-${index}`;
-                const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - (segmentAngle / 2.2), TEXT_RADIUS);
-                const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + (segmentAngle / 2.2), TEXT_RADIUS);
-                const textPathData = `M ${textPathStartX},${textPathStartY} A ${TEXT_RADIUS},${TEXT_RADIUS} 0 0 1 ${textPathEndX},${textPathEndY}`;
-                
-                const nameParts = segment.name.toUpperCase().split(',');
+                    const largeArcFlag = segmentAngle > 180 ? 1 : 0;
+                    const pathData = `M ${VIEWBOX_SIZE / 2},${VIEWBOX_SIZE / 2} L ${startX},${startY} A ${WHEEL_RADIUS},${WHEEL_RADIUS} 0 ${largeArcFlag} 1 ${endX},${endY} Z`;
+                    
+                    const textAngle = startAngle + segmentAngle / 2;
+                    const textPathId = `text-path-${index}`;
+                    const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - (segmentAngle / 2.2), TEXT_RADIUS);
+                    const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + (segmentAngle / 2.2), TEXT_RADIUS);
+                    const textPathData = `M ${textPathStartX},${textPathStartY} A ${TEXT_RADIUS},${TEXT_RADIUS} 0 0 1 ${textPathEndX},${textPathEndY}`;
+                    
+                    const nameParts = (segment.name || "").toUpperCase().split(',');
 
-                return (
-                  <g key={index}>
-                    <defs>
-                      <path id={textPathId} d={textPathData} />
-                    </defs>
-                    <path d={pathData} fill={segment.color || '#ffffff'} stroke="#000" strokeWidth="1" />
-                    <text 
-                      fill="#fff" 
-                      fontSize="16" 
-                      fontWeight="600"
-                      style={{ fontFamily: "'PT Sans', sans-serif" }}
-                      letterSpacing="0.5"
-                    >
-                      <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
-                        {nameParts.map((part, i) => (
-                          <tspan
-                            key={i}
-                            x="0"
-                            dy={i === 0 ? '-0.3em' : '1.2em'}
-                          >
-                            {part.trim()}
-                          </tspan>
-                        ))}
-                      </textPath>
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-          </svg>
+                    return (
+                      <g key={index}>
+                        <defs>
+                          <path id={textPathId} d={textPathData} />
+                        </defs>
+                        <path d={pathData} fill={segment.color || '#ffffff'} stroke="#000" strokeWidth="1" />
+                        <text 
+                          fill="#fff" 
+                          fontSize="16" 
+                          fontWeight="600"
+                          style={{ fontFamily: "'PT Sans', sans-serif" }}
+                          letterSpacing="0.5"
+                        >
+                          <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
+                            {nameParts.map((part, i) => (
+                              <tspan
+                                key={i}
+                                x="0"
+                                dy={i === 0 ? '-0.3em' : '1.2em'}
+                              >
+                                {part.trim()}
+                              </tspan>
+                            ))}
+                          </textPath>
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              </svg>
+            </div>
         </div>
         
         {/* Layer 2: Border Image (Middle) */}
