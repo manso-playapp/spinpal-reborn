@@ -40,6 +40,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
 
 
 const segmentSchema = z.object({
@@ -100,6 +101,8 @@ export default function EditGameForm({ game }: { game: Game }) {
     control: form.control,
     name: 'segments',
   });
+  
+  const watchedSegments = form.watch('segments');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -122,7 +125,6 @@ export default function EditGameForm({ game }: { game: Game }) {
   };
 
   // Observa los cambios para actualizar la vista previa
-  const watchedSegments = form.watch('segments');
   const watchedBackgroundImage = form.watch('backgroundImage');
   const watchedBackgroundFit = form.watch('backgroundFit');
 
@@ -283,43 +285,61 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 {fields.map((field, index) => (
                                     <SortableItem key={field.id} id={field.id}>
                                         <div className="flex items-center gap-2 p-1 border rounded-md bg-background hover:bg-muted/50">
-                                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-                                        <Controller
-                                            control={form.control}
-                                            name={`segments.${index}.name`}
-                                            render={({ field: controllerField }) => (
-                                                <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0 bg-transparent" />
-                                            )}
-                                        />
-                                        <Controller
-                                            control={form.control}
-                                            name={`segments.${index}.probability`}
-                                            render={({ field: controllerField }) => (
-                                                <Input 
-                                                    type="number" 
-                                                    value={controllerField.value ?? ''}
-                                                    onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
-                                                    className="w-28 text-center"
-                                                    placeholder="%"
+                                            <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                                            <Controller
+                                                control={form.control}
+                                                name={`segments.${index}.name`}
+                                                render={({ field: controllerField }) => (
+                                                    <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0 bg-transparent" />
+                                                )}
+                                            />
+                                            
+                                            <div className="w-28">
+                                                <Controller
+                                                    control={form.control}
+                                                    name={`segments.${index}.probability`}
+                                                    render={({ field: controllerField }) => (
+                                                        watchedSegments[index]?.isRealPrize ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <Slider
+                                                                    value={[controllerField.value ?? 0]}
+                                                                    onValueChange={(value) => controllerField.onChange(value[0])}
+                                                                    max={100}
+                                                                    step={1}
+                                                                    className="flex-grow"
+                                                                />
+                                                                <span className="text-xs w-8 text-center">{controllerField.value ?? 0}%</span>
+                                                            </div>
+                                                        ) : (
+                                                            <Input 
+                                                                type="number" 
+                                                                value={controllerField.value ?? ''}
+                                                                onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
+                                                                className="w-full text-center"
+                                                                placeholder="%"
+                                                                disabled
+                                                            />
+                                                        )
+                                                    )}
                                                 />
-                                            )}
-                                        />
-                                        <Controller
-                                            control={form.control}
-                                            name={`segments.${index}.isRealPrize`}
-                                            render={({ field: controllerField }) => (
-                                                <div className="w-24 flex justify-center">
-                                                    <Checkbox
-                                                        checked={controllerField.value}
-                                                        onCheckedChange={controllerField.onChange}
-                                                    />
-                                                </div>
-                                            )}
-                                        />
-                                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                            <span className="sr-only">Eliminar</span>
-                                        </Button>
+                                            </div>
+                                            
+                                            <Controller
+                                                control={form.control}
+                                                name={`segments.${index}.isRealPrize`}
+                                                render={({ field: controllerField }) => (
+                                                    <div className="w-24 flex justify-center">
+                                                        <Checkbox
+                                                            checked={controllerField.value}
+                                                            onCheckedChange={controllerField.onChange}
+                                                        />
+                                                    </div>
+                                                )}
+                                            />
+                                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                                <span className="sr-only">Eliminar</span>
+                                            </Button>
                                         </div>
                                     </SortableItem>
                                 ))}
