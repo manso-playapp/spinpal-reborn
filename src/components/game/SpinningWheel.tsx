@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/firebase/config';
@@ -15,6 +15,7 @@ const Wheel = dynamic(() => import('react-custom-roulette').then(mod => mod.Whee
 
 interface Segment {
   name: string;
+  probability?: number;
 }
 
 interface SpinningWheelProps {
@@ -32,14 +33,13 @@ const formatSegmentsForWheel = (segments: Segment[]) => {
   }));
 };
 
-// Palabras clave para identificar un segmento que NO es un premio
 const nonPrizeKeywords = ['intenta', 'suerte', 'nada', 'pierde'];
 
 const normalizeText = (text: string) => {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, ""); // Eliminar acentos
+    .replace(/[\u0300-\u036f]/g, "");
 };
 
 const isPrize = (option: string) => {
@@ -53,8 +53,42 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
 
   const wheelData = formatSegmentsForWheel(segments);
 
+  const calculatePrizeNumber = useCallback(() => {
+    const probabilities = segments.map(s => s.probability);
+
+    const definedProbabilities = probabilities.filter(p => typeof p === 'number' && p >= 0) as number[];
+    const sumOfDefinedProbabilities = definedProbabilities.reduce((sum, p) => sum + p, 0);
+
+    const segmentsWithoutProbability = probabilities.filter(p => p === undefined || p === null).length;
+    
+    let remainingProbability = 100 - sumOfDefinedProbabilities;
+    if (remainingProbability < 0) remainingProbability = 0; // Ensure it's not negative
+
+    const probabilityForUndefined = segmentsWithoutProbability > 0 ? remainingProbability / segmentsWithoutProbability : 0;
+
+    const finalProbabilities = probabilities.map(p => (p === undefined || p === null) ? probabilityForUndefined : (p as number));
+    
+    // Normalize probabilities to ensure they sum to 100, handling potential floating point inaccuracies
+    const totalProbability = finalProbabilities.reduce((sum, p) => sum + p, 0);
+    const normalizedProbabilities = finalProbabilities.map(p => (p / totalProbability) * 100);
+
+    const random = Math.random() * 100;
+    let cumulativeProbability = 0;
+
+    for (let i = 0; i < normalizedProbabilities.length; i++) {
+        cumulativeProbability += normalizedProbabilities[i];
+        if (random < cumulativeProbability) {
+            return i;
+        }
+    }
+
+    // Fallback to last segment in case of rounding errors
+    return segments.length - 1;
+
+  }, [segments]);
+
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId || isDemoMode) return;
 
     const gameRef = doc(db, 'games', gameId);
     let currentSpinRequestTime: number | null = null;
@@ -64,10 +98,9 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
         const data = docSnap.data();
         const spinRequest = data.spinRequest;
 
-        // Check for a new spin request
         if (spinRequest && spinRequest.timestamp?.toMillis() !== currentSpinRequestTime) {
           currentSpinRequestTime = spinRequest.timestamp.toMillis();
-          const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
+          const newPrizeNumber = calculatePrizeNumber();
           setPrizeNumber(newPrizeNumber);
           setMustSpin(true);
         }
@@ -75,12 +108,12 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
     });
 
     return () => unsubscribe();
-  }, [gameId, wheelData.length]);
+  }, [gameId, isDemoMode, calculatePrizeNumber]);
 
 
   const handleDemoSpin = () => {
     if (!mustSpin) {
-      const newPrizeNumber = Math.floor(Math.random() * wheelData.length);
+      const newPrizeNumber = calculatePrizeNumber();
       setPrizeNumber(newPrizeNumber);
       setMustSpin(true);
     }
@@ -89,8 +122,6 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
   const handleStopSpinning = async () => {
     setMustSpin(false);
     
-    // Solo actualizamos la base de datos si NO estamos en modo demo
-    // y si la acción de parada fue iniciada por una solicitud de Firestore
     if (!isDemoMode) {
         const gameRef = doc(db, 'games', gameId);
         try {
@@ -101,8 +132,6 @@ export default function SpinningWheel({ segments, gameId, isDemoMode = false }: 
                 updateData.prizesAwarded = increment(1);
             }
             
-            // Siempre intentamos limpiar la solicitud de giro si hay algo que actualizar
-            // o si la ruleta se detuvo (para evitar giros repetidos)
             await updateDoc(gameRef, { 
                 ...updateData,
                 spinRequest: null 
