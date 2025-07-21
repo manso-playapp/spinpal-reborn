@@ -728,18 +728,16 @@ export default function EditGameForm({ game }: { game: Game }) {
                             />
                         </TabsContent>
                         <TabsContent value="game" className="mt-4 p-2 border rounded-lg bg-muted/50 overflow-hidden">
-                          <div className="transform scale-[0.35] origin-top-left -translate-y-[20px] -translate-x-[20px]">
+                           <div className="transform scale-[0.35] origin-top-left -translate-y-[20px] -translate-x-[20px]">
                               <div className="w-[450px] h-[800px] flex flex-col items-center justify-around p-4" style={backgroundPreviewStyles}>
-                                  {/* Columna de la Ruleta */}
-                                  <div className="w-full max-w-sm text-center flex flex-col items-center justify-center">
-                                      <SpinningWheel 
-                                        segments={watchedFormData.segments}
-                                        gameId={game.id} 
-                                        isDemoMode={true}
-                                        config={currentConfig}
-                                      />
+                                  <div className="w-full max-w-sm">
+                                    <SpinningWheel 
+                                      segments={watchedFormData.segments} 
+                                      gameId={game.id} 
+                                      isDemoMode={true}
+                                      config={currentConfig}
+                                    />
                                   </div>
-                                  {/* Columna del QR */}
                                   <Card 
                                     className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
                                     style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
