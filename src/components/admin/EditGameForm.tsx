@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase/config';
 import { doc, updateDoc } from 'firebase/firestore';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableItem } from './SortableItem';
 
 
 import { Button } from '@/components/ui/button';
@@ -267,40 +268,42 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 strategy={verticalListSortingStrategy}
                               >
                                 {fields.map((field, index) => (
-                                    <div key={field.id} className="flex items-center gap-2 p-1 border rounded-md bg-background">
-                                      <Controller
-                                          control={form.control}
-                                          name={`segments.${index}.name`}
-                                          render={({ field: controllerField }) => (
-                                              <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0" />
-                                          )}
-                                      />
-                                      <Controller
-                                          control={form.control}
-                                          name={`segments.${index}.probability`}
-                                          render={({ field: controllerField }) => (
-                                              <Input 
-                                                  type="number" 
-                                                  value={controllerField.value ?? ''}
-                                                  onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
-                                                  className="w-24 text-center"
-                                                  placeholder="%"
-                                              />
-                                          )}
-                                      />
-                                      <div className="flex flex-col">
-                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index - 1)} disabled={index === 0 || loading}>
-                                            <ArrowUp className="h-4 w-4" />
+                                    <SortableItem key={field.id} id={field.id}>
+                                        <div className="flex items-center gap-2 p-1 border rounded-md bg-background">
+                                        <Controller
+                                            control={form.control}
+                                            name={`segments.${index}.name`}
+                                            render={({ field: controllerField }) => (
+                                                <Input {...controllerField} className="flex-grow border-none focus-visible:ring-0" />
+                                            )}
+                                        />
+                                        <Controller
+                                            control={form.control}
+                                            name={`segments.${index}.probability`}
+                                            render={({ field: controllerField }) => (
+                                                <Input 
+                                                    type="number" 
+                                                    value={controllerField.value ?? ''}
+                                                    onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
+                                                    className="w-24 text-center"
+                                                    placeholder="%"
+                                                />
+                                            )}
+                                        />
+                                        <div className="flex flex-col">
+                                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index - 1)} disabled={index === 0 || loading}>
+                                                <ArrowUp className="h-4 w-4" />
+                                            </Button>
+                                            <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index + 1)} disabled={index === fields.length - 1 || loading}>
+                                                <ArrowDown className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                            <span className="sr-only">Eliminar</span>
                                         </Button>
-                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => swap(index, index + 1)} disabled={index === fields.length - 1 || loading}>
-                                            <ArrowDown className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
-                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                          <span className="sr-only">Eliminar</span>
-                                      </Button>
-                                    </div>
+                                        </div>
+                                    </SortableItem>
                                 ))}
                               </SortableContext>
                             </DndContext>
