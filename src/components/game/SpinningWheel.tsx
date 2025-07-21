@@ -31,6 +31,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
     // If no real prizes, distribute probability equally among all segments
     if (realPrizeSegments.length === 0) {
+      if (initialSegments.length === 0) return [];
       const equalProb = 100 / initialSegments.length;
       return initialSegments.map(seg => ({ ...seg, probability: equalProb }));
     }
@@ -59,12 +60,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       }
     }
     
-    // Fallback in case of rounding errors
+    // Fallback in case of rounding errors or no prize segments
     const prizeIndices = initialSegments
       .map((seg, index) => (seg.isRealPrize ? index : -1))
       .filter(index => index !== -1);
       
-    return prizeIndices.length > 0 ? prizeIndices[prizeIndices.length - 1] : Math.floor(Math.random() * initialSegments.length);
+    if (prizeIndices.length > 0) {
+      return prizeIndices[prizeIndices.length - 1];
+    }
+    
+    // If no real prizes, pick any segment
+    return Math.floor(Math.random() * initialSegments.length);
 
   }, [initialSegments, normalizedSegments]);
   

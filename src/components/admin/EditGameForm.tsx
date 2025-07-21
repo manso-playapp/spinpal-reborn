@@ -88,7 +88,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments || [{name: 'Premio 1', color: '#FFDD00', isRealPrize: true}, {name: 'Premio 2', color: '#B5D5E2', isRealPrize: false}],
+      segments: game.segments && game.segments.length > 0 ? game.segments : [{name: 'Premio 1', color: '#FFDD00', isRealPrize: true}, {name: 'No ganas', color: '#B5D5E2', isRealPrize: false}],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
@@ -302,7 +302,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                           </div>
                           
                            <div className="space-y-2">
-                                <div className="flex items-center text-sm font-medium text-muted-foreground px-2 -mb-1">
+                                <div className="hidden md:flex items-center text-sm font-medium text-muted-foreground px-2 -mb-1">
                                     <div className="w-10 flex-shrink-0"></div>
                                     <div className="flex-1 pl-2">Nombre</div>
                                     <div className="w-48 text-center">Probabilidad %</div>
@@ -322,12 +322,13 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     {fields.map((field, index) => (
                                       <SortableItem key={field.id} id={field.id}>
                                         {(listeners) => (
-                                          <div className="flex items-center gap-2 p-1 pr-2 border rounded-md bg-background hover:bg-muted/50">
+                                          <div className="flex flex-col md:flex-row items-center gap-2 p-1 pr-2 border rounded-md bg-background hover:bg-muted/50">
                                               <Button type="button" {...listeners} className="cursor-grab p-1 flex-shrink-0 h-10 w-10" variant="ghost">
                                                   <GripVertical className="h-5 w-5 text-muted-foreground" />
                                               </Button>
                                               
-                                              <div className="flex-1 min-w-0">
+                                              <div className="flex-1 min-w-0 w-full">
+                                                  <Label className="md:hidden text-xs text-muted-foreground">Nombre</Label>
                                                   <Controller
                                                       control={form.control}
                                                       name={`segments.${index}.name`}
@@ -336,11 +337,13 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       )}
                                                   />
                                               </div>
-                                              <div className="w-48 text-center text-sm text-muted-foreground">
-                                                  {watchedSegments[index]?.isRealPrize ? 'Probabilidad basada en otros premios reales' : 'No es un premio real'}
+                                              <div className="w-full md:w-48 text-center text-sm text-muted-foreground">
+                                                  <Label className="md:hidden text-xs text-muted-foreground">Probabilidad %</Label>
+                                                  <div>{watchedSegments[index]?.isRealPrize ? 'Probabilidad basada en otros premios reales' : 'No es un premio real'}</div>
                                               </div>
 
-                                              <div className="w-24 flex justify-center">
+                                              <div className="w-full md:w-24 flex justify-center items-center">
+                                                 <Label className="md:hidden text-xs text-muted-foreground mr-2">Premio Real</Label>
                                                  <Controller
                                                     control={form.control}
                                                     name={`segments.${index}.isRealPrize`}
@@ -353,7 +356,8 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                     )}
                                                   />
                                               </div>
-                                              <div className="w-32 flex items-center justify-center gap-1">
+                                              <div className="w-full md:w-32 flex items-center justify-center gap-1">
+                                                <Label className="md:hidden text-xs text-muted-foreground">Color</Label>
                                                 <Controller
                                                     control={form.control}
                                                     name={`segments.${index}.color`}
@@ -363,7 +367,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                           type="color" 
                                                           value={value || '#ffffff'}
                                                           onChange={onChange}
-                                                          className="h-6 w-6 p-0 border-none"
+                                                          className="h-6 w-6 p-0 border-none cursor-pointer"
                                                         />
                                                         <Input
                                                           type="text"
