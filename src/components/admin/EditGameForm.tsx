@@ -251,7 +251,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                         render={({ field: controllerField }) => (
                                             <Input 
                                                 type="number" 
-                                                {...controllerField}
+                                                value={controllerField.value ?? ''}
                                                 onChange={e => controllerField.onChange(e.target.value === '' ? undefined : e.target.value)}
                                                 className="w-24 text-center"
                                                 placeholder="%"
