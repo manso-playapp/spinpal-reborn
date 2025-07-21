@@ -11,6 +11,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
 import SpinningWheel from '../game/SpinningWheel';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -42,13 +43,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
 
-
 const segmentSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
+  // New fields
+  textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
+  fontFamily: z.string().default('PT Sans'),
+  fontSize: z.number().min(4).max(40).default(16),
+  lineHeight: z.number().min(0.5).max(3).default(1),
+  letterSpacing: z.number().min(-5).max(10).default(0.5),
+  distanceFromCenter: z.number().min(0).max(1).default(0.7), // As a percentage of radius
+  iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
+  iconScale: z.number().min(0.1).max(2).default(1),
 });
 
 
@@ -89,19 +98,39 @@ interface Game {
 }
 
 const getRandomColor = () => `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
+const CONDENSED_FONTS = [
+  'PT Sans', 'Roboto Condensed', 'Oswald', 'Montserrat', 'Lato', 'Bebas Neue', 'Anton'
+];
+
+const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
+  name: name,
+  color: getRandomColor(),
+  isRealPrize: false,
+  probability: 0,
+  textColor: '#FFFFFF',
+  fontFamily: 'PT Sans',
+  fontSize: 16,
+  lineHeight: 1,
+  letterSpacing: 0.5,
+  distanceFromCenter: 0.7,
+  iconUrl: '',
+  iconScale: 1,
+});
+
 
 export default function EditGameForm({ game }: { game: Game }) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
+  const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
-      segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...s, probability: s.probability ?? 0})) : [{name: 'Premio 1', color: '#FFDD00', isRealPrize: true, probability: 10}, {name: 'No ganas', color: '#B5D5E2', isRealPrize: false, probability: 0}],
+      segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
@@ -114,7 +143,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     },
   });
 
-  const { fields, append, remove, move } = useFieldArray({
+  const { fields, append, remove, move, insert } = useFieldArray({
     control: form.control,
     name: 'segments',
   });
@@ -199,9 +228,18 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const addSegment = () => {
     if (newSegmentName.trim()) {
-      append({ name: newSegmentName.trim(), color: getRandomColor(), isRealPrize: false, probability: 0 });
+      append(getDefaultSegment(newSegmentName.trim()));
       setNewSegmentName('');
     }
+  };
+
+  const duplicateSegment = (index: number) => {
+    const segmentToDuplicate = form.getValues(`segments.${index}`);
+    insert(index + 1, {
+      ...segmentToDuplicate,
+      name: `${segmentToDuplicate.name} (Copia)`,
+      id: undefined, // ensure it gets a new ID from react-hook-form
+    });
   };
   
   const currentConfig = {
@@ -428,123 +466,146 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 </Button>
                               </div>
                               
-                              <div className="space-y-2">
-                                    <div className="hidden md:flex items-center text-sm font-medium text-muted-foreground px-2 -mb-1">
-                                        <div className="w-10 flex-shrink-0"></div>
-                                        <div className="w-32 flex-shrink-0 pl-2">Color</div>
-                                        <div className="flex-1 pl-2">Nombre del Premio</div>
-                                        <div className="w-48 text-center">Probabilidad %</div>
-                                        <div className="w-24 text-center">Premio Real</div>
-                                        <div className="w-10 flex-shrink-0"></div>
-                                    </div>
-                                    <DndContext 
-                                      sensors={sensors}
-                                      collisionDetection={closestCenter}
-                                      onDragEnd={handleDragEnd}
-                                    >
-                                      <SortableContext
-                                        items={fields.map(field => field.id)}
-                                        strategy={verticalListSortingStrategy}
-                                      >
-                                        {fields.map((field, index) => (
-                                          <SortableItem key={field.id} id={field.id}>
-                                            {(listeners) => (
-                                              <div className="flex flex-col md:flex-row items-center gap-2 p-1 pr-2 border rounded-md bg-background hover:bg-muted/50">
-                                                  <Button type="button" {...listeners} className="cursor-grab p-1 flex-shrink-0 h-10 w-10" variant="ghost">
-                                                      <GripVertical className="h-5 w-5 text-muted-foreground" />
-                                                  </Button>
-                                                  
-                                                  <div className="w-full md:w-32 flex items-center justify-center gap-1">
-                                                    <Label className="md:hidden text-xs text-muted-foreground">Color</Label>
-                                                    <Controller
-                                                        control={form.control}
-                                                        name={`segments.${index}.color`}
-                                                        render={({ field: { onChange, value } }) => (
-                                                          <div className="flex items-center gap-2 border rounded-md p-1">
-                                                            <Input 
-                                                              type="color" 
-                                                              value={value || '#ffffff'}
-                                                              onChange={onChange}
-                                                              className="h-6 w-6 p-0 border-none cursor-pointer"
-                                                            />
-                                                            <Input
-                                                              type="text"
-                                                              value={value || ''}
-                                                              onChange={onChange}
-                                                              className="h-6 w-full font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0"
-                                                            />
-                                                          </div>
-                                                        )}
-                                                      />
+                              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                                <SortableContext items={fields.map(field => field.id)} strategy={verticalListSortingStrategy}>
+                                    <Accordion type="multiple" value={openAccordionItems} onValueChange={setOpenAccordionItems}>
+                                    {fields.map((field, index) => (
+                                      <SortableItem key={field.id} id={field.id}>
+                                        {(listeners) => (
+                                          <AccordionItem value={`item-${index}`} className="border rounded-md mb-2 bg-background hover:bg-muted/50">
+                                            <AccordionTrigger className="p-2 text-sm font-medium w-full hover:no-underline">
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    <Button type="button" {...listeners} className="cursor-grab p-1 h-8 w-8" variant="ghost">
+                                                        <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                                    </Button>
+                                                    <Controller control={form.control} name={`segments.${index}.name`} render={({ field: controllerField }) => (
+                                                      <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" onClick={(e) => e.stopPropagation()} />
+                                                    )}/>
+                                                </div>
+                                                <div className="flex items-center gap-1 pr-2">
+                                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); duplicateSegment(index); }}>
+                                                        <CopyIcon className="h-4 w-4 text-blue-500" />
+                                                    </Button>
+                                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); remove(index); }}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="p-4 border-t">
+                                              <Tabs defaultValue="basic" className="w-full">
+                                                <TabsList className="grid w-full grid-cols-3">
+                                                  <TabsTrigger value="basic"><Palette className="mr-2 h-4 w-4"/>Básico</TabsTrigger>
+                                                  <TabsTrigger value="text"><Type className="mr-2 h-4 w-4"/>Texto</TabsTrigger>
+                                                  <TabsTrigger value="icon"><PictureInPicture className="mr-2 h-4 w-4"/>Icono</TabsTrigger>
+                                                </TabsList>
+                                                <TabsContent value="basic" className="pt-4 space-y-6">
+                                                  <div className="flex items-center justify-between rounded-lg border p-3">
+                                                      <div className="space-y-0.5">
+                                                        <Label>Premio Real</Label>
+                                                        <FormDescription>Define si este premio cuenta para las estadísticas y consume probabilidad.</FormDescription>
+                                                      </div>
+                                                      <Controller control={form.control} name={`segments.${index}.isRealPrize`} render={({ field: { onChange, value } }) => ( <Checkbox checked={!!value} onCheckedChange={onChange} /> )}/>
                                                   </div>
-                                                  
-                                                  <div className="flex-1 min-w-0 w-full">
-                                                      <Label className="md:hidden text-xs text-muted-foreground">Nombre</Label>
-                                                      <Controller
-                                                          control={form.control}
-                                                          name={`segments.${index}.name`}
-                                                          render={({ field: controllerField }) => (
-                                                              <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" />
+                                                  <FormField
+                                                    control={form.control}
+                                                    name={`segments.${index}.probability`}
+                                                    render={({ field }) => (
+                                                      <FormItem>
+                                                          <FormLabel>Probabilidad ({field.value || 0}%)</FormLabel>
+                                                          {watchedSegments[index]?.isRealPrize ? (
+                                                              <Slider value={[field.value || 0]} onValueChange={(vals) => field.onChange(vals[0])} max={100 - (realPrizeTotalProbability - (field.value || 0))} step={1} />
+                                                          ) : (
+                                                              <Input value={`${nonRealPrizeProbability}%`} disabled className="text-center bg-muted" />
                                                           )}
-                                                      />
-                                                  </div>
-                                                  <div className="w-full md:w-48 text-center text-sm text-muted-foreground flex items-center gap-2">
-                                                    {watchedSegments[index]?.isRealPrize ? (
-                                                      <>
-                                                        <Controller
-                                                          control={form.control}
-                                                          name={`segments.${index}.probability`}
-                                                          render={({ field: { onChange, value } }) => (
-                                                            <Slider
-                                                              value={[value || 0]}
-                                                              onValueChange={(vals) => onChange(vals[0])}
-                                                              max={100 - (realPrizeTotalProbability - (value || 0))}
-                                                              step={1}
-                                                              className="flex-1"
-                                                            />
-                                                          )}
-                                                        />
-                                                        <span className="w-8">{watchedSegments[index].probability}%</span>
-                                                      </>
-                                                    ) : (
-                                                      <Input value={`${nonRealPrizeProbability}%`} disabled className="text-center bg-muted" />
+                                                      </FormItem>
                                                     )}
-                                                  </div>
-                                                  <div className="w-full md:w-24 flex justify-center items-center">
-                                                    <Label className="md:hidden text-xs text-muted-foreground mr-2">Premio Real</Label>
-                                                    <Controller
-                                                        control={form.control}
-                                                        name={`segments.${index}.isRealPrize`}
-                                                        render={({ field: { onChange, value, ...rest } }) => (
-                                                          <Checkbox
-                                                              checked={!!value}
-                                                              onCheckedChange={(checked) => {
-                                                                onChange(checked)
-                                                                if (!checked) {
-                                                                  form.setValue(`segments.${index}.probability`, 0);
-                                                                }
-                                                              }}
-                                                              {...rest}
-                                                          />
-                                                        )}
-                                                      />
-                                                  </div>
-                                                  <div className="w-10 flex-shrink-0">
-                                                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => remove(index)} disabled={loading}>
-                                                          <Trash2 className="h-4 w-4 text-destructive" />
-                                                          <span className="sr-only">Eliminar</span>
-                                                      </Button>
-                                                  </div>
-                                              </div>
-                                            )}
-                                          </SortableItem>
-                                        ))}
-                                      </SortableContext>
-                                    </DndContext>
-                                </div>
-                                <div className="text-right font-medium text-sm text-muted-foreground mt-2">
-                                    Probabilidad Total de Premios Reales: <span className={`font-bold ${realPrizeTotalProbability > 100 ? 'text-destructive' : 'text-foreground'}`}>{realPrizeTotalProbability}%</span>
-                                </div>
+                                                  />
+                                                  <FormField control={form.control} name={`segments.${index}.color`} render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Color del Gajo</FormLabel>
+                                                      <FormControl>
+                                                          <div className="flex items-center gap-2 border rounded-md p-1 w-32">
+                                                            <Input type="color" value={field.value || '#ffffff'} onChange={field.onChange} className="h-6 w-6 p-0 border-none cursor-pointer" />
+                                                            <Input type="text" value={field.value || ''} onChange={field.onChange} className="h-6 w-full font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0" />
+                                                          </div>
+                                                      </FormControl>
+                                                    </FormItem>
+                                                  )}/>
+                                                </TabsContent>
+                                                <TabsContent value="text" className="pt-4 grid grid-cols-2 gap-x-6 gap-y-4">
+                                                  <FormField control={form.control} name={`segments.${index}.textColor`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Color del Texto</FormLabel>
+                                                        <div className="flex items-center gap-2 border rounded-md p-1 w-32">
+                                                            <Input type="color" {...field} className="h-6 w-6 p-0 border-none cursor-pointer" />
+                                                            <Input type="text" {...field} className="h-6 w-full font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0" />
+                                                        </div>
+                                                      </FormItem>
+                                                  )}/>
+                                                  <FormField control={form.control} name={`segments.${index}.fontFamily`} render={({ field }) => (
+                                                    <FormItem>
+                                                      <FormLabel>Tipografía</FormLabel>
+                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                          {CONDENSED_FONTS.map(font => <SelectItem key={font} value={font}>{font}</SelectItem>)}
+                                                        </SelectContent>
+                                                      </Select>
+                                                    </FormItem>
+                                                  )}/>
+                                                  <FormField control={form.control} name={`segments.${index}.fontSize`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Tamaño ({field.value}px)</FormLabel>
+                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={4} max={40} step={1} />
+                                                      </FormItem>
+                                                  )}/>
+                                                  <FormField control={form.control} name={`segments.${index}.lineHeight`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Interlineado ({field.value})</FormLabel>
+                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={0.5} max={3} step={0.1} />
+                                                      </FormItem>
+                                                  )}/>
+                                                   <FormField control={form.control} name={`segments.${index}.letterSpacing`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Interletrado ({field.value}px)</FormLabel>
+                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={-5} max={10} step={0.1} />
+                                                      </FormItem>
+                                                  )}/>
+                                                  <FormField control={form.control} name={`segments.${index}.distanceFromCenter`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Distancia del Centro ({Math.round(field.value*100)}%)</FormLabel>
+                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={0} max={1} step={0.01} />
+                                                      </FormItem>
+                                                  )}/>
+                                                </TabsContent>
+                                                <TabsContent value="icon" className="pt-4 space-y-4">
+                                                   <FormField control={form.control} name={`segments.${index}.iconUrl`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>URL del Icono</FormLabel>
+                                                        <Input placeholder="https://..." {...field} />
+                                                        <FormDescription>URL de una imagen PNG transparente.</FormDescription>
+                                                      </FormItem>
+                                                   )}/>
+                                                   <FormField control={form.control} name={`segments.${index}.iconScale`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Escala del Icono ({field.value.toFixed(2)})</FormLabel>
+                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={0.1} max={2} step={0.05} />
+                                                      </FormItem>
+                                                   )}/>
+                                                </TabsContent>
+                                              </Tabs>
+                                            </AccordionContent>
+                                          </AccordionItem>
+                                        )}
+                                      </SortableItem>
+                                    ))}
+                                  </Accordion>
+                                </SortableContext>
+                              </DndContext>
+                                
+                              <div className="text-right font-medium text-sm text-muted-foreground mt-2">
+                                  Probabilidad Total de Premios Reales: <span className={`font-bold ${realPrizeTotalProbability > 100 ? 'text-destructive' : 'text-foreground'}`}>{realPrizeTotalProbability}%</span>
+                              </div>
                               {form.formState.errors.segments && (
                                   <p className="text-sm font-medium text-destructive">{form.formState.errors.segments.message || form.formState.errors.segments.root?.message}</p>
                               )}

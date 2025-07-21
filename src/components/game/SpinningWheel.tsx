@@ -14,7 +14,16 @@ interface Segment {
   color?: string;
   isRealPrize?: boolean;
   probability?: number;
-  finalProbability?: number; // Add this to the interface
+  finalProbability?: number; // Calculated probability
+  // New text and icon fields
+  textColor?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  distanceFromCenter?: number;
+  iconUrl?: string;
+  iconScale?: number;
 }
 
 
@@ -31,8 +40,7 @@ interface SpinningWheelProps {
 }
 
 const VIEWBOX_SIZE = 500;
-const WHEEL_RADIUS = 240;
-const TEXT_RADIUS = 180;
+const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
 
 export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
@@ -48,7 +56,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     setShouldRender(true);
   }, []);
 
-  // Process segments directly on each render to ensure real-time updates
   const normalizedSegments = (() => {
     if (!initialSegments || initialSegments.length === 0) return [];
 
@@ -101,9 +108,9 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
 
     const fullSpins = 5 * 360;
-    const finalRotation = fullSpins + targetAngle;
+    const finalRotation = rotation + fullSpins + targetAngle; // Accumulate rotation
 
-    setRotation(prev => prev + finalRotation);
+    setRotation(finalRotation);
 
     setTimeout(() => {
       setIsSpinning(false);
@@ -116,7 +123,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       }
     }, 7000); // Match transition duration
 
-  }, [isSpinning, normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex]);
+  }, [isSpinning, normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex, rotation]);
 
   useEffect(() => {
     if (!gameId || isDemoMode) return;
@@ -146,8 +153,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const segmentAngle = 360 / segmentCount;
 
   const getCoordinatesForAngle = (angle: number, radius: number) => {
-    const x = VIEWBOX_SIZE / 2 + radius * Math.cos(angle * Math.PI / 180);
-    const y = VIEWBOX_SIZE / 2 + radius * Math.sin(angle * Math.PI / 180);
+    const x = WHEEL_RADIUS + radius * Math.cos(angle * Math.PI / 180);
+    const y = WHEEL_RADIUS + radius * Math.sin(angle * Math.PI / 180);
     return [x, y];
   };
 
@@ -155,7 +162,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     <div className="relative flex flex-col items-center justify-center gap-8">
       <div className="relative w-full max-w-md aspect-square">
         
-        {/* Layer 1: Spinning Wheel (Bottom) */}
+        {/* Layer 1: Spinning Wheel SVG (Bottom) */}
         <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 z-0" style={wheelStyle}>
               <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
@@ -168,35 +175,58 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                     const [endX, endY] = getCoordinatesForAngle(endAngle, WHEEL_RADIUS);
 
                     const largeArcFlag = segmentAngle > 180 ? 1 : 0;
-                    const pathData = `M ${VIEWBOX_SIZE / 2},${VIEWBOX_SIZE / 2} L ${startX},${startY} A ${WHEEL_RADIUS},${WHEEL_RADIUS} 0 ${largeArcFlag} 1 ${endX},${endY} Z`;
+                    const pathData = `M ${WHEEL_RADIUS},${WHEEL_RADIUS} L ${startX},${startY} A ${WHEEL_RADIUS},${WHEEL_RADIUS} 0 ${largeArcFlag} 1 ${endX},${endY} Z`;
                     
+                    const textRadius = WHEEL_RADIUS * (segment.distanceFromCenter || 0.7);
                     const textAngle = startAngle + segmentAngle / 2;
                     const textPathId = `text-path-${index}`;
-                    const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - (segmentAngle / 2.2), TEXT_RADIUS);
-                    const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + (segmentAngle / 2.2), TEXT_RADIUS);
-                    const textPathData = `M ${textPathStartX},${textPathStartY} A ${TEXT_RADIUS},${TEXT_RADIUS} 0 0 1 ${textPathEndX},${textPathEndY}`;
+                    const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - (segmentAngle / 2.2), textRadius);
+                    const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + (segmentAngle / 2.2), textRadius);
+                    const textPathData = `M ${textPathStartX},${textPathStartY} A ${textRadius},${textRadius} 0 0 1 ${textPathEndX},${textPathEndY}`;
                     
                     const nameParts = (segment.name || "").toUpperCase().split(',');
+
+                    // Icon positioning
+                    const iconAngle = textAngle * Math.PI / 180;
+                    const iconRadius = textRadius * 0.6; // Position icon closer to center than text
+                    const iconSize = 40 * (segment.iconScale || 1);
+                    const iconX = WHEEL_RADIUS + iconRadius * Math.cos(iconAngle) - iconSize / 2;
+                    const iconY = WHEEL_RADIUS + iconRadius * Math.sin(iconAngle) - iconSize / 2;
+                    const iconRotation = textAngle + 90;
 
                     return (
                       <g key={index}>
                         <defs>
                           <path id={textPathId} d={textPathData} />
                         </defs>
-                        <path d={pathData} fill={segment.color || '#ffffff'} stroke="#000" strokeWidth="1" />
+                        <path d={pathData} fill={segment.color || '#ffffff'} stroke="#000" strokeWidth="0.5" />
+                        
+                        {segment.iconUrl && (
+                          <image
+                            href={segment.iconUrl}
+                            x={iconX}
+                            y={iconY}
+                            height={iconSize}
+                            width={iconSize}
+                            transform={`rotate(${iconRotation} ${iconX + iconSize/2} ${iconY + iconSize/2})`}
+                          />
+                        )}
+
                         <text 
-                          fill="#fff" 
-                          fontSize="16" 
-                          fontWeight="600"
-                          style={{ fontFamily: "'PT Sans', sans-serif" }}
-                          letterSpacing="0.5"
+                          fill={segment.textColor || '#FFFFFF'}
+                          fontSize={segment.fontSize || 16}
+                          fontFamily={segment.fontFamily || "'PT Sans', sans-serif"}
+                          letterSpacing={segment.letterSpacing || 0.5}
+                          style={{
+                            lineHeight: segment.lineHeight || 1,
+                          }}
                         >
                           <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
                             {nameParts.map((part, i) => (
                               <tspan
                                 key={i}
                                 x="0"
-                                dy={i === 0 ? '-0.3em' : '1.2em'}
+                                dy={i === 0 ? '-0.3em' : `${(segment.lineHeight || 1)}em`}
                               >
                                 {part.trim()}
                               </tspan>
