@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const formSchema = z.object({
   name: z.string().min(3, {
@@ -38,6 +39,7 @@ const formSchema = z.object({
   clientName: z.string().optional(),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   status: z.enum(['activo', 'demo']),
+  managementType: z.enum(['client', 'playapp']).default('client'),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -54,6 +56,7 @@ export default function CreateGameForm() {
       status: 'demo',
       clientName: '',
       clientEmail: '',
+      managementType: 'client',
     },
   });
 
@@ -61,10 +64,7 @@ export default function CreateGameForm() {
     setLoading(true);
     try {
       const docRef = await addDoc(collection(db, 'games'), {
-        name: data.name,
-        status: data.status,
-        clientName: data.clientName || '',
-        clientEmail: data.clientEmail || '',
+        ...data,
         plays: 0,
         prizesAwarded: 0,
         createdAt: serverTimestamp(),
@@ -177,6 +177,44 @@ export default function CreateGameForm() {
                         <FormMessage />
                         </FormItem>
                     )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="managementType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Tipo de Gestión</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex flex-col space-y-1"
+                          disabled={loading}
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="client" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Controlado por Cliente
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="playapp" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              Controlado por PlayApp
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormDescription>
+                        Elige quién se encargará de administrar esta campaña.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                 control={form.control}

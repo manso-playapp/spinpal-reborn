@@ -51,6 +51,7 @@ interface Game {
   status: 'activo' | 'demo';
   clientName?: string;
   clientEmail?: string;
+  managementType?: 'client' | 'playapp';
   plays: number;
   prizesAwarded: number;
   createdAt: {
@@ -267,11 +268,12 @@ export default function AdminDashboard() {
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                             <CardTitle className="font-headline text-xl mb-1">{game.name}</CardTitle>
-                            <div className="flex items-center gap-2">
-                                <Badge variant={game.status === 'activo' ? 'default' : 'secondary'}>
+                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className="text-xs">
                                     {game.status === 'activo' ? 'Activo' : 'Demo'}
                                 </Badge>
-                                <p className="text-xs text-muted-foreground">
+                                <span>•</span>
+                                <p>
                                     Creado: {game.createdAt ? format(new Date(game.createdAt.seconds * 1000), "dd/MM/yyyy") : 'N/A'}
                                 </p>
                             </div>
@@ -350,22 +352,30 @@ export default function AdminDashboard() {
                         </DropdownMenu>
                     </div>
 
-                    {(game.clientName || game.clientEmail) && (
-                        <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm">
-                            {game.clientName && (
-                                <div className="flex items-center gap-2 font-medium">
-                                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                                    <span>{game.clientName}</span>
-                                </div>
-                            )}
-                            {game.clientEmail && (
-                                <div className={`flex items-center gap-2 ${game.clientName ? 'text-muted-foreground text-xs mt-1' : ''}`}>
-                                    <User className="h-4 w-4 text-muted-foreground" />
-                                    <span>{game.clientEmail}</span>
-                                </div>
-                            )}
+                    <Separator className="my-4"/>
+
+                    <div className="space-y-3 text-sm">
+                        <div className="flex items-center gap-2 font-medium">
+                            {game.managementType === 'client' ? <User className="h-4 w-4 text-muted-foreground" /> : <Briefcase className="h-4 w-4 text-muted-foreground" />}
+                            <span>
+                                {game.managementType === 'client' ? 'Controlado por Cliente' : 'Controlado por PlayApp'}
+                            </span>
                         </div>
-                    )}
+                        {(game.clientName || game.clientEmail) && (
+                            <div className="p-3 bg-muted/50 rounded-lg text-xs">
+                                {game.clientName && (
+                                    <div className="font-semibold text-card-foreground">
+                                        {game.clientName}
+                                    </div>
+                                )}
+                                {game.clientEmail && (
+                                    <div className="text-muted-foreground">
+                                        {game.clientEmail}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-4">
                     <div className="flex justify-around text-center border-t border-b py-4">

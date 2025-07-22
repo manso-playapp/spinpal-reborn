@@ -44,6 +44,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
 import QRCodeDisplay from '../game/QRCodeDisplay';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const segmentSchema = z.object({
   id: z.string().optional(),
@@ -67,6 +68,7 @@ const formSchema = z.object({
   status: z.enum(['activo', 'demo']),
   clientName: z.string().optional(),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
+  managementType: z.enum(['client', 'playapp']).default('client'),
   exemptedEmails: z.string().optional(),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios para la ruleta.'),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
@@ -93,6 +95,7 @@ interface Game {
   status: 'activo' | 'demo';
   clientName?: string;
   clientEmail?: string;
+  managementType?: 'client' | 'playapp';
   exemptedEmails?: string[];
   segments?: z.infer<typeof segmentSchema>[];
   backgroundImage?: string;
@@ -149,6 +152,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       status: game.status || 'demo',
       clientName: game.clientName || '',
       clientEmail: game.clientEmail || '',
+      managementType: game.managementType || 'client',
       exemptedEmails: (game.exemptedEmails || []).join('\n'),
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
@@ -359,6 +363,40 @@ export default function EditGameForm({ game }: { game: Game }) {
                               </FormItem>
                             )}
                           />
+                           <FormField
+                            control={form.control}
+                            name="managementType"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                <FormLabel>Tipo de Gestión</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-row space-x-4"
+                                    disabled={loading}
+                                    >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="client" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Controlado por Cliente</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="playapp" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">Controlado por PlayApp</FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                 <FormDescription>
+                                    Elige quién se encargará de administrar esta campaña.
+                                </FormDescription>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
                            <FormField
                             control={form.control}
                             name="exemptedEmails"
