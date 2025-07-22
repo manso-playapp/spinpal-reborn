@@ -112,7 +112,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
       style={backgroundStyles}
     >
         {game.status === 'demo' && (
-            <div className="absolute top-0 left-0 bg-yellow-500 text-black px-8 py-1 text-sm font-bold shadow-lg transform -rotate-45 -translate-x-8 translate-y-4 z-30">
+            <div className="absolute top-0 left-0 bg-yellow-400 text-black px-8 py-1 text-sm font-bold shadow-lg transform -rotate-45 -translate-x-8 translate-y-4 z-30">
                 DEMO
             </div>
         )}
@@ -152,13 +152,13 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
               }}
             >
               {spinResult ? (
-                   <Card className="shadow-lg bg-black/50 backdrop-blur-md border-white/30 text-white animate-in fade-in zoom-in-95">
+                   <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in zoom-in-95">
                       <CardHeader className="p-6">
-                          <CardTitle className="font-headline text-5xl md:text-6xl flex items-center justify-center gap-4">
-                             {spinResult.isRealPrize ? <Gift className="text-yellow-400 h-14 w-14 md:h-16 md:w-16" /> : <ThumbsDown className="text-red-400 h-14 w-14 md:h-16 md:w-16" />}
+                          <CardTitle className="font-headline text-5xl md:text-6xl flex items-center justify-center gap-4 text-primary">
+                             {spinResult.isRealPrize ? <Gift className="h-14 w-14 md:h-16 md:w-16" /> : <ThumbsDown className="text-red-400 h-14 w-14 md:h-16 md:w-16" />}
                              {spinResult.isRealPrize ? '¡Premio!' : '¡Casi!'}
                           </CardTitle>
-                          <Separator className="bg-white/20 mt-4"/>
+                          <Separator className="bg-primary/20 mt-4"/>
                       </CardHeader>
                       <CardContent className="p-6 pt-0">
                           <p className="text-3xl md:text-4xl font-semibold">
@@ -170,7 +170,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                       </CardContent>
                   </Card>
               ) : (
-                  <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
+                  <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in">
                       <CardHeader>
                       <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
                           <QrCode />
@@ -179,7 +179,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                       </CardHeader>
                       <CardContent className="flex flex-col items-center justify-center gap-4">
                           <QRCodeDisplay gameId={game.id} />
-                          <Separator className="bg-white/20"/>
+                          <Separator className="bg-primary/20"/>
                           <p className="text-sm">
                           Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
                           </p>

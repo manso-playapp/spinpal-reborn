@@ -276,12 +276,12 @@ export default function AdminDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {games.map((game) => (
-                <Card key={game.id} className="flex flex-col">
+                <Card key={game.id} className="flex flex-col border-primary/20 hover:border-primary transition-colors duration-300">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <CardTitle className="font-headline text-lg mb-1">{game.name}</CardTitle>
-                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className={game.status === 'activo' ? 'bg-green-600 text-white' : ''}>
+                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className={game.status === 'activo' ? 'bg-green-500 text-white border-green-500' : ''}>
                           {game.status === 'activo' ? 'Activo' : 'Demo'}
                         </Badge>
                       </div>

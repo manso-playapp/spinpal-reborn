@@ -151,9 +151,9 @@ export default function EditGameForm({ game }: { game: Game }) {
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
-      borderImage: game.borderImage || '',
+      borderImage: game.borderImage || 'https://i.imgur.com/J62nHj9.png',
       borderScale: game.borderScale || 1,
-      centerImage: game.centerImage || '',
+      centerImage: game.centerImage || 'https://i.imgur.com/N3PAzB2.png',
       centerScale: game.centerScale || 1,
       qrCodeScale: game.qrCodeScale || 1,
       rouletteScale: game.rouletteScale || 1,
@@ -377,7 +377,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                       onCheckedChange={(checked) => field.onChange(checked ? 'activo' : 'demo')}
                                       disabled={loading}
                                     />
-                                    <span className={`text-sm font-medium ${field.value === 'activo' ? 'text-green-600' : 'text-muted-foreground'}`}>Activo</span>
+                                    <span className={`text-sm font-medium ${field.value === 'activo' ? 'text-primary' : 'text-muted-foreground'}`}>Activo</span>
                                   </div>
                                 </FormControl>
                               </FormItem>
