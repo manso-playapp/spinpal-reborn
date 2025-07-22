@@ -56,18 +56,30 @@ export default function CreateGameForm() {
   const onSubmit = async (data: GameFormValues) => {
     setLoading(true);
     try {
-      await addDoc(collection(db, 'games'), {
+      const docRef = await addDoc(collection(db, 'games'), {
         name: data.name,
         status: data.status,
         plays: 0,
         prizesAwarded: 0,
         createdAt: serverTimestamp(),
+        // Default values for new games
+        segments: [
+            { name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+            { name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+            { name: 'Premio 2', color: '#4CAF50', isRealPrize: true, probability: 5, textColor: '#FFFFFF', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+            { name: 'Sigue Intentando', color: '#F0F0F0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+        ],
+        borderImage: 'https://i.imgur.com/J62nHj9.png',
+        borderScale: 1,
+        centerImage: 'https://i.imgur.com/N3PAzB2.png',
+        centerScale: 1,
+        backgroundFit: 'cover',
       });
       toast({
         title: '¡Juego Creado!',
-        description: `El juego "${data.name}" ha sido creado exitosamente.`,
+        description: `El juego "${data.name}" ha sido creado. Ahora configúralo.`,
       });
-      router.push('/admin');
+      router.push(`/admin/juegos/editar/${docRef.id}`);
     } catch (error) {
       console.error('Error creating game: ', error);
       toast({
@@ -81,81 +93,83 @@ export default function CreateGameForm() {
   };
 
   return (
-    <Card className="max-w-xl mx-auto">
-      <CardHeader>
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" className="h-7 w-7" asChild>
-            <Link href="/admin">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Volver</span>
-            </Link>
-          </Button>
-          <div className="flex-1">
-            <CardTitle className="font-headline text-2xl">Crear Nuevo Juego</CardTitle>
-            <CardDescription>
-              Completa los detalles para configurar tu nueva ruleta.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre del Juego</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ej: Ruleta Aniversario"
-                      {...field}
-                      disabled={loading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Estado del Juego</FormLabel>
-                    <FormDescription>
-                      Activa el juego para todos o mantenlo en modo Demo.
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                     <div className="flex items-center space-x-2">
-                        <span className={`text-sm font-medium ${field.value === 'demo' ? 'text-muted-foreground' : 'text-foreground'}`}>
-                          Demo
-                        </span>
-                        <Switch
-                          checked={field.value === 'activo'}
-                          onCheckedChange={(checked) =>
-                            field.onChange(checked ? 'activo' : 'demo')
-                          }
-                          disabled={loading}
-                          aria-label="Estado del juego"
-                        />
-                        <span className={`text-sm font-medium ${field.value === 'activo' ? 'text-green-600' : 'text-muted-foreground'}`}>
-                          Activo
-                        </span>
-                      </div>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creando...' : 'Crear Juego'}
+    <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <Card className="max-w-xl mx-auto">
+        <CardHeader>
+            <div className="flex items-center gap-4">
+            <Button variant="outline" size="icon" className="h-7 w-7" asChild>
+                <Link href="/admin">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Volver</span>
+                </Link>
             </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+            <div className="flex-1">
+                <CardTitle className="font-headline text-2xl">Crear Nuevo Juego</CardTitle>
+                <CardDescription>
+                Completa los detalles iniciales. Podrás configurar los premios y el diseño después de crearlo.
+                </CardDescription>
+            </div>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Nombre del Juego</FormLabel>
+                    <FormControl>
+                        <Input
+                        placeholder="Ej: Ruleta Aniversario"
+                        {...field}
+                        disabled={loading}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                        <FormLabel className="text-base">Estado del Juego</FormLabel>
+                        <FormDescription>
+                        Activa el juego para todos o mantenlo en modo Demo.
+                        </FormDescription>
+                    </div>
+                    <FormControl>
+                        <div className="flex items-center space-x-2">
+                            <span className={`text-sm font-medium ${field.value === 'demo' ? 'text-muted-foreground' : 'text-foreground'}`}>
+                            Demo
+                            </span>
+                            <Switch
+                            checked={field.value === 'activo'}
+                            onCheckedChange={(checked) =>
+                                field.onChange(checked ? 'activo' : 'demo')
+                            }
+                            disabled={loading}
+                            aria-label="Estado del juego"
+                            />
+                            <span className={`text-sm font-medium ${field.value === 'activo' ? 'text-primary' : 'text-muted-foreground'}`}>
+                            Activo
+                            </span>
+                        </div>
+                    </FormControl>
+                    </FormItem>
+                )}
+                />
+                <Button type="submit" disabled={loading}>
+                {loading ? 'Creando...' : 'Crear y Configurar Juego'}
+                </Button>
+            </form>
+            </Form>
+        </CardContent>
+        </Card>
+    </main>
   );
 }
