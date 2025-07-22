@@ -16,7 +16,6 @@ interface Segment {
   color?: string;
   isRealPrize?: boolean;
   probability?: number;
-  finalProbability?: number; // Calculated probability
   // New text and icon fields
   textColor?: string;
   fontFamily?: string;
@@ -66,57 +65,22 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     setShouldRender(true);
   }, []);
 
-  const normalizedSegments = useMemo(() => {
-    if (!initialSegments || initialSegments.length === 0) return [];
+  const segments = useMemo(() => initialSegments, [initialSegments]);
 
-    const realPrizeSegments = initialSegments.filter(s => s.isRealPrize);
-    const nonRealPrizeSegments = initialSegments.filter(s => !s.isRealPrize);
+  const handleSpinClick = useCallback(async (spinRequestData) => {
+    if (isSpinningRef.current || segments.length === 0) return;
+
+    const { winningSegment, customerId, isDemoSpin } = spinRequestData;
+    const winningIndex = segments.findIndex(s => s.name === winningSegment.name);
     
-    const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
-    const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
-    
-    let nonRealPrizeProb = 0;
-    if (nonRealPrizeSegments.length > 0) {
-        nonRealPrizeProb = remainingProbability / nonRealPrizeSegments.length;
-    } else if (realPrizeTotalProbability > 0 && realPrizeTotalProbability < 100) {
-        // Distribute remaining probability among real prizes if no non-real prizes exist
-        const adjustment = remainingProbability / realPrizeSegments.length;
-        return initialSegments.map(seg => ({
-            ...seg,
-            finalProbability: seg.isRealPrize ? (seg.probability || 0) + adjustment : 0
-        }));
+    if (winningIndex === -1) {
+        console.error("Error: Winning segment not found in segments array.");
+        return;
     }
-
-    return initialSegments.map(seg => ({
-      ...seg,
-      finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
-    }));
-  }, [initialSegments]);
-
-
-  const getWinningSegmentIndex = useCallback(() => {
-    if (normalizedSegments.length === 0) return 0;
-    const random = Math.random() * 100;
-    let accumulatedProb = 0;
-    
-    for (let i = 0; i < normalizedSegments.length; i++) {
-        accumulatedProb += (normalizedSegments[i].finalProbability || 0);
-        if (random < accumulatedProb) {
-            return i;
-        }
-    }
-    return normalizedSegments.length - 1; // Fallback
-  }, [normalizedSegments]);
-
-  const handleSpinClick = useCallback(async (customerId?: string) => {
-    if (isSpinningRef.current || normalizedSegments.length === 0) return;
 
     setIsSpinning(true);
     
-    const winningIndex = getWinningSegmentIndex();
-    const winningSegment = normalizedSegments[winningIndex];
-    
-    const segmentCount = normalizedSegments.length;
+    const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
     const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
@@ -128,9 +92,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
     const gameRef = doc(db, 'games', gameId);
     
-    // DELAY WRITING THE RESULT to create suspense on mobile
     setTimeout(() => {
-        if (customerId) {
+        if (customerId && !isDemoSpin) {
             updateDoc(gameRef, {
                 lastResult: {
                     name: winningSegment.name,
@@ -140,7 +103,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                 }
             });
         }
-    }, 1000); // 1 second delay
+    }, 1000);
 
     setTimeout(async () => {
       setIsSpinning(false);
@@ -153,10 +116,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
 
-      if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
+      if (!isDemoMode && winningSegment?.isRealPrize && customerId && !isDemoSpin) {
         try {
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
-            const gameSnap = await getDoc(gameRef); // Get latest game data
+            const gameSnap = await getDoc(gameRef);
             const clientEmail = gameSnap.data()?.clientEmail;
 
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
@@ -165,7 +128,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                 prizeWonAt: serverTimestamp()
             });
             
-            // Only send notification if there is a client email configured
             if (clientEmail) {
                 await sendPrizeNotification({
                     gameId: gameId,
@@ -182,7 +144,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       }
     }, 7000); // Match transition duration
 
-  }, [normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex, rotation, onSpinEnd]);
+  }, [segments, gameId, isDemoMode, rotation, onSpinEnd]);
 
   const spinHandlerRef = useRef(handleSpinClick);
   useEffect(() => {
@@ -191,7 +153,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
 
   useEffect(() => {
-    if (!gameId || isDemoMode) return;
+    if (!gameId) return;
 
     const gameRef = doc(db, 'games', gameId);
     
@@ -205,14 +167,14 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             if (newSpinTime !== spinRequestTimestamp.current) {
                 spinRequestTimestamp.current = newSpinTime;
                 if (!isSpinningRef.current) {
-                    spinHandlerRef.current(spinRequest.customerId);
+                    spinHandlerRef.current(spinRequest);
                 }
             }
         }
       }
     });
     return () => unsubscribe();
-  }, [gameId, isDemoMode]);
+  }, [gameId]);
 
 
   const wheelStyle: React.CSSProperties = {
@@ -225,13 +187,45 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     return <div className="w-full max-w-md aspect-square bg-muted rounded-full animate-pulse" />;
   }
 
-  const segmentCount = normalizedSegments.length;
+  const segmentCount = segments.length;
   const segmentAngle = 360 / segmentCount;
 
   const getCoordinatesForAngle = (angle: number, radius: number) => {
     const x = WHEEL_RADIUS + radius * Math.cos(angle * Math.PI / 180);
     const y = WHEEL_RADIUS + radius * Math.sin(angle * Math.PI / 180);
     return [x, y];
+  };
+
+  const handleDemoSpin = () => {
+    const realPrizeSegments = segments.filter(s => s.isRealPrize);
+    const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
+    
+    const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
+    const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
+    
+    let nonRealPrizeProb = 0;
+    if (nonRealPrizeSegments.length > 0) {
+        nonRealPrizeProb = remainingProbability / nonRealPrizeSegments.length;
+    }
+    
+    const finalSegments = segments.map(seg => ({
+      ...seg,
+      finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
+    }));
+
+    const random = Math.random() * 100;
+    let accumulatedProb = 0;
+    let winningIndex = finalSegments.length - 1;
+
+    for (let i = 0; i < finalSegments.length; i++) {
+        accumulatedProb += (finalSegments[i].finalProbability || 0);
+        if (random < accumulatedProb) {
+            winningIndex = i;
+            break;
+        }
+    }
+    
+    handleSpinClick({ winningSegment: finalSegments[winningIndex], isDemoSpin: true, customerId: 'demo' });
   };
 
   return (
@@ -243,7 +237,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             <div className="absolute inset-0 z-0" style={wheelStyle}>
               <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center', transform: 'rotate(-90deg)' }}>
                 <g style={{ transformOrigin: 'center center' }}>
-                  {normalizedSegments.map((segment, index) => {
+                  {segments.map((segment, index) => {
                     const startAngle = index * segmentAngle;
                     const endAngle = startAngle + segmentAngle;
 
@@ -355,7 +349,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       </div>
 
       {isDemoMode && showDemoButton && (
-        <Button onClick={() => handleSpinClick()} disabled={isSpinning}>
+        <Button onClick={handleDemoSpin} disabled={isSpinning}>
           <RotateCw className="mr-2 h-4 w-4" />
           {isSpinning ? 'Girando...' : 'Girar en modo Demo'}
         </Button>

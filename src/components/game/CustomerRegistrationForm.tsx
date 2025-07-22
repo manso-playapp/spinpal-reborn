@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -57,6 +58,7 @@ interface GameData {
     exemptedEmails: string[];
     isPhoneRequired: boolean;
     successMessage?: string;
+    segments: any[];
 }
 
 export default function CustomerRegistrationForm({ gameId }: CustomerRegistrationFormProps) {
@@ -91,6 +93,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                     exemptedEmails: data.exemptedEmails || [],
                     isPhoneRequired: isPhoneRequired,
                     successMessage: data.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+                    segments: data.segments || [],
                 };
                 setGameData(newGameData);
 
@@ -126,20 +129,18 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
       const data = docSnap.data();
       if (data && data.lastResult && data.lastResult.customerId === customerId) {
         
-        // RESULTADO RECIBIDO. AHORA ESPERAMOS PARA MOSTRARLO.
         setTimeout(() => {
             setSpinResult({
               name: data.lastResult.name,
               isRealPrize: data.lastResult.isRealPrize,
             });
             setUiState('final_result');
-        }, 6500); // 6.5s delay on mobile + 1s delay on wheel = 7.5s total
+        }, 6500); 
 
-        unsubscribe(); // Stop listening once we have the result
+        unsubscribe();
       }
     });
 
-    // Cleanup listener on component unmount or state change
     return () => unsubscribe();
 
   }, [uiState, customerId, gameId]);
@@ -150,7 +151,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
     setIsSubmitting(true);
     const submittedEmail = data.email.toLowerCase();
 
-    // Check if the email is in the exempted list
     if (!gameData.exemptedEmails.includes(submittedEmail)) {
         try {
             const customersCollectionRef = collection(db, 'games', gameId, 'customers');
@@ -164,8 +164,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             }
         } catch (error) {
             console.error('Error checking for existing customer:', error);
-            // We can decide to let them through or show an error.
-            // For now, let's show a generic error to be safe.
              toast({
                 variant: 'destructive',
                 title: 'Error de Verificación',
@@ -176,7 +174,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         }
     }
     
-    // Proceed with registration
     try {
       const newCustomerRef = await addDoc(collection(db, 'games', gameId, 'customers'), {
         name: data.name,
@@ -203,7 +200,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
   };
 
   const handleSpin = async () => {
-    if (!customerId) {
+    if (!customerId || !gameData) {
         setUiState('error');
         return;
     };
@@ -212,17 +209,43 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         const gameRef = doc(db, 'games', gameId);
         const customerRef = doc(db, 'games', gameId, 'customers', customerId);
 
+        // Determine winning segment here
+        const { segments } = gameData;
+        const realPrizeSegments = segments.filter(s => s.isRealPrize);
+        const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
+        const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
+        const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
+        let nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
+        
+        const finalSegments = segments.map(seg => ({
+          ...seg,
+          finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
+        }));
+
+        const random = Math.random() * 100;
+        let accumulatedProb = 0;
+        let winningIndex = finalSegments.length - 1;
+
+        for (let i = 0; i < finalSegments.length; i++) {
+            accumulatedProb += (finalSegments[i].finalProbability || 0);
+            if (random < accumulatedProb) {
+                winningIndex = i;
+                break;
+            }
+        }
+        const winningSegment = finalSegments[winningIndex];
+
         await updateDoc(gameRef, {
             spinRequest: {
                 timestamp: serverTimestamp(),
                 customerId: customerId,
+                winningSegment: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize }
             },
             plays: increment(1),
         });
 
         await updateDoc(customerRef, { hasPlayed: true });
-
-        // Change UI state to show a success message and start listening for the result
+        
         setUiState('success_message');
 
     } catch (error) {
