@@ -246,9 +246,9 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                           fill={segment.textColor || '#FFFFFF'}
                           fontSize={segment.fontSize || 16}
                           fontFamily={segment.fontFamily || "'PT Sans', sans-serif"}
-                          letterSpacing={segment.letterSpacing || 0.5}
                           style={{
                             lineHeight: segment.lineHeight || 1,
+                            letterSpacing: segment.letterSpacing || 0.5,
                           }}
                         >
                           <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
@@ -257,7 +257,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                                 key={i}
                                 x="0"
                                 dy={i === 0 ? '-0.3em' : `${(segment.lineHeight || 1)}em`}
-                                style={ i > 0 ? { fontSize: '110%' } : {}}
+                                style={ i > 0 ? { fontSize: '110%', letterSpacing: `calc(${segment.letterSpacing || 0.5}px * 1.1)` } : {}}
                               >
                                 {part.trim()}
                               </tspan>
