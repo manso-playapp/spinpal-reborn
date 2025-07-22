@@ -202,17 +202,16 @@ export default function EditGameForm({ game }: { game: Game }) {
   // This effect will update the localStorage for the preview iframe
   useEffect(() => {
     const subscription = form.watch((value) => {
-        try {
-            const previewData = { ...value, id: game.id };
-            localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
-            // Trigger a custom event to notify the iframe
-            window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
-        } catch (error) {
-            console.error("Could not save preview data to localStorage", error);
-        }
+      try {
+        const previewData = { ...value, id: game.id };
+        localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
+        window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
+      } catch (error) {
+        console.error("Could not save preview data to localStorage", error);
+      }
     });
     return () => subscription.unsubscribe();
-  }, [form, game.id]);
+  }, [form.watch, game.id]);
 
 
   const sensors = useSensors(
@@ -321,7 +320,7 @@ export default function EditGameForm({ game }: { game: Game }) {
               
               {/* Columna de Controles */}
               <div className="lg:col-span-2 space-y-4">
-                <Tabs defaultValue="data" className="w-full">
+                <Tabs defaultValue="prizes" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="data"><Settings className="mr-2 h-4 w-4" />Datos Generales</TabsTrigger>
                     <TabsTrigger value="prizes"><Gift className="mr-2 h-4 w-4" />Premios</TabsTrigger>
@@ -626,15 +625,16 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                                 <FormControl>
                                                                     {watchedFormData.segments[index]?.isRealPrize ? (
                                                                         <div className="flex items-center gap-2">
-                                                                            <Slider 
-                                                                                value={[probField.value || 0]} 
-                                                                                onValueChange={(vals) => probField.onChange(vals[0])} 
-                                                                                max={100 - (realPrizeTotalProbability - (probField.value || 0))} 
-                                                                                step={1} />
-                                                                            <span className="text-xs font-mono w-16 text-right">{(probField.value || 0)}%</span>
+                                                                            <Slider
+                                                                                value={[probField.value || 0]}
+                                                                                onValueChange={(vals) => probField.onChange(vals[0])}
+                                                                                max={100 - (realPrizeTotalProbability - (probField.value || 0))}
+                                                                                step={1}
+                                                                            />
+                                                                            <span className="text-xs font-mono w-16 text-right">{(probField.value || 0).toFixed(0)}%</span>
                                                                         </div>
                                                                     ) : (
-                                                                        <Input value={`${nonRealPrizeProbability}% (auto)`} disabled className="text-center bg-muted/50 h-8 text-xs border-dashed" />
+                                                                        <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 h-8 text-xs border-dashed" />
                                                                     )}
                                                                 </FormControl>
                                                             </FormItem>
@@ -751,7 +751,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                               </DndContext>
                                 
                               <div className="text-right font-medium text-sm text-muted-foreground mt-2">
-                                  Probabilidad Total de Premios Reales: <span className={`font-bold ${realPrizeTotalProbability > 100 ? 'text-destructive' : 'text-foreground'}`}>{realPrizeTotalProbability}%</span>
+                                  Probabilidad Total de Premios Reales: <span className={`font-bold ${realPrizeTotalProbability > 100 ? 'text-destructive' : 'text-foreground'}`}>{realPrizeTotalProbability.toFixed(2)}%</span>
                               </div>
                               {form.formState.errors.segments && (
                                   <p className="text-sm font-medium text-destructive">{form.formState.errors.segments.message || form.formState.errors.segments.root?.message}</p>
@@ -974,3 +974,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
+
+    
