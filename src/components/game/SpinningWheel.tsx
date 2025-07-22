@@ -116,11 +116,16 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = normalizedSegments.length;
     const segmentAngle = 360 / segmentCount;
     
-    const targetAngle = -(winningIndex * segmentAngle + segmentAngle / 2);
+    // Correct calculation for target angle
+    // The pointer is at 12 o'clock (270 degrees in SVG coordinate system).
+    // We want the middle of the winning segment to land there.
+    const winningSegmentMiddleAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
+    const targetAngle = 270 - winningSegmentMiddleAngle;
+
 
     const fullSpins = 5 * 360;
-    const newRotation = rotation + fullSpins + targetAngle;
-    setRotation(newRotation);
+    const finalRotation = rotation - (rotation % 360) + fullSpins + targetAngle;
+    setRotation(finalRotation);
 
     const gameRef = doc(db, 'games', gameId);
 
