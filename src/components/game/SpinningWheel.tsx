@@ -86,35 +86,45 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Calculate the middle angle of the winning segment.
-    const winningSegmentMiddleAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
-
-    // Calculate the rotation needed to align the middle of the winning segment with the pointer.
-    const angleToAlign = POINTER_ANGLE - winningSegmentMiddleAngle;
-
-    // Add a random number of full spins for variety.
-    const fullSpins = 5 * 360; 
-  
-    // The final rotation is the current rotation plus the new spin distance.
-    const finalRotation = currentRotationRef.current + fullSpins + angleToAlign;
-    currentRotationRef.current = finalRotation;
+    // Calculate the start and end angles of the winning segment
+    const winningSegmentStartAngle = winningIndex * segmentAngle;
     
+    // Create a random offset WITHIN the winning segment to make it look more natural.
+    // We use a padding (e.g., 10% of the segment width on each side) to avoid stopping on the line.
+    const padding = 0.10;
+    const randomOffsetInSegment = (segmentAngle * padding) + (Math.random() * (segmentAngle * (1 - padding * 2)));
+    const randomizedTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
+
+    // Calculate the rotation needed to align our random point with the pointer.
+    const angleToAlign = POINTER_ANGLE - randomizedTargetAngle;
+    
+    // Add a random number of full spins for variety.
+    const fullSpins = (Math.floor(Math.random() * 2) + 4) * 360; 
+  
+    // Unlike previous versions, we don't add to the current rotation.
+    // We calculate the final position from a "zero" state + a random number of full spins.
+    // This prevents any accumulated floating point errors from previous spins.
+    const finalRotation = fullSpins + angleToAlign;
+    
+    currentRotationRef.current = finalRotation;
     setRotation(finalRotation);
   
     const gameRef = doc(db, 'games', gameId);
     
+    // The spin animation takes 7 seconds
     setTimeout(async () => {
       setWinningSegmentId(winningId);
       setIsSpinning(false);
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
   
-      // Clean up the spin request.
+      // Clean up the spin request from Firestore.
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
       } catch (error) {
         console.error("Error cleaning up spinRequest field:", error);
       }
-       // Stop blinking after a few seconds.
+
+      // Stop blinking after a few seconds.
       setTimeout(() => {
         setWinningSegmentId(null);
       }, 4000); 
@@ -307,5 +317,3 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     </div>
   );
 }
-
-    
