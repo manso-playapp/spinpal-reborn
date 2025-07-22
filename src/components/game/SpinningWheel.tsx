@@ -4,8 +4,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, updateDoc, deleteField } from 'firebase/firestore';
-import { Button } from '../ui/button';
-import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
 
 interface Segment {
@@ -29,20 +27,19 @@ interface Segment {
 interface SpinningWheelProps {
   segments: Segment[];
   gameId: string;
-  isDemoMode?: boolean;
+  onSpinEnd: (result: { name: string; isRealPrize: boolean }) => void;
   config?: {
     borderImage?: string;
     borderScale?: number;
     centerImage?: string;
     centerScale?: number;
   };
-  onSpinEnd: (result: { name: string; isRealPrize: boolean }) => void;
 }
 
 const VIEWBOX_SIZE = 500;
 const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
 
-export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, config = {}, onSpinEnd }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -68,12 +65,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     if (isSpinningRef.current || !segments || segments.length === 0) return;
 
     const { winningId } = spinRequestData;
-
     const winningIndex = segments.findIndex(s => s.id === winningId);
     
     if (winningIndex === -1) {
         console.error("Error: Winning segment ID not found in the current segments array.", spinRequestData);
-        // Clear the invalid request to prevent re-triggering
         const gameRef = doc(db, 'games', gameId);
         await updateDoc(gameRef, { spinRequest: deleteField() });
         return;
@@ -86,12 +81,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Calculate the target angle to center the winning segment under the pointer
-    const randomOffsetInSegment = (Math.random() * 0.8 + 0.1) * segmentAngle; // Land somewhere within 10-90% of the segment
+    const randomOffsetInSegment = (Math.random() * 0.8 + 0.1) * segmentAngle;
     const targetAngle = 360 - (winningIndex * segmentAngle + randomOffsetInSegment);
     
-    const fullSpins = 6 * 360; // More spins for a better visual effect
-    // We subtract 90 degrees because the SVG wheel is drawn from the 3 o'clock position, but our pointer is at 12 o'clock (top).
+    // Add randomness to the number of spins for a more natural feel
+    const fullSpins = (6 + Math.random() * 2) * 360; 
+    
     const finalRotation = fullSpins + targetAngle - 90;
     
     setRotation(finalRotation);
@@ -102,7 +97,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       setIsSpinning(false);
       
       try {
-        // Clean up the spin request from Firestore after the spin is complete.
         await updateDoc(gameRef, { spinRequest: deleteField() });
       } catch (error) {
         console.error("Error cleaning up spinRequest field:", error);
@@ -121,8 +115,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
 
   useEffect(() => {
-    if (!gameId || isDemoMode) return; // Don't listen for spins in demo/preview mode
-
     const gameRef = doc(db, 'games', gameId);
     
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
@@ -130,7 +122,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         const data = docSnap.data();
         const spinRequest = data.spinRequest;
         
-        // Check for a new spin request
         if (spinRequest && spinRequest.timestamp) {
             const newSpinTime = spinRequest.timestamp.toMillis();
             if (newSpinTime !== spinRequestTimestamp.current) {
@@ -143,11 +134,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       }
     });
     return () => unsubscribe();
-  }, [gameId, isDemoMode]);
+  }, [gameId]);
 
 
   const wheelStyle: React.CSSProperties = {
-    transition: 'transform 7s cubic-bezier(0.25, 0.1, 0.25, 1)',
+    transition: 'transform 7s cubic-bezier(0.1, 0.5, 0.2, 1)',
     transform: `rotate(${rotation}deg)`,
     transformOrigin: 'center center',
   };
@@ -157,7 +148,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   }
 
   const segmentCount = segments.length;
-  if (segmentCount === 0) return null; // Don't render if there are no segments
+  if (segmentCount === 0) return null;
   const segmentAngle = 360 / segmentCount;
 
   const getCoordinatesForAngle = (angle: number, radius: number) => {
