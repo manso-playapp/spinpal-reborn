@@ -971,23 +971,23 @@ export default function EditGameForm({ game }: { game: Game }) {
               </div>
               
               {/* Columna de Vista Previa */}
-               <div className="lg:col-span-1 lg:sticky top-4">
+              <div className="lg:col-span-1 lg:sticky top-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
-                        <Eye className="h-5 w-5"/>
-                        Vista Previa
+                      <Eye className="h-5 w-5" />
+                      Vista Previa
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square overflow-hidden">
-                    <div style={{ transform: 'scale(0.8)' }}>
-                        <SpinningWheel
-                            gameId={game.id}
-                            segments={watchedFormData.segments}
-                            config={watchedFormData.config}
-                            onSpinEnd={() => {}} // No-op for preview
-                            isDemoMode={true}
-                        />
+                    <div className="w-full max-w-md" style={{ transform: 'scale(0.8)' }}>
+                      <SpinningWheel
+                        gameId={game.id}
+                        segments={watchedFormData.segments}
+                        config={watchedFormData.config}
+                        onSpinEnd={() => {}} // No-op for preview
+                        isDemoMode={true}
+                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -998,5 +998,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
-
-    
