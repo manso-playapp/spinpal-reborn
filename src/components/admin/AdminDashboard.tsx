@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye, Briefcase } from 'lucide-react';
+import { PlusCircle, Gamepad2, Edit, Trash2, Copy as CopyIcon, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye, Briefcase, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -35,12 +35,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Separator } from '../ui/separator';
+import { format } from 'date-fns';
 
 
 interface Game {
@@ -245,9 +246,9 @@ export default function AdminDashboard() {
 
         {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
             </div>
         ) : games.length === 0 ? (
             <div className="mt-8 p-8 text-center border-2 border-dashed border-border rounded-lg">
@@ -258,162 +259,160 @@ export default function AdminDashboard() {
                 </p>
             </div>
         ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {games.map((game) => (
-            <Card key={game.id} className="flex flex-col hover:border-primary transition-colors duration-300">
+            <Card key={game.id} className="flex flex-col hover:border-primary/50 transition-colors duration-300 shadow-sm hover:shadow-lg">
                 <CardHeader>
-                <div className="flex items-start justify-between">
-                    <div className="flex-1 pr-2">
-                        <CardTitle className="font-headline text-lg mb-1">{game.name}</CardTitle>
-                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'}>
-                            {game.status === 'activo' ? 'Activo' : 'Demo'}
-                        </Badge>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 flex-shrink-0">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                            <CardTitle className="font-headline text-xl mb-1">{game.name}</CardTitle>
+                            <div className="flex items-center gap-2">
+                                <Badge variant={game.status === 'activo' ? 'default' : 'secondary'}>
+                                    {game.status === 'activo' ? 'Activo' : 'Demo'}
+                                </Badge>
+                                <p className="text-xs text-muted-foreground">
+                                    Creado: {game.createdAt ? format(new Date(game.createdAt.seconds * 1000), "dd/MM/yyyy") : 'N/A'}
+                                </p>
+                            </div>
+                        </div>
                         
-                        {game.clientEmail && (
-                            <DropdownMenuItem asChild>
-                                <Link href={`/client/dashboard?clientEmail=${game.clientEmail}&clientName=${game.clientName || ''}`}>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Ver como Cliente
-                                </Link>
-                            </DropdownMenuItem>
-                        )}
-
-
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <RotateCcw className="mr-2 h-4 w-4" />
-                                <span>Resetear Contadores</span>
-                            </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>¿Resetear contadores?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Esta acción restablecerá las jugadas y premios de <span className="font-bold">{game.name}</span> a 0. No se puede deshacer.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleResetCounters(game.id, game.name)}>
-                                    Sí, resetear
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-
-                        <DropdownMenuItem onClick={() => handleDuplicateGame(game.id)}>
-                            <CopyPlus className="mr-2 h-4 w-4" />
-                            Duplicar
-                        </DropdownMenuItem>
-
-                            <DropdownMenuItem onClick={() => handleDownloadData(game.id, game.name)}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Descargar Datos (CSV)
-                        </DropdownMenuItem>
-                        
-                        <DropdownMenuSeparator />
-                        
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                <span>Eliminar Juego</span>
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Esta acción no se puede deshacer. Se eliminará permanentemente el juego <span className="font-bold">{game.name}</span> y todos sus datos asociados.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 flex-shrink-0">
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Más opciones</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {game.clientEmail && (
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/client/dashboard?clientEmail=${game.clientEmail}&clientName=${game.clientName || ''}`}>
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            Ver como Cliente
+                                        </Link>
+                                    </DropdownMenuItem>
+                                )}
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                        <span>Resetear Contadores</span>
+                                    </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Resetear contadores?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Esta acción restablecerá las jugadas y premios de <span className="font-bold">{game.name}</span> a 0. No se puede deshacer.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteGame(game.id, game.name)} className="bg-destructive hover:bg-destructive/90">
-                                        Sí, eliminar
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                 {(game.clientName || game.clientEmail) && (
-                    <div className="mt-2 text-xs text-muted-foreground flex flex-col items-start gap-1">
-                        {game.clientName && (
-                            <div className="flex items-center gap-1.5">
-                                <Briefcase className="h-3 w-3" />
-                                <span className="font-medium text-foreground">{game.clientName}</span>
-                            </div>
-                        )}
-                        {game.clientEmail && (
-                            <div className="flex items-center gap-1.5">
-                                <User className="h-3 w-3" />
-                                <span>{game.clientEmail}</span>
-                            </div>
-                        )}
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleResetCounters(game.id, game.name)}>
+                                            Sí, resetear
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                <DropdownMenuItem onClick={() => handleDuplicateGame(game.id)}>
+                                    <CopyPlus className="mr-2 h-4 w-4" />
+                                    Duplicar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownloadData(game.id, game.name)}>
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Descargar Datos (CSV)
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        <span>Eliminar Juego</span>
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta acción no se puede deshacer. Se eliminará permanentemente el juego <span className="font-bold">{game.name}</span> y todos sus datos asociados.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDeleteGame(game.id, game.name)} className="bg-destructive hover:bg-destructive/90">
+                                                Sí, eliminar
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
-                )}
+
+                    {(game.clientName || game.clientEmail) && (
+                        <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm">
+                            {game.clientName && (
+                                <div className="flex items-center gap-2 font-medium">
+                                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                    <span>{game.clientName}</span>
+                                </div>
+                            )}
+                            {game.clientEmail && (
+                                <div className={`flex items-center gap-2 ${game.clientName ? 'text-muted-foreground text-xs mt-1' : ''}`}>
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span>{game.clientEmail}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </CardHeader>
-                <CardContent className="flex-grow">
-                    <div className="flex justify-around text-center border-t border-b py-4 my-4">
+                <CardContent className="flex-grow space-y-4">
+                    <div className="flex justify-around text-center border-t border-b py-4">
                         <div className="px-2">
-                            <p className="text-2xl font-bold">{game.plays || 0}</p>
-                            <p className="text-xs text-muted-foreground">Jugadas</p>
+                            <p className="text-3xl font-bold">{game.plays || 0}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">Jugadas</p>
                         </div>
                         <div className="border-l"></div>
                         <div className="px-2">
-                            <p className="text-2xl font-bold">{game.prizesAwarded || 0}</p>
-                            <p className="text-xs text-muted-foreground">Premios</p>
+                            <p className="text-3xl font-bold">{game.prizesAwarded || 0}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">Premios</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-muted-foreground">Enlace para TV / Pantalla</label>
+                         <div className="flex items-center space-x-2 mt-1">
+                            <Input value={getGameUrl(game.id)} readOnly className="h-9 text-xs"/>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => copyToClipboard(getGameUrl(game.id))}>
+                                        <CopyIcon className="h-4 w-4" />
+                                        <span className="sr-only">Copiar</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Copiar enlace</p></TooltipContent>
+                            </Tooltip>
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button asChild variant="outline" size="icon" className="h-9 w-9 flex-shrink-0">
+                                        <Link href={getGameUrl(game.id)} target="_blank">
+                                            <ExternalLink className="h-4 w-4" />
+                                            <span className="sr-only">Abrir</span>
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Abrir en nueva pestaña</p></TooltipContent>
+                            </Tooltip>
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-2">
+                <Separator />
+                <CardFooter className="flex p-4 gap-2">
                     <Button asChild className="w-full">
                         <Link href={`/admin/juegos/editar/${game.id}`}><Edit className="mr-2 h-4 w-4"/> Configurar</Link>
                     </Button>
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                        <Button asChild variant="secondary">
+                    <Button asChild variant="secondary" className="w-full">
                         <Link href={`/admin/clientes/${game.id}`}><Users className="mr-2 h-4 w-4" /> Participantes</Link>
-                        </Button>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="secondary"><LinkIcon className="mr-2 h-4 w-4" /> TV Link</Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Enlace Público del Juego</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Usa este enlace para mostrar la ruleta en una pantalla o TV.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <div className="flex items-center space-x-2">
-                                    <Input value={getGameUrl(game.id)} readOnly />
-                                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(getGameUrl(game.id))}>
-                                        <Copy className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cerrar</AlertDialogCancel>
-                                    <AlertDialogAction asChild>
-                                        <Link href={getGameUrl(game.id)} target="_blank">
-                                            Abrir enlace
-                                        </Link>
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
+                    </Button>
                 </CardFooter>
             </Card>
             ))}
