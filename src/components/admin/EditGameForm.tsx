@@ -639,11 +639,11 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                     name={`segments.${index}.probability`}
                                                     render={({ field }) => (
                                                       <FormItem>
-                                                          <FormLabel>Probabilidad ({field.value || 0}%)</FormLabel>
+                                                          <FormLabel>Probabilidad ({watchedFormData.segments[index]?.isRealPrize ? (field.value || 0) : nonRealPrizeProbability}%)</FormLabel>
                                                           {watchedFormData.segments[index]?.isRealPrize ? (
                                                               <Slider value={[field.value || 0]} onValueChange={(vals) => field.onChange(vals[0])} max={100 - (realPrizeTotalProbability - (field.value || 0))} step={1} />
                                                           ) : (
-                                                              <Input value={`${nonRealPrizeProbability}%`} disabled className="text-center bg-muted" />
+                                                              <Input value={`${nonRealPrizeProbability}% (calculado)`} disabled className="text-center bg-muted" />
                                                           )}
                                                       </FormItem>
                                                     )}
@@ -911,7 +911,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                         Vista Previa
                     </CardTitle>
                   </CardHeader>
-                   <CardContent>
+                  <CardContent>
                     <Tabs defaultValue="roulette" className="w-full">
                       <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
@@ -937,12 +937,13 @@ export default function EditGameForm({ game }: { game: Game }) {
                              <iframe
                                 key={previewKey}
                                 src={`/juego/${game.id}/preview`}
-                                className="w-full h-full border-0 transform scale-[0.3] origin-top-left"
+                                className="w-full h-full border-0 origin-top-left"
                                 scrolling="no"
                                 title="Game Preview"
                                 style={{
                                     width: '333.33%',
                                     height: '333.33%',
+                                    transform: 'scale(0.3)',
                                 }}
                             />
                           </div>
@@ -958,3 +959,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
+
+    
