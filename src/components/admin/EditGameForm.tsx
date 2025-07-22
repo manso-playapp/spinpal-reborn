@@ -43,7 +43,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import GameClientPage from '@/app/game/GameClientPage';
+import GameClientPage from '@/components/game/GameClientPage';
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 
@@ -200,7 +200,6 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedSegments = form.watch('segments');
-  const watchedConfig = form.watch('config');
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
     const realPrizeSegments = watchedSegments.filter(s => s.isRealPrize);
@@ -253,7 +252,10 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const refreshPreview = () => {
     if (iframeRef.current) {
-        iframeRef.current.src = iframeRef.current.src;
+        // Reloading the iframe src is one way, but can be flashy.
+        // Since GameClientPage uses onSnapshot, changes should appear automatically.
+        // A forced reload can be a fallback if real-time updates fail.
+        iframeRef.current.src = `/juego/${game.id}/preview?t=${new Date().getTime()}`;
     }
   }
   
@@ -287,7 +289,8 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
-      refreshPreview();
+      // The preview will refresh automatically via onSnapshot listener in the iframe.
+      // refreshPreview();
 
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -985,22 +988,10 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <Eye className="h-5 w-5"/>
                         Vista Previa
                     </CardTitle>
-                    <Button type="button" variant="ghost" size="sm" onClick={refreshPreview}><RefreshCw className="mr-2 h-4 w-4"/>Refrescar</Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => refreshPreview()}><RefreshCw className="mr-2 h-4 w-4"/>Refrescar</Button>
                   </CardHeader>
-                  <CardContent className="p-4 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-video overflow-hidden">
-                     <div 
-                        className="w-[1080px] h-[1920px] origin-top-left bg-background"
-                        style={{
-                           transform: 'scale(0.35) translateX(-5%) translateY(-5%)',
-                        }}
-                     >
-                        <iframe 
-                           ref={iframeRef}
-                           src={`/juego/${game.id}/preview`}
-                           className="w-full h-full border-none"
-                           title="Vista previa del juego"
-                        />
-                     </div>
+                  <CardContent className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-video overflow-hidden">
+                     <GameClientPage gameId={game.id} />
                   </CardContent>
                 </Card>
               </div>

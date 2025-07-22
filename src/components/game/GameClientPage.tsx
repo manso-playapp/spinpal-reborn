@@ -54,14 +54,16 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
         if (docSnap.exists()) {
             const data = docSnap.data();
             
-            // Handle spin request
             const spinRequest = data.spinRequest;
             if (spinRequest && spinRequest.customerId) {
-                setUiState('SPINNING');
-                const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
-                const customerSnap = await getDoc(customerRef);
-                if (customerSnap.exists()) {
-                    setCurrentPlayer(customerSnap.data().name);
+                // Only trigger spin if the UI is idle
+                if (uiState === 'IDLE') {
+                    setUiState('SPINNING');
+                    const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
+                    const customerSnap = await getDoc(customerRef);
+                    if (customerSnap.exists()) {
+                        setCurrentPlayer(customerSnap.data().name);
+                    }
                 }
             }
 
@@ -95,7 +97,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
 
     // Cleanup listener on component unmount
     return () => unsubscribe();
-  }, [gameId]);
+  }, [gameId, uiState]); // Added uiState to dependencies to re-evaluate when it changes
 
 
   const handleSpinEnd = (result: SpinResult) => {
