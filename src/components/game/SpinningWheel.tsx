@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc, increment, deleteField } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
@@ -136,7 +136,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                 name: winningSegment.name,
                 isRealPrize: !!winningSegment.isRealPrize,
                 customerId: customerId,
-                timestamp: new Date(),
+                timestamp: serverTimestamp(),
             }
         });
     }
