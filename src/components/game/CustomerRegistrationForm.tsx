@@ -221,7 +221,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const random = Math.random() * 100;
         let accumulatedProb = 0;
-        let winningSegment = finalSegments[finalSegments.length - 1]; // Fallback
+        let winningSegment: (Segment & { finalProbability: number }) | null = null;
 
         for (let i = 0; i < finalSegments.length; i++) {
             accumulatedProb += (finalSegments[i].finalProbability || 0);
@@ -231,6 +231,10 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             }
         }
         
+        if (!winningSegment) {
+            winningSegment = finalSegments[finalSegments.length - 1]; // Fallback
+        }
+
         const spinRequestData = {
             timestamp: serverTimestamp(),
             customerId: customerId,
@@ -240,7 +244,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 isRealPrize: !!winningSegment.isRealPrize,
             }
         };
-
+        
         await updateDoc(gameRef, {
             spinRequest: spinRequestData,
             plays: increment(1),
