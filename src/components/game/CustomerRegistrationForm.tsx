@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, serverTimestamp, doc, writeBatch, query, where, getDocs, limit, increment, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -112,23 +113,21 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     };
     setIsSubmitting(true);
     try {
-        const batch = writeBatch(db);
         const gameRef = doc(db, 'games', gameId);
         const customerRef = doc(db, 'games', gameId, 'customers', customerId);
 
-        // Update game to trigger spin and increment plays
-        batch.update(gameRef, {
+        // Action 1: Update the game document to trigger the spin on screen
+        await updateDoc(gameRef, {
             spinRequest: {
                 timestamp: serverTimestamp(),
             },
             plays: increment(1),
         });
 
-        // Mark customer as having played
-        batch.update(customerRef, { hasPlayed: true });
+        // Action 2: Mark the customer as having played
+        await updateDoc(customerRef, { hasPlayed: true });
 
-        await batch.commit();
-
+        // All successful, move to the final state
         setUiState('submitted');
 
     } catch (error) {
