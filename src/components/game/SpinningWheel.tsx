@@ -79,7 +79,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const winningSegment = segments[winningIndex];
 
     setIsSpinning(true);
-    setWinningSegmentId(winningId);
     
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
@@ -91,7 +90,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const fullSpins = (6 + Math.random() * 2) * 360; 
 
     // The final rotation is the current rotation plus the new spin distance.
-    // This ensures the wheel always spins forward.
     const finalRotation = rotation + fullSpins + targetAngle;
     
     setRotation(finalRotation);
@@ -99,16 +97,22 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const gameRef = doc(db, 'games', gameId);
     
     setTimeout(async () => {
+      // Announce winner visually by blinking
+      setWinningSegmentId(winningId);
+
       setIsSpinning(false);
-      setWinningSegmentId(null);
-      
+      onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
+
+      // Clean up the spin request and blinking effect
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
       } catch (error) {
         console.error("Error cleaning up spinRequest field:", error);
       }
-      
-      onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
+       // Stop blinking after a few seconds
+      setTimeout(() => {
+        setWinningSegmentId(null);
+      }, 4000); 
 
     }, 7000); // This duration must match the CSS transition duration for a smooth stop.
 
@@ -175,7 +179,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                 50% { opacity: 0.3; }
             }
             .blinking-winner {
-                animation: blink-winner 0.5s 3;
+                animation: blink-winner 0.5s infinite;
             }
             `}
         </style>
