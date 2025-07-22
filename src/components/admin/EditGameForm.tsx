@@ -668,7 +668,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       </div>
                                                       <Controller control={form.control} name={`segments.${index}.isRealPrize`} render={({ field: { onChange, value } }) => ( <Checkbox checked={!!value} onCheckedChange={onChange} /> )}/>
                                                   </div>
-                                                  <FormField
+                                                  <Controller
                                                     control={form.control}
                                                     name={`segments.${index}.probability`}
                                                     render={({ field }) => (
