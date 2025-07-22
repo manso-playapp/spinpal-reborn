@@ -257,8 +257,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                                 x="0"
                                 dy={i === 0 ? '-0.3em' : `${(segment.lineHeight || 1)}em`}
                                 style={ i > 0 ? { 
-                                    fontSize: '110%', 
-                                    letterSpacing: segment.letterSpacingLineTwo ?? `calc(${segment.letterSpacing || 0.5}px * 1.1)` 
+                                    letterSpacing: segment.letterSpacingLineTwo ?? ((segment.letterSpacing || 0.5) * 1.1) 
                                 } : {}}
                               >
                                 {part.trim()}

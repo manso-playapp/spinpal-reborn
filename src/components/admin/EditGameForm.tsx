@@ -1053,5 +1053,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
-
-    
