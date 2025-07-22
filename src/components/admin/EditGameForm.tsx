@@ -989,14 +989,25 @@ export default function EditGameForm({ game }: { game: Game }) {
                     </Button>
                   </CardHeader>
                   <CardContent>
-                     <div className="mt-4 p-2 bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
-                        <iframe
-                            ref={iframeRef}
-                            src={`/juego/${game.id}/preview`}
-                            className="w-full h-full bg-background shadow-lg rounded-lg border-0 transform origin-top-left"
-                            title="Vista Previa del Juego"
-                        ></iframe>
-                      </div>
+                     <div className="relative mx-auto h-[680px] w-[380px] overflow-hidden rounded-[2rem] bg-muted/50 p-4 shadow-inner">
+                        <div
+                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                            style={{
+                                width: '1080px',
+                                height: '1920px',
+                                transform: 'scale(0.35)',
+                                transformOrigin: 'center center',
+                            }}
+                        >
+                            <iframe
+                                ref={iframeRef}
+                                src={`/juego/${game.id}/preview`}
+                                className="h-full w-full bg-background"
+                                title="Vista Previa del Juego"
+                                scrolling="no"
+                            ></iframe>
+                        </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
