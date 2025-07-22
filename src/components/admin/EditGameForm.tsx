@@ -932,14 +932,18 @@ export default function EditGameForm({ game }: { game: Game }) {
                         </div>
                       </TabsContent>
                       <TabsContent value="game">
-                        <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[16/9] w-full">
+                        <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
                           <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-center">
-                            <iframe
-                              key={previewKey}
-                              src={`/juego/${game.id}/preview`}
-                              className="w-full h-full border-0"
-                              scrolling="no"
-                              title="Game Preview"
+                             <iframe
+                                key={previewKey}
+                                src={`/juego/${game.id}/preview`}
+                                className="w-full h-full border-0 transform scale-[0.3] origin-top-left"
+                                scrolling="no"
+                                title="Game Preview"
+                                style={{
+                                    width: '333.33%',
+                                    height: '333.33%',
+                                }}
                             />
                           </div>
                         </div>
