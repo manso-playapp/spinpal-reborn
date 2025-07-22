@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { Resend } from 'resend';
+import TestEmailSender from '@/components/admin/TestEmailSender';
 
 type ServiceStatus = {
   connected: boolean;
@@ -163,10 +164,12 @@ const ServiceStatusCard = ({
   title,
   icon,
   status,
+  children,
 }: {
   title: string;
   icon: React.ReactNode;
   status: ServiceStatus;
+  children?: React.ReactNode;
 }) => (
   <Card className={`shadow-md border-l-4 ${status.isConfigured === 'yes' ? 'border-green-500' : (status.isConfigured === 'partial' ? 'border-yellow-500' : 'border-red-500')}`}>
     <CardHeader>
@@ -195,6 +198,7 @@ const ServiceStatusCard = ({
           )}
         </div>
       </div>
+      {children}
       {status.actionUrl && (
         <Button asChild variant="outline" size="sm" className="self-start">
           <Link href={status.actionUrl} target="_blank">
@@ -224,7 +228,13 @@ export default async function ConexionesPage() {
           <ServiceStatusCard title="Firebase Auth" icon={<UserPlus />} status={servicesStatus.auth} />
           <ServiceStatusCard title="Firebase Firestore" icon={<Database />} status={servicesStatus.firestore} />
           <ServiceStatusCard title="Gemini API" icon={<Sparkles />} status={servicesStatus.gemini} />
-          <ServiceStatusCard title="Resend API" icon={<Mail />} status={servicesStatus.resend} />
+          <ServiceStatusCard title="Resend API" icon={<Mail />} status={servicesStatus.resend}>
+            {servicesStatus.resend.isConfigured === 'yes' && (
+                <div className="mt-4 pt-4 border-t">
+                    <TestEmailSender />
+                </div>
+            )}
+          </ServiceStatusCard>
         </div>
 
         <Separator />
@@ -352,8 +362,8 @@ service cloud.firestore {
                             <li className='font-bold text-card-foreground'>
                                 <strong>¡Atención Proveedores como DONWEB!</strong> Si el panel de tu dominio no acepta un nombre de host como `send` o `resend._domainkey`, es porque espera el nombre completo. Debes construirlo tú mismo:
                                 <ul className="list-disc list-inside pl-6 mt-2 font-normal">
-                                    <li>Si Resend pide `send`, en tu panel debes poner `send.tudominio.com`.</li>
-                                    <li>Si Resend pide `resend._domainkey`, en tu panel debes poner `resend._domainkey.tudominio.com`.</li>
+                                    <li>Si Resend pide un registro <strong>CNAME</strong> con el host `send`, en tu panel debes poner `send.tudominio.com`.</li>
+                                    <li>Si Resend pide un registro <strong>TXT</strong> con el host `resend._domainkey`, en tu panel debes poner `resend._domainkey.tudominio.com`.</li>
                                 </ul>
                             </li>
                             <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como "Verified".</li>
