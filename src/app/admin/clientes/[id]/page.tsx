@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import AdminHeader from '@/components/admin/AdminHeader';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
   const gameRef = doc(db, 'games', id);
@@ -29,8 +30,8 @@ export default async function CustomerListPage({ params }: { params: { id: strin
   return (
     <AuthWrapper>
       <div className="flex min-h-screen w-full flex-col bg-muted/40">
-        <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
-          <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <AdminHeader />
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
             <div className="flex items-center gap-4 mb-4">
                 <Button variant="outline" size="icon" className="h-7 w-7" asChild>
                     <Link href="/admin">
@@ -43,8 +44,7 @@ export default async function CustomerListPage({ params }: { params: { id: strin
                 </h1>
             </div>
             <CustomerList gameId={params.id} />
-          </main>
-        </div>
+        </main>
       </div>
     </AuthWrapper>
   );

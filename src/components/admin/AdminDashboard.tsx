@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical } from 'lucide-react';
+import { PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -39,7 +39,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
-import Logo from '../logo';
+import AdminHeader from './AdminHeader';
 
 
 interface Game {
@@ -55,7 +55,7 @@ interface Game {
 }
 
 export default function AdminDashboard() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const superAdminEmail = 'grupomanso@gmail.com';
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -222,28 +222,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
-        <div className="flex items-center gap-4">
-          <Link href="/admin">
-            <Logo className="h-8 w-auto text-primary" />
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {user && user.email && (
-            <p className="text-sm text-muted-foreground hidden md:block">
-              {user.email}
-            </p>
-          )}
-          <Button onClick={signOut} variant="outline" size="icon" className="h-8 w-8">
-            <LogOut className="h-4 w-4" />
-            <span className="sr-only">Cerrar sesión</span>
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
-        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+       <AdminHeader />
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="font-headline text-2xl font-semibold">Mis Juegos</h1>
@@ -298,12 +278,12 @@ export default function AdminDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {games.map((game) => (
-                <Card key={game.id} className="flex flex-col border-primary/20 hover:border-primary transition-colors duration-300">
+                <Card key={game.id} className="flex flex-col hover:border-primary transition-colors duration-300">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <CardTitle className="font-headline text-lg mb-1">{game.name}</CardTitle>
-                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className={game.status === 'activo' ? 'bg-green-500 text-white border-green-500' : ''}>
+                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'}>
                           {game.status === 'activo' ? 'Activo' : 'Demo'}
                         </Badge>
                       </div>
@@ -431,7 +411,6 @@ export default function AdminDashboard() {
             </div>
           )}
       </main>
-      </div>
     </div>
   );
 }
