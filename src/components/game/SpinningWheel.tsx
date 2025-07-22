@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp } from 'firebase/firestore';
 import { Button } from '../ui/button';
@@ -55,7 +55,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     isSpinningRef.current = isSpinning;
   }, [isSpinning]);
 
-
   const borderImage = config?.borderImage || "";
   const centerImage = config?.centerImage || "";
   const borderScale = config?.borderScale || 1;
@@ -65,7 +64,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     setShouldRender(true);
   }, []);
 
-  const normalizedSegments = (() => {
+  const normalizedSegments = useMemo(() => {
     if (!initialSegments || initialSegments.length === 0) return [];
 
     const realPrizeSegments = initialSegments.filter(s => s.isRealPrize);
@@ -77,25 +76,26 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     let nonRealPrizeProb = 0;
     if (nonRealPrizeSegments.length > 0) {
         nonRealPrizeProb = remainingProbability / nonRealPrizeSegments.length;
+    } else if (realPrizeTotalProbability < 100 && realPrizeSegments.length > 0) {
+        // Distribute remaining probability among real prizes if no non-real prizes exist
+        const adjustment = remainingProbability / realPrizeSegments.length;
+        return initialSegments.map(seg => ({
+            ...seg,
+            finalProbability: seg.isRealPrize ? (seg.probability || 0) + adjustment : 0
+        }));
     }
 
     return initialSegments.map(seg => ({
       ...seg,
       finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
     }));
-  })();
+  }, [initialSegments]);
 
 
   const getWinningSegmentIndex = useCallback(() => {
     if (normalizedSegments.length === 0) return 0;
     const random = Math.random() * 100;
     let accumulatedProb = 0;
-    
-    const totalProb = normalizedSegments.reduce((sum, s) => sum + (s.finalProbability || 0), 0);
-    
-    if (Math.abs(totalProb - 100) > 0.1 && totalProb > 0) {
-       console.warn("DIAGNÓSTICO: La probabilidad total no es 100, es", totalProb, ". La distribución puede no ser perfecta.");
-    }
     
     for (let i = 0; i < normalizedSegments.length; i++) {
         accumulatedProb += (normalizedSegments[i].finalProbability || 0);
@@ -107,31 +107,23 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   }, [normalizedSegments]);
 
   const handleSpinClick = useCallback(async (customerId?: string) => {
-    if (isSpinningRef.current || normalizedSegments.length === 0) {
-        console.log("DIAGNÓSTICO: Se ignoró el giro. ¿Está girando ya?", isSpinningRef.current, "¿Hay segmentos?", normalizedSegments.length > 0);
-        return;
-    }
+    if (isSpinningRef.current || normalizedSegments.length === 0) return;
 
-    console.log("DIAGNÓSTICO: Iniciando giro...");
     setIsSpinning(true);
     const winningIndex = getWinningSegmentIndex();
     const winningSegment = normalizedSegments[winningIndex];
-    console.log(`DIAGNÓSTICO: El segmento ganador es el #${winningIndex}: "${winningSegment?.name}"`);
     
     const segmentCount = normalizedSegments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Correct calculation for the target angle. We want to point the top (at -90 deg) to the middle of the winning segment.
     const targetAngle = -(winningIndex * segmentAngle + segmentAngle / 2);
 
     const fullSpins = 5 * 360;
-    // Add the current rotation to continue spinning from the last position
     const newRotation = rotation + fullSpins + targetAngle;
     setRotation(newRotation);
 
     const gameRef = doc(db, 'games', gameId);
 
-    // Update game with last result for the player's screen
     if (customerId) {
         await updateDoc(gameRef, {
             lastResult: {
@@ -144,13 +136,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     }
 
     setTimeout(async () => {
-      console.log("DIAGNÓSTICO: El giro ha terminado.");
       setIsSpinning(false);
       
-      console.log("DIAGNÓSTICO: Intentando limpiar spinRequest en Firestore...");
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
-        console.log("DIAGNÓSTICO: ¡Éxito! spinRequest limpiado.");
       } catch (error) {
         console.error("DIAGNÓSTICO: ¡ERROR AL LIMPIAR spinRequest!", error);
       }
@@ -158,23 +147,18 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
 
       if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
-        console.log(`DIAGNÓSTICO: Es un premio real para el cliente ${customerId}. Intentando actualizar contador y notificar...`);
         try {
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
-            console.log("DIAGNÓSTICO: ¡Éxito! Contador de premios incrementado.");
             
-            const notificationResult = await sendPrizeNotification({
+            await sendPrizeNotification({
                 gameId: gameId,
                 customerId: customerId,
                 prizeName: winningSegment.name,
             });
-            console.log("DIAGNÓSTICO: Resultado de la notificación de premio:", notificationResult);
 
         } catch (error) {
             console.error("DIAGNÓSTICO: ¡ERROR al actualizar premios o notificar!", error);
         }
-      } else {
-        console.log("DIAGNÓSTICO: No es un premio real, no se actualiza contador ni se notifica.");
       }
     }, 7000); // Match transition duration
 
@@ -201,11 +185,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             const newSpinTime = spinRequest.timestamp.toMillis();
             if (newSpinTime !== lastSpinRequestTime) {
                 lastSpinRequestTime = newSpinTime;
-                console.log(`DIAGNÓSTICO: Nueva solicitud de giro detectada en Firestore con timestamp ${newSpinTime}.`);
                 if (!isSpinningRef.current) {
                     spinHandlerRef.current(spinRequest.customerId);
-                } else {
-                    console.log("DIAGNÓSTICO: Solicitud de giro ignorada porque la ruleta ya está girando.");
                 }
             }
         }
@@ -271,7 +252,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                     const iconRotation = textAngle + 90;
 
                     return (
-                      <g key={index}>
+                      <g key={segment.id || index}>
                         <defs>
                           <path id={textPathId} d={textPathData} />
                         </defs>

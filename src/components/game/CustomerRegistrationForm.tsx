@@ -101,35 +101,27 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
     fetchGameData();
   }, [gameId]);
 
-  const fetchResultAfterDelay = async (cId: string) => {
-    // Wait for the spin animation to finish (7s) + a small buffer (0.5s)
-    setTimeout(async () => {
-      try {
-        const gameRef = doc(db, 'games', gameId);
-        const docSnap = await getDoc(gameRef);
-        const data = docSnap.data();
 
-        if (data && data.lastResult && data.lastResult.customerId === cId) {
-            setSpinResult({
-                name: data.lastResult.name,
-                isRealPrize: data.lastResult.isRealPrize,
-            });
-            setUiState('final_result');
-        } else {
-            // Fallback or retry logic if needed, for now show error
-            setUiState('error');
-            toast({
-                variant: 'destructive',
-                title: 'Error de Sincronización',
-                description: 'No se pudo obtener el resultado del giro. Por favor, contacta al organizador.',
-            });
-        }
-      } catch(e) {
-        console.error("Error fetching spin result:", e);
-        setUiState('error');
+  useEffect(() => {
+    if (uiState !== 'success_message' || !customerId) return;
+
+    const gameRef = doc(db, 'games', gameId);
+    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+      const data = docSnap.data();
+      if (data && data.lastResult && data.lastResult.customerId === customerId) {
+        setSpinResult({
+          name: data.lastResult.name,
+          isRealPrize: data.lastResult.isRealPrize,
+        });
+        setUiState('final_result');
+        unsubscribe(); // Stop listening once we have the result
       }
-    }, 7500); // 7.5 seconds
-  }
+    });
+
+    // Cleanup listener on component unmount or state change
+    return () => unsubscribe();
+
+  }, [uiState, customerId, gameId]);
 
 
   const onSubmit = async (data: CustomerFormValues) => {
@@ -209,9 +201,8 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         await updateDoc(customerRef, { hasPlayed: true });
 
-        // Change UI state to show a success message and start the timer to fetch the result
+        // Change UI state to show a success message and start listening for the result
         setUiState('success_message');
-        fetchResultAfterDelay(customerId);
 
     } catch (error) {
         console.error('Error triggering spin: ', error);
