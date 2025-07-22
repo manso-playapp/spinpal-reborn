@@ -58,6 +58,7 @@ const segmentSchema = z.object({
   fontSize: z.number().min(4).max(40).default(16),
   lineHeight: z.number().min(0.5).max(3).default(1),
   letterSpacing: z.number().min(-5).max(10).default(0.5),
+  letterSpacingLineTwo: z.number().min(-5).max(10).optional(),
   distanceFromCenter: z.number().min(0).max(1).default(0.7),
   iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
   iconScale: z.number().min(0.1).max(2).default(1),
@@ -154,6 +155,7 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   fontSize: 16,
   lineHeight: 1,
   letterSpacing: 0.5,
+  letterSpacingLineTwo: 0.5 * 1.1,
   distanceFromCenter: 0.7,
   iconUrl: '',
   iconScale: 1,
@@ -182,7 +184,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       backgroundFit: game.backgroundFit || 'cover',
       mobileBackgroundImage: game.mobileBackgroundImage || '',
       mobileBackgroundFit: game.mobileBackgroundFit || 'cover',
-      registrationTitle: game.registrationTitle || `Estás jugando a`,
+      registrationTitle: game.registrationTitle || ``,
       registrationSubtitle: game.registrationSubtitle || '',
       isPhoneRequired: game.isPhoneRequired || false,
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
@@ -783,6 +785,12 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                    <FormField control={form.control} name={`segments.${index}.letterSpacing`} render={({ field }) => (
                                                       <FormItem>
                                                         <FormLabel>Interletrado ({field.value}px)</FormLabel>
+                                                        <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={-5} max={10} step={0.1} />
+                                                      </FormItem>
+                                                  )}/>
+                                                   <FormField control={form.control} name={`segments.${index}.letterSpacingLineTwo`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>Interletrado Línea 2 ({field.value?.toFixed(1)}px)</FormLabel>
                                                         <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={-5} max={10} step={0.1} />
                                                       </FormItem>
                                                   )}/>

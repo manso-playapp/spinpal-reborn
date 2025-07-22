@@ -18,6 +18,7 @@ interface Segment {
   fontSize?: number;
   lineHeight?: number;
   letterSpacing?: number;
+  letterSpacingLineTwo?: number;
   distanceFromCenter?: number;
   iconUrl?: string;
   iconScale?: number;
@@ -99,9 +100,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     const fullSpins = (Math.floor(Math.random() * 3) + 5) * 360; // 5 to 7 fast spins
     
-    // Calculate final rotation based on current accumulated rotation
-    const rotationFromCurrent = fullSpins - (currentRotationRef.current % 360) + (POINTER_ANGLE - randomizedTargetAngle);
-    const finalRotation = currentRotationRef.current + rotationFromCurrent;
+    const finalRotation = fullSpins + currentRotationRef.current + (POINTER_ANGLE - randomizedTargetAngle);
     
     currentRotationRef.current = finalRotation;
     setRotation(finalRotation);
@@ -257,7 +256,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                                 key={i}
                                 x="0"
                                 dy={i === 0 ? '-0.3em' : `${(segment.lineHeight || 1)}em`}
-                                style={ i > 0 ? { fontSize: '110%', letterSpacing: `calc(${segment.letterSpacing || 0.5}px * 1.1)` } : {}}
+                                style={ i > 0 ? { 
+                                    fontSize: '110%', 
+                                    letterSpacing: segment.letterSpacingLineTwo ?? `calc(${segment.letterSpacing || 0.5}px * 1.1)` 
+                                } : {}}
                               >
                                 {part.trim()}
                               </tspan>
