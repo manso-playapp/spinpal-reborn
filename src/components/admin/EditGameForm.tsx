@@ -252,7 +252,9 @@ export default function EditGameForm({ game }: { game: Game }) {
   };
 
   const refreshPreview = () => {
-    // This function is now just for show, but could be useful if we re-add an iframe
+    if (iframeRef.current) {
+        iframeRef.current.src = iframeRef.current.src;
+    }
   }
   
   const onSubmit = async (data: GameFormValues) => {
@@ -285,6 +287,7 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
+      refreshPreview();
 
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -982,9 +985,10 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <Eye className="h-5 w-5"/>
                         Vista Previa
                     </CardTitle>
+                    <Button type="button" variant="ghost" size="sm" onClick={refreshPreview}><RefreshCw className="mr-2 h-4 w-4"/>Refrescar</Button>
                   </CardHeader>
-                  <CardContent className="p-4 bg-muted/50 flex items-center justify-center rounded-b-lg">
-                     <div className="w-full max-w-md">
+                  <CardContent className="p-4 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square">
+                     <div className="w-full max-w-md" style={{ transform: 'scale(0.8)' }}>
                         <SpinningWheel
                             segments={watchedSegments}
                             gameId={game.id}
