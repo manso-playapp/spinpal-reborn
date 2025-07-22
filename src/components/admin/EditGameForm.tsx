@@ -306,7 +306,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     centerScale: watchedFormData.centerScale,
   };
 
-  const roulettePreviewKey = JSON.stringify(watchedFormData.segments) + JSON.stringify(currentConfig);
+  const roulettePreviewKey = JSON.stringify(watchedSegments) + JSON.stringify(currentConfig);
 
 
   return (
@@ -416,7 +416,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 </FormControl>
                                  <FormDescription>
                                     Elige quién se encargará de administrar esta campaña.
-                                </FormDescription>
+                                 </FormDescription>
                                 <FormMessage />
                                 </FormItem>
                             )}
@@ -956,7 +956,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                           <div className="w-full max-w-md">
                             <SpinningWheel
                               key={roulettePreviewKey}
-                              segments={watchedFormData.segments}
+                              segments={watchedSegments}
                               gameId={game.id}
                               isDemoMode={true}
                               showDemoButton={true}
