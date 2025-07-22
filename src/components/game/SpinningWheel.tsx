@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { Button } from '../ui/button';
@@ -47,6 +47,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  
+  const isSpinningRef = useRef(isSpinning);
+  useEffect(() => {
+    isSpinningRef.current = isSpinning;
+  }, [isSpinning]);
+
 
   const borderImage = config?.borderImage || "";
   const centerImage = config?.centerImage || "";
@@ -99,7 +105,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   }, [normalizedSegments]);
 
   const handleSpinClick = useCallback(() => {
-    if (isSpinning || normalizedSegments.length === 0) return;
+    if (isSpinningRef.current || normalizedSegments.length === 0) return;
 
     setIsSpinning(true);
     const winningIndex = getWinningSegmentIndex();
@@ -109,36 +115,54 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
 
     const fullSpins = 5 * 360;
-    const finalRotation = rotation + fullSpins + targetAngle; // Accumulate rotation
-
-    setRotation(finalRotation);
+    setRotation(prevRotation => prevRotation + fullSpins + targetAngle);
 
     setTimeout(() => {
       setIsSpinning(false);
+      // Logic to update prizesAwarded if needed can go here, but it's better handled
+      // when the spin is requested to avoid race conditions.
       if (!isDemoMode) {
         const winningSegment = normalizedSegments[winningIndex];
-        if (winningSegment && winningSegment.isRealPrize) {
-          const gameRef = doc(db, 'games', gameId);
-          updateDoc(gameRef, { prizesAwarded: increment(1) }).catch(console.error);
+        if (winningSegment?.isRealPrize) {
+            const gameRef = doc(db, 'games', gameId);
+            updateDoc(gameRef, { prizesAwarded: increment(1) }).catch(console.error);
         }
       }
     }, 7000); // Match transition duration
 
-  }, [isSpinning, normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex, rotation]);
+  }, [normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex]);
+
+  const spinHandlerRef = useRef(handleSpinClick);
+  useEffect(() => {
+    spinHandlerRef.current = handleSpinClick;
+  }, [handleSpinClick]);
+
 
   useEffect(() => {
     if (!gameId || isDemoMode) return;
 
     const gameRef = doc(db, 'games', gameId);
+    let lastSpinRequestTime: number | null = null;
+    
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
-      if (docSnap.exists() && docSnap.data().spinRequest) {
-        if (!isSpinning) {
-          handleSpinClick();
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const spinRequest = data.spinRequest;
+        
+        if (spinRequest && spinRequest.timestamp) {
+            const newSpinTime = spinRequest.timestamp.toMillis();
+            if (newSpinTime !== lastSpinRequestTime) {
+                lastSpinRequestTime = newSpinTime;
+                if (!isSpinningRef.current) {
+                    spinHandlerRef.current();
+                }
+            }
         }
       }
     });
     return () => unsubscribe();
-  }, [gameId, isDemoMode, handleSpinClick, isSpinning]);
+  }, [gameId, isDemoMode]);
+
 
   const wheelStyle: React.CSSProperties = {
     transition: 'transform 7s cubic-bezier(0.2, 0.8, 0.3, 1)',
