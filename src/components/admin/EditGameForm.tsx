@@ -74,6 +74,7 @@ const formSchema = z.object({
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
   mobileBackgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).optional(),
+  mobileBackgroundFit: z.enum(['cover', 'contain', 'fill', 'none']).optional(),
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   isPhoneRequired: z.boolean().optional(),
@@ -117,6 +118,7 @@ interface Game {
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   mobileBackgroundImage?: string;
+  mobileBackgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   registrationTitle?: string;
   registrationSubtitle?: string;
   isPhoneRequired?: boolean;
@@ -179,7 +181,8 @@ export default function EditGameForm({ game }: { game: Game }) {
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       mobileBackgroundImage: game.mobileBackgroundImage || '',
-      registrationTitle: game.registrationTitle || 'Estás jugando a',
+      mobileBackgroundFit: game.mobileBackgroundFit || 'cover',
+      registrationTitle: game.registrationTitle || `Estás jugando a`,
       registrationSubtitle: game.registrationSubtitle || '',
       isPhoneRequired: game.isPhoneRequired || false,
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
@@ -932,14 +935,23 @@ export default function EditGameForm({ game }: { game: Game }) {
                             />
                             <FormField
                               control={form.control}
-                              name="registrationTitle"
+                              name="mobileBackgroundFit"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Título en Pantalla de Registro</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} disabled={loading} placeholder="Ej: Estás jugando a" />
-                                  </FormControl>
-                                  <FormDescription>El texto que aparece encima del nombre del juego en la pantalla del móvil.</FormDescription>
+                                  <FormLabel>Ajuste de la Imagen (Móvil)</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona cómo se ajustará la imagen" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="cover">Cubrir (Cover)</SelectItem>
+                                      <SelectItem value="contain">Contener (Contain)</SelectItem>
+                                      <SelectItem value="fill">Rellenar (Fill)</SelectItem>
+                                      <SelectItem value="none">Ninguno (None)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                   <FormMessage />
                                 </FormItem>
                               )}

@@ -15,9 +15,9 @@ async function getGameData(id: string) {
   return { 
     id: gameSnap.id, 
     name: data.name || "Juego sin nombre",
-    registrationTitle: data.registrationTitle || `Estás jugando a`,
     registrationSubtitle: data.registrationSubtitle,
     mobileBackgroundImage: data.mobileBackgroundImage || '',
+    mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
   };
 }
 
@@ -30,7 +30,7 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
   
   const backgroundStyles: React.CSSProperties = game.mobileBackgroundImage ? {
     backgroundImage: `url(${game.mobileBackgroundImage})`,
-    backgroundSize: 'cover',
+    backgroundSize: game.mobileBackgroundFit as 'cover' | 'contain' | 'fill' | 'none',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   } : {};
