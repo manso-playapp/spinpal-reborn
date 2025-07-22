@@ -69,6 +69,7 @@ const emailPrompt = ai.definePrompt({
     prompt: `
         You are an expert in writing clear, friendly, and professional emails. 
         Your task is to generate the subject and HTML body for a prize notification email.
+        You must strictly return a JSON object with a "subject" and a "body" property.
 
         **Game Name:** {{{gameName}}}
         **Prize Won:** {{{prizeName}}}
@@ -116,7 +117,6 @@ const prizeNotificationFlow = ai.defineFlow(
         };
     }
     const resend = new Resend(resendApiKey);
-    // IMPORTANT: To use a different sender, you must verify your domain in Resend.
     const fromAddress = 'noreply@mansoestudiocreativo.com'; 
 
     try {
@@ -130,10 +130,10 @@ const prizeNotificationFlow = ai.defineFlow(
         ]);
 
         if (!gameSnap.exists()) {
-            throw new Error('Game not found.');
+            throw new Error(`Game not found with ID: ${input.gameId}`);
         }
         if (!customerSnap.exists()) {
-            throw new Error('Customer not found.');
+            throw new Error(`Customer not found with ID: ${input.customerId} in game ${input.gameId}`);
         }
 
         const gameData = gameSnap.data();
@@ -143,36 +143,50 @@ const prizeNotificationFlow = ai.defineFlow(
         const clientEmail = gameData.clientEmail;
         const customerEmail = customerData.email;
 
-        // 2. Generate email content using Genkit AI
-        const [customerEmailResult, clientEmailResult] = await Promise.allSettled([
-            emailPrompt({
+        // 2. Generate email content using Genkit AI, with robust error handling
+        let customerEmailContent, clientEmailContent;
+
+        try {
+            const customerEmailResult = await emailPrompt({
                 gameName: gameData.name,
                 prizeName: input.prizeName,
                 validationCode,
                 customerName: customerData.name,
                 emailType: 'customer',
-            }),
-            clientEmail 
-            ? emailPrompt({
-                gameName: gameData.name,
-                prizeName: input.prizeName,
-                validationCode,
-                customerName: customerData.name,
-                emailType: 'client',
-            })
-            : Promise.resolve(null),
-        ]);
-
-        const customerEmailContent = customerEmailResult.status === 'fulfilled' ? customerEmailResult.value.output : null;
-        if (!customerEmailContent) {
-            throw new Error('Failed to generate customer email content.');
+            });
+            customerEmailContent = customerEmailResult.output;
+            if (!customerEmailContent) {
+                 throw new Error('AI prompt for customer email returned empty output.');
+            }
+        } catch (error) {
+            console.error('CRITICAL: Failed to generate customer email content.', error);
+            // We cannot proceed without the customer email.
+            throw new Error('Failed to generate required customer email.');
         }
-        
-        const clientEmailContent = (clientEmailResult.status === 'fulfilled' && clientEmailResult.value) ? clientEmailResult.value.output : null;
+
+        if (clientEmail) {
+            try {
+                 const clientEmailResult = await emailPrompt({
+                    gameName: gameData.name,
+                    prizeName: input.prizeName,
+                    validationCode,
+                    customerName: customerData.name,
+                    emailType: 'client',
+                });
+                clientEmailContent = clientEmailResult.output;
+                if (!clientEmailContent) {
+                    console.warn('AI prompt for client email returned empty output. Proceeding without client email.');
+                }
+            } catch(error) {
+                console.error('WARNING: Failed to generate client email content. The customer will still be notified.', error);
+                // Continue execution, the client email is not critical.
+                clientEmailContent = null; 
+            }
+        }
+
 
         // 3. Send emails via Resend and log the results to Firestore
         const emailLogRef = collection(db, 'outbound_emails');
-        
         const sendPromises = [];
 
         // Send and log customer email
@@ -207,7 +221,7 @@ const prizeNotificationFlow = ai.defineFlow(
             await addDoc(emailLogRef, logData);
         })());
 
-        // Send and log client email if applicable
+        // Send and log client email if applicable and successfully generated
         if (clientEmail && clientEmailContent) {
             sendPromises.push((async () => {
                 let logData: any = {
@@ -250,7 +264,7 @@ const prizeNotificationFlow = ai.defineFlow(
         };
 
     } catch (error: any) {
-        console.error('Error in prizeNotificationFlow:', error);
+        console.error('Fatal error in prizeNotificationFlow:', error);
         return {
             success: false,
             message: error.message || 'An unexpected error occurred.',
