@@ -262,7 +262,7 @@ service cloud.firestore {
       // Jugadores (sin autenticar) solo pueden actualizar 'spinRequest' y/o 'plays'.
       // Se usa hasAny y hasOnly para asegurar que no se modifiquen otros campos.
       allow update: if request.auth == null
-                      && request.resource.data.diff(resource.data).affectedKeys().hasAny(['spinRequest', 'plays'])
+                      && request.resource.data.diff(resource.data).affectedKeys().hasAny(['spinRequest', 'plays', 'prizesAwarded'])
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest', 'plays', 'prizesAwarded']);
     }
 

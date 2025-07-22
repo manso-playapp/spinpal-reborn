@@ -93,7 +93,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const totalProb = normalizedSegments.reduce((sum, s) => sum + (s.finalProbability || 0), 0);
     
     if (Math.abs(totalProb - 100) > 0.1 && totalProb > 0) {
-       console.warn("Total probability is not 100, it's", totalProb, ". Probabilities may not be perfectly distributed.");
+       console.warn("DIAGNÓSTICO: La probabilidad total no es 100, es", totalProb, ". La distribución puede no ser perfecta.");
     }
     
     for (let i = 0; i < normalizedSegments.length; i++) {
@@ -106,10 +106,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   }, [normalizedSegments]);
 
   const handleSpinClick = useCallback((customerId?: string) => {
-    if (isSpinningRef.current || normalizedSegments.length === 0) return;
+    if (isSpinningRef.current || normalizedSegments.length === 0) {
+        console.log("DIAGNÓSTICO: Se ignoró el giro. ¿Está girando ya?", isSpinningRef.current, "¿Hay segmentos?", normalizedSegments.length > 0);
+        return;
+    }
 
+    console.log("DIAGNÓSTICO: Iniciando giro...");
     setIsSpinning(true);
     const winningIndex = getWinningSegmentIndex();
+    const winningSegment = normalizedSegments[winningIndex];
+    console.log(`DIAGNÓSTICO: El segmento ganador es el #${winningIndex}: "${winningSegment?.name}"`);
+    
     const segmentCount = normalizedSegments.length;
     const segmentAngle = 360 / segmentCount;
     
@@ -120,31 +127,36 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     setRotation(newRotation);
 
     setTimeout(async () => {
+      console.log("DIAGNÓSTICO: El giro ha terminado.");
       setIsSpinning(false);
-      const winningSegment = normalizedSegments[winningIndex];
       const gameRef = doc(db, 'games', gameId);
-
-      // Clean up the spin request to prevent re-spins on reload
+      
+      console.log("DIAGNÓSTICO: Intentando limpiar spinRequest en Firestore...");
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
+        console.log("DIAGNÓSTICO: ¡Éxito! spinRequest limpiado.");
       } catch (error) {
-        console.error("Failed to clear spin request:", error);
+        console.error("DIAGNÓSTICO: ¡ERROR AL LIMPIAR spinRequest!", error);
       }
       
       if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
+        console.log(`DIAGNÓSTICO: Es un premio real para el cliente ${customerId}. Intentando actualizar contador y notificar...`);
         try {
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
+            console.log("DIAGNÓSTICO: ¡Éxito! Contador de premios incrementado.");
             
-            // Call the prize notification flow
             await sendPrizeNotification({
                 gameId: gameId,
                 customerId: customerId,
                 prizeName: winningSegment.name,
             });
+            console.log("DIAGNÓSTICO: ¡Éxito! Notificación de premio procesada.");
 
         } catch (error) {
-            console.error("Error sending prize notification or updating prize count:", error);
+            console.error("DIAGNÓSTICO: ¡ERROR al actualizar premios o notificar!", error);
         }
+      } else {
+        console.log("DIAGNÓSTICO: No es un premio real, no se actualiza contador ni se notifica.");
       }
     }, 7000); // Match transition duration
 
@@ -171,8 +183,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             const newSpinTime = spinRequest.timestamp.toMillis();
             if (newSpinTime !== lastSpinRequestTime) {
                 lastSpinRequestTime = newSpinTime;
+                console.log(`DIAGNÓSTICO: Nueva solicitud de giro detectada en Firestore con timestamp ${newSpinTime}.`);
                 if (!isSpinningRef.current) {
                     spinHandlerRef.current(spinRequest.customerId);
+                } else {
+                    console.log("DIAGNÓSTICO: Solicitud de giro ignorada porque la ruleta ya está girando.");
                 }
             }
         }
@@ -330,5 +345,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     </div>
   );
 }
+
 
 
