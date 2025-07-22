@@ -235,13 +235,19 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         if (winningIndex === -1) winningIndex = finalSegments.length - 1;
 
         const winningSegment = finalSegments[winningIndex];
+        
+        // Create a plain object for Firestore
+        const plainWinningSegment = {
+            name: winningSegment.name,
+            isRealPrize: !!winningSegment.isRealPrize,
+        };
 
         await updateDoc(gameRef, {
             spinRequest: {
                 timestamp: serverTimestamp(),
                 customerId: customerId,
-                winningSegment: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize },
-                winningId: winningSegment.id, // Use the unique ID
+                winningSegment: plainWinningSegment,
+                winningId: winningSegment.id, 
             },
             plays: increment(1),
         });
@@ -347,7 +353,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">
-                 {spinResult.isRealPrize ? '¡Felicidades!' : '¡Casi!'}
+                 {spinResult.isRealPrize ? '¡Felicidades!' : 'Casi!'}
             </CardTitle>
             <p className="text-xl font-semibold text-primary">{spinResult.name}</p>
             <CardDescription className="mt-2">
