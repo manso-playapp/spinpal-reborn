@@ -81,7 +81,7 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
         rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
         qrVerticalOffset: data.qrVerticalOffset || 0,
         // The config object should now be passed directly in initialData for previews
-        config: {
+        config: data.config ? data.config : {
           borderImage: data.borderImage || '',
           borderScale: data.borderScale || 1,
           centerImage: data.centerImage || '',
@@ -149,12 +149,8 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
               segments={game.segments} 
               gameId={game.id} 
               isDemoMode={game.status === 'demo'}
-              config={{
-                borderImage: game.config.borderImage,
-                borderScale: game.config.borderScale,
-                centerImage: game.config.centerImage,
-                centerScale: game.config.centerScale,
-              }}
+              showDemoButton={isPreview}
+              config={game.config}
               onSpinEnd={handleSpinEnd}
             />
           </div>
