@@ -225,7 +225,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const random = Math.random() * 100;
         let accumulatedProb = 0;
-        let winningSegment: any = null; // Changed to any to allow debug tracking
+        let winningSegment: any = null;
 
         for (let i = 0; i < finalSegments.length; i++) {
             accumulatedProb += (finalSegments[i].finalProbability || 0);
@@ -236,15 +236,13 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         }
         
         if (!winningSegment) {
-            winningSegment = finalSegments.length > 0 ? finalSegments[finalSegments.length - 1] : null; // Fallback to last segment
+            winningSegment = finalSegments.length > 0 ? finalSegments[finalSegments.length - 1] : null;
         }
         
-        // --- SEÑUELO DE DEPURACIÓN ---
         setDebugWinningSegment(winningSegment);
-        // --- FIN SEÑUELO ---
 
         if (!winningSegment || !winningSegment.id) {
-            console.error("DEBUG INFO:", { winningSegment });
+            console.error("ERROR CRITICO: El segmento ganador no se pudo determinar o no tiene ID.", { winningSegment });
             toast({
                 variant: 'destructive',
                 title: 'Error Crítico de Sorteo',
@@ -257,7 +255,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         const gameRef = doc(db, 'games', gameId);
         const customerRef = doc(db, 'games', gameId, 'customers', customerId);
 
-        // Build the atomic update object for the game
         const gameUpdateData: { [key: string]: any } = {
             plays: increment(1),
             spinRequest: {
@@ -273,7 +270,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             }
         };
 
-        // Build the atomic update for the customer
         const customerUpdateData: { [key: string]: any } = {
             hasPlayed: true
         };
@@ -284,14 +280,12 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             customerUpdateData.prizeWonAt = serverTimestamp();
         }
         
-        // Use a batch to perform multiple writes atomically
         const batch = writeBatch(db);
         batch.update(gameRef, gameUpdateData);
         batch.update(customerRef, customerUpdateData);
         
         await batch.commit();
 
-        // Send notification email if it's a real prize (after batch commit)
         if (winningSegment.isRealPrize) {
              try {
                 await sendPrizeNotification({
