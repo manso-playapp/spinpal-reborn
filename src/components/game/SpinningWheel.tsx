@@ -50,6 +50,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
   const isSpinningRef = useRef(isSpinning);
   const spinRequestTimestamp = useRef<number | null>(null);
+  const currentRotationRef = useRef(0);
 
   useEffect(() => {
     isSpinningRef.current = isSpinning;
@@ -98,16 +99,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const randomOffsetInSegment = (segmentAngle * padding) + (Math.random() * (segmentAngle * (1 - padding * 2)));
     
     // The final angle within the 360-degree circle that we want to point to.
-    const finalTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
+    const randomizedTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
 
     // Add a random number of full spins for variety.
-    const fullSpins = (Math.floor(Math.random() * 2) + 5) * 360; 
+    const fullSpins = (Math.floor(Math.random() * 3) + 5) * 360; 
   
-    // Calculate the final rotation value. This is absolute.
+    // Calculate the final rotation value by adding to the current rotation.
     // It aligns the target angle with the pointer angle (270deg)
-    const finalRotation = fullSpins + POINTER_ANGLE - finalTargetAngle;
+    const finalRotation = currentRotationRef.current + fullSpins + (POINTER_ANGLE - randomizedTargetAngle);
     
     setRotation(finalRotation);
+    currentRotationRef.current = finalRotation;
   
     const gameRef = doc(db, 'games', gameId);
     
