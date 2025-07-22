@@ -117,24 +117,25 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
             </div>
         )}
 
-        {/* Roulette container */}
+        {/* Roulette container - This container handles scale and vertical offset */}
         <div
-            className="absolute w-full max-w-2xl text-center left-1/2"
+            className="absolute inset-0 flex justify-center items-center pointer-events-none"
             style={{
-                transform: `translateX(-50%) translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})`,
-                transformOrigin: 'top center',
+                transform: `translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})`,
+                transformOrigin: 'center center',
             }}
         >
-              <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
-                <SpinningWheel 
-                  segments={game.segments} 
-                  gameId={game.id} 
-                  isDemoMode={game.status === 'demo'}
-                  config={game.config}
-                  onSpinEnd={handleSpinEnd}
-                />
-              </div>
+          {/* This inner container handles the content's max-width */}
+          <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
+            <SpinningWheel 
+              segments={game.segments} 
+              gameId={game.id} 
+              isDemoMode={game.status === 'demo'}
+              config={game.config}
+              onSpinEnd={handleSpinEnd}
+            />
           </div>
+        </div>
 
         {/* QR / Result container */}
         <div 
@@ -144,7 +145,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
           }}
         >
             <div 
-              className="w-full max-w-md text-center"
+              className="w-full max-w-sm text-center"
               style={{
                 transform: `scale(${game.qrCodeScale})`,
                 transformOrigin: 'bottom center'
