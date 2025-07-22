@@ -76,7 +76,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     let nonRealPrizeProb = 0;
     if (nonRealPrizeSegments.length > 0) {
         nonRealPrizeProb = remainingProbability / nonRealPrizeSegments.length;
-    } else if (realPrizeTotalProbability < 100 && realPrizeSegments.length > 0) {
+    } else if (realPrizeTotalProbability > 0 && realPrizeTotalProbability < 100) {
         // Distribute remaining probability among real prizes if no non-real prizes exist
         const adjustment = remainingProbability / realPrizeSegments.length;
         return initialSegments.map(seg => ({
@@ -117,11 +117,13 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentAngle = 360 / segmentCount;
     
     // Correct calculation for target angle
-    // The pointer is at 12 o'clock (270 degrees in SVG coordinate system).
-    // We want the middle of the winning segment to land there.
+    // The pointer is at 12 o'clock (which is 270 degrees in SVG's angle system).
+    // The middle of the winning segment should land there.
     const winningSegmentMiddleAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
-    const targetAngle = 270 - winningSegmentMiddleAngle;
-
+    
+    // We adjust by -90 because SVG path arcs start from the 3 o'clock position (0 degrees)
+    // instead of the 12 o'clock position.
+    const targetAngle = 360 - winningSegmentMiddleAngle;
 
     const fullSpins = 5 * 360;
     const finalRotation = rotation - (rotation % 360) + fullSpins + targetAngle;
