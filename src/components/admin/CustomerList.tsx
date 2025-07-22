@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -14,7 +15,22 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Users } from 'lucide-react';
+import { Users, Trash2 } from 'lucide-react';
+import { Button } from '../ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+
 
 interface Customer {
   id: string;
@@ -30,6 +46,7 @@ interface Customer {
 export default function CustomerList({ gameId }: { gameId: string }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!gameId) return;
@@ -55,8 +72,26 @@ export default function CustomerList({ gameId }: { gameId: string }) {
 
     return () => unsubscribe();
   }, [gameId]);
+  
+  const handleDeleteCustomer = async (customerId: string, customerName: string) => {
+    try {
+      await deleteDoc(doc(db, "games", gameId, "customers", customerId));
+      toast({
+        title: "¡Participante Eliminado!",
+        description: `El participante "${customerName}" ha sido eliminado.`,
+      });
+    } catch (error) {
+      console.error("Error deleting customer: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error al eliminar",
+        description: "No se pudo eliminar el participante. Inténtalo de nuevo.",
+      });
+    }
+  };
 
   return (
+    <TooltipProvider>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -89,6 +124,7 @@ export default function CustomerList({ gameId }: { gameId: string }) {
                 <TableHead>Email</TableHead>
                 <TableHead>Fecha de Registro</TableHead>
                 <TableHead className="text-center">¿Ha Jugado?</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,9 +138,40 @@ export default function CustomerList({ gameId }: { gameId: string }) {
                       : 'N/A'}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant={customer.hasPlayed ? 'default' : 'secondary'}>
+                    <Badge variant={customer.hasPlayed ? 'default' : 'secondary'} className={customer.hasPlayed ? 'bg-green-600 text-white' : ''}>
                       {customer.hasPlayed ? 'Sí' : 'No'}
                     </Badge>
+                  </TableCell>
+                   <TableCell className="text-right">
+                     <AlertDialog>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="icon" className="h-8 w-8">
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Eliminar Participante</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Eliminar Participante</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Se eliminará permanentemente al participante <span className="font-bold">{customer.name}</span>.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                             <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteCustomer(customer.id, customer.name)} className="bg-destructive hover:bg-destructive/90">
+                                    Sí, eliminar
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
@@ -113,5 +180,6 @@ export default function CustomerList({ gameId }: { gameId: string }) {
         )}
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 }
