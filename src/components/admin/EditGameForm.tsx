@@ -227,7 +227,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     watchedSegments.forEach((segment, index) => {
       if (!segment.isRealPrize) {
         if (segment.probability !== nonRealPrizeProbability) {
-            form.setValue(`segments.${index}.probability`, nonRealPrizeProbability, { shouldDirty: true });
+            form.setValue(`segments.${index}.probability`, nonRealPrizeProbability, { shouldDirty: true, shouldValidate: true });
         }
       }
     });
@@ -691,52 +691,48 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       name={`segments.${index}.probability`}
                                                       render={({ field }) => (
                                                           <FormItem>
-                                                              <FormLabel>Probabilidad</FormLabel>
+                                                            <FormLabel>Probabilidad</FormLabel>
+                                                            <FormControl>
                                                               {watchedSegments[index]?.isRealPrize ? (
                                                                   <div className="flex items-center gap-4">
+                                                                    <Controller
+                                                                        name={`segments.${index}.probability`}
+                                                                        control={form.control}
+                                                                        render={({ field: renderField }) => (
+                                                                            <Slider
+                                                                                value={[renderField.value ?? 0]}
+                                                                                onValueChange={(val) => renderField.onChange(val[0])}
+                                                                                max={100}
+                                                                                step={1}
+                                                                                className="w-full"
+                                                                            />
+                                                                        )}
+                                                                    />
+                                                                    <div className="relative w-24">
                                                                       <Controller
                                                                           name={`segments.${index}.probability`}
                                                                           control={form.control}
-                                                                          render={({ field: sliderField }) => (
-                                                                              <Slider
-                                                                                  value={[sliderField.value || 0]}
-                                                                                  onValueChange={(val) => sliderField.onChange(val[0])}
-                                                                                  max={100}
-                                                                                  step={1}
-                                                                                  className="w-full"
+                                                                          render={({ field: renderField }) => (
+                                                                              <Input
+                                                                                type="number"
+                                                                                value={renderField.value || 0}
+                                                                                onChange={(e) => renderField.onChange(parseFloat(e.target.value) || 0)}
+                                                                                className="text-center font-mono"
                                                                               />
                                                                           )}
                                                                       />
-                                                                      <div className="relative w-24">
-                                                                          <Controller
-                                                                              name={`segments.${index}.probability`}
-                                                                              control={form.control}
-                                                                              render={({ field: inputField }) => (
-                                                                                  <Input
-                                                                                    type="number"
-                                                                                    value={inputField.value || 0}
-                                                                                    onChange={(e) => inputField.onChange(parseFloat(e.target.value) || 0)}
-                                                                                    className="text-center font-mono"
-                                                                                  />
-                                                                              )}
-                                                                          />
-                                                                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                                                                      </div>
+                                                                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                                                                    </div>
                                                                   </div>
                                                               ) : (
-                                                                    <Controller
-                                                                      name={`segments.${index}.probability`}
-                                                                      control={form.control}
-                                                                      render={({ field: inputField }) => (
-                                                                        <Input 
-                                                                          value={`${(inputField.value || 0).toFixed(2)}% (auto)`} 
-                                                                          disabled 
-                                                                          className="text-center bg-muted/50 border-dashed" 
-                                                                        />
-                                                                      )}
+                                                                  <Input 
+                                                                    value={`${(field.value || 0).toFixed(2)}% (auto)`} 
+                                                                    disabled 
+                                                                    className="text-center bg-muted/50 border-dashed" 
                                                                   />
                                                               )}
-                                                              <FormMessage />
+                                                            </FormControl>
+                                                            <FormMessage />
                                                           </FormItem>
                                                       )}
                                                   />
