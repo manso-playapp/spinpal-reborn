@@ -82,8 +82,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Correctly calculates the middle of the segment and adjusts for the top-pointer (-90deg)
-    const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2) - 90;
+    // Introduce a random offset to make the spin feel more organic
+    // It will land somewhere between 15% and 85% of the segment width
+    const randomOffset = (Math.random() * 0.7 + 0.15) * segmentAngle;
+    
+    // Correctly calculates the start of the segment, adds the random offset, and adjusts for the top-pointer (-90deg)
+    const targetAngle = 360 - (winningIndex * segmentAngle + randomOffset) - 90;
     
     const fullSpins = 5 * 360;
     const newRotation = rotation + fullSpins + targetAngle;
