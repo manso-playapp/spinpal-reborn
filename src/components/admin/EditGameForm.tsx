@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,9 +11,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
-import SpinningWheel from '../game/SpinningWheel';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import GameClientPage from '../game/GameClientPage';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -35,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -44,7 +42,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
-import QRCodeDisplay from '../game/QRCodeDisplay';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
@@ -164,7 +161,8 @@ export default function EditGameForm({ game }: { game: Game }) {
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
-  
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -200,7 +198,6 @@ export default function EditGameForm({ game }: { game: Game }) {
     name: 'segments',
   });
   
-  const watchedFormData = form.watch();
   const watchedSegments = form.watch('segments');
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
@@ -251,6 +248,12 @@ export default function EditGameForm({ game }: { game: Game }) {
       }
     }
   };
+
+  const refreshPreview = () => {
+    if (iframeRef.current) {
+        iframeRef.current.src = iframeRef.current.src;
+    }
+  }
   
   const onSubmit = async (data: GameFormValues) => {
     setLoading(true);
@@ -282,6 +285,7 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
+      refreshPreview();
 
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -974,17 +978,24 @@ export default function EditGameForm({ game }: { game: Game }) {
               {/* Columna de Vista Previa */}
               <div className="lg:col-span-1 lg:sticky top-4">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                         <Eye className="h-5 w-5"/>
                         Vista Previa
                     </CardTitle>
+                    <Button variant="ghost" size="icon" onClick={refreshPreview} type="button">
+                        <RefreshCw className="h-4 w-4"/>
+                        <span className="sr-only">Refrescar</span>
+                    </Button>
                   </CardHeader>
                   <CardContent>
-                     <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
-                        <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-top-left">
-                           <GameClientPage gameId={game.id} />
-                        </div>
+                     <div className="mt-4 p-2 bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
+                        <iframe
+                            ref={iframeRef}
+                            src={`/juego/preview/${game.id}`}
+                            className="w-full h-full bg-background shadow-lg rounded-lg border-0 transform origin-top-left"
+                            title="Vista Previa del Juego"
+                        ></iframe>
                       </div>
                   </CardContent>
                 </Card>
