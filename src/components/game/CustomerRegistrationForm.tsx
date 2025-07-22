@@ -43,6 +43,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     const [uiState, setUiState] = useState<UiState>('LOADING');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [customerId, setCustomerId] = useState<string | null>(null);
+    const [playerName, setPlayerName] = useState<string | null>(null);
     const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [errorMessage, setErrorMessage] = useState('Ha ocurrido un error inesperado.');
@@ -106,7 +107,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
         });
 
         return () => unsubscribe();
-    }, [gameId]); // Rerunning this effect if gameId changes is correct
+    }, [gameId, uiState]); // Rerunning this effect if gameId changes is correct
 
      // Effect to listen for spin results
     useEffect(() => {
@@ -158,6 +159,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 hasPlayed: false,
             });
             setCustomerId(newCustomerRef.id);
+            setPlayerName(data.name);
             setUiState('READY_TO_SPIN');
         } catch (error) {
             console.error('Error registering customer:', error);
@@ -177,6 +179,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
         }
 
         setIsSubmitting(true);
+        setUiState('WAITING_FOR_RESULT'); // Change state immediately when clicked
 
         try {
             // Filter for valid segments with IDs to prevent errors
@@ -245,14 +248,13 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             batch.update(customerRef, customerUpdateData);
             
             await batch.commit();
-            setUiState('WAITING_FOR_RESULT');
-
+            // The result listener will now take over
+            
         } catch (error: any) {
             console.error('Error triggering spin:', error);
             setErrorMessage(error.message || 'Hubo un problema al iniciar el giro.');
             setUiState('ERROR');
-        } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false); // Make sure to re-enable button on error
         }
     };
     
@@ -333,8 +335,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                            <p className="text-xl font-semibold">¡Mucha Suerte!</p>
-                            <p className="text-sm text-muted-foreground">{gameData?.successMessage}</p>
+                            <p className="text-xl font-semibold">¡Mucha suerte...!</p>
+                            <p className="font-bold text-2xl text-primary">{playerName || ''}</p>
                         </CardContent>
                     </Card>
                 );
