@@ -78,7 +78,7 @@ const formSchema = z.object({
   qrCodeScale: z.number().min(0.1).max(2).optional(),
   rouletteScale: z.number().min(0.1).max(2).optional(),
   rouletteVerticalOffset: z.number().min(-500).max(500).optional(),
-  rouletteQrGap: z.number().min(0).max(300).optional(),
+  rouletteQrGap: z.number().min(0).max(800).optional(),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -686,7 +686,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     defaultValue={[32]}
                                     value={[field.value ?? 32]}
                                     onValueChange={(val) => field.onChange(val[0])}
-                                    max={300}
+                                    max={800}
                                     min={0}
                                     step={1}
                                     />
