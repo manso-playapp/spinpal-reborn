@@ -9,12 +9,17 @@ export const metadata: Metadata = {
   description: 'El blueprint de reconstrucción definitivo.',
 };
 
+// Genera un ID de compilación corto basado en el timestamp actual
+const buildId = new Date().getTime().toString(36).slice(-6);
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const appVersion = packageJson.version;
+  const displayVersion = `v${appVersion}-${buildId}`;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -27,8 +32,8 @@ export default function RootLayout({
           {children}
           <Toaster />
         </AuthProvider>
-        <div className="fixed bottom-2 right-2 bg-background/80 text-muted-foreground text-xs px-2 py-1 rounded-md shadow">
-          v{appVersion}
+        <div className="fixed bottom-2 right-2 bg-background/80 text-muted-foreground text-xs px-2 py-1 rounded-md shadow z-50">
+          {displayVersion}
         </div>
       </body>
     </html>
