@@ -259,10 +259,11 @@ service cloud.firestore {
       // Admins pueden escribir todo el documento (crear, editar, borrar)
       allow write: if request.auth != null; 
       
-      // Jugadores (sin autenticar) solo pueden actualizar los campos 'spinRequest' y 'plays'.
-      // Se usa hasAll para asegurar que la operación contenga exactamente esos dos campos.
-      allow update: if request.auth == null 
-                      && request.resource.data.diff(resource.data).affectedKeys().hasAll(['spinRequest', 'plays']);
+      // Jugadores (sin autenticar) solo pueden actualizar 'spinRequest' y/o 'plays'.
+      // Se usa hasAny y hasOnly para asegurar que no se modifiquen otros campos.
+      allow update: if request.auth == null
+                      && request.resource.data.diff(resource.data).affectedKeys().hasAny(['spinRequest', 'plays'])
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest', 'plays', 'prizesAwarded']);
     }
 
     match /games/{gameId}/customers/{customerId} {

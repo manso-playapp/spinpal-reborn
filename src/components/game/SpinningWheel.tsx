@@ -116,7 +116,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
 
     const fullSpins = 5 * 360;
-    setRotation(prevRotation => prevRotation + fullSpins + targetAngle);
+    const newRotation = rotation + fullSpins + targetAngle;
+    setRotation(newRotation);
 
     setTimeout(async () => {
       setIsSpinning(false);
@@ -124,9 +125,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       const gameRef = doc(db, 'games', gameId);
 
       // Clean up the spin request to prevent re-spins on reload
-      await updateDoc(gameRef, {
-        spinRequest: deleteField(),
-      });
+      try {
+        await updateDoc(gameRef, { spinRequest: deleteField() });
+      } catch (error) {
+        console.error("Failed to clear spin request:", error);
+      }
       
       if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
         try {
@@ -145,7 +148,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       }
     }, 7000); // Match transition duration
 
-  }, [normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex]);
+  }, [normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex, rotation]);
 
   const spinHandlerRef = useRef(handleSpinClick);
   useEffect(() => {
@@ -327,4 +330,5 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     </div>
   );
 }
+
 
