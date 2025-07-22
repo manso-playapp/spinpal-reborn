@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, deleteField } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
@@ -68,12 +68,15 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const handleSpinClick = useCallback(async (spinRequestData) => {
     if (isSpinningRef.current || segments.length === 0) return;
 
-    const { customerId, isDemoSpin, winningId } = spinRequestData;
+    const { winningId } = spinRequestData;
 
     const winningIndex = segments.findIndex(s => s.id === winningId);
     
     if (winningIndex === -1) {
         console.error("Error: Winning segment ID not found in the current segments array.", spinRequestData);
+        // Clear the invalid request to prevent re-triggering
+        const gameRef = doc(db, 'games', gameId);
+        await updateDoc(gameRef, { spinRequest: deleteField() });
         return;
     }
     
@@ -84,11 +87,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Introduce a random offset to make the spin feel more organic
-    // It will land somewhere between 15% and 85% of the segment width
     const randomOffset = (Math.random() * 0.7 + 0.15) * segmentAngle;
-    
-    // Correctly calculates the start of the segment, adds the random offset, and adjusts for the top-pointer (-90deg)
     const targetAngle = 360 - (winningIndex * segmentAngle + randomOffset) - 90;
     
     const fullSpins = 5 * 360;
@@ -111,7 +110,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
     }, 7000); // Match transition duration
 
-  }, [segments, gameId, isDemoMode, rotation, onSpinEnd]);
+  }, [segments, gameId, rotation, onSpinEnd]);
 
   const spinHandlerRef = useRef(handleSpinClick);
   useEffect(() => {

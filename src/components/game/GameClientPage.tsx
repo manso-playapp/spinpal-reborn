@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, DocumentData } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { QrCode, Gift, ThumbsDown, Loader2 } from 'lucide-react';
@@ -54,43 +54,42 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
         return;
     }
 
-    const getGameData = async () => {
-      setLoading(true);
-      const gameRef = doc(db, 'games', gameId);
-      const gameSnap = await getDoc(gameRef);
-
-      if (!gameSnap.exists()) {
-        setLoading(false);
-        notFound();
-        return;
-      }
-
-      const data = gameSnap.data();
-      setGame({ 
-        id: gameSnap.id, 
-        ...data,
-        name: data.name || 'Juego sin nombre',
-        status: data.status || 'demo',
-        segments: data.segments || [],
-        backgroundImage: data.backgroundImage || '',
-        backgroundFit: data.backgroundFit || 'cover',
-        qrCodeScale: data.qrCodeScale || 1,
-        rouletteScale: data.rouletteScale || 1,
-        rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
-        qrVerticalOffset: data.qrVerticalOffset || 0,
-        config: data.config || { // Fallback for old data structure
-          borderImage: data.borderImage || '',
-          borderScale: data.borderScale || 1,
-          centerImage: data.centerImage || '',
-          centerScale: data.centerScale || 1,
+    // If not in preview, set up a real-time listener
+    const gameRef = doc(db, 'games', gameId);
+    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            setGame({
+                id: docSnap.id,
+                ...data,
+                name: data.name || 'Juego sin nombre',
+                status: data.status || 'demo',
+                segments: data.segments || [],
+                backgroundImage: data.backgroundImage || '',
+                backgroundFit: data.backgroundFit || 'cover',
+                qrCodeScale: data.qrCodeScale || 1,
+                rouletteScale: data.rouletteScale || 1,
+                rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
+                qrVerticalOffset: data.qrVerticalOffset || 0,
+                config: data.config || { // Fallback for old data structure
+                    borderImage: data.borderImage || '',
+                    borderScale: data.borderScale || 1,
+                    centerImage: data.centerImage || '',
+                    centerScale: data.centerScale || 1,
+                }
+            });
+        } else {
+            notFound();
         }
-      });
-      setLoading(false);
-    };
+        setLoading(false);
+    }, (error) => {
+        console.error("Error fetching game data in real-time:", error);
+        setLoading(false);
+        // Optionally, show an error state to the user
+    });
 
-    if (!initialData) {
-      getGameData();
-    }
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
   }, [gameId, isPreview, initialData]);
 
 
