@@ -109,11 +109,16 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
       const data = docSnap.data();
       if (data && data.lastResult && data.lastResult.customerId === customerId) {
-        setSpinResult({
-          name: data.lastResult.name,
-          isRealPrize: data.lastResult.isRealPrize,
-        });
-        setUiState('final_result');
+        
+        // RESULTADO RECIBIDO. AHORA ESPERAMOS PARA MOSTRARLO.
+        setTimeout(() => {
+            setSpinResult({
+              name: data.lastResult.name,
+              isRealPrize: data.lastResult.isRealPrize,
+            });
+            setUiState('final_result');
+        }, 6500); // 6.5s delay on mobile + 1s delay on wheel = 7.5s total
+
         unsubscribe(); // Stop listening once we have the result
       }
     });

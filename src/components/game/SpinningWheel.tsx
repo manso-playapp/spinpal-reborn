@@ -49,6 +49,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const spinRequestTimestamp = useRef<number | null>(null);
   
   const isSpinningRef = useRef(isSpinning);
   useEffect(() => {
@@ -117,32 +118,28 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = normalizedSegments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // The pointer is at the top (270 degrees in SVG coords), but we treat it as 0 for simplicity.
-    // The middle of the first segment (index 0) is at segmentAngle / 2.
-    // We want to rotate so the middle of the winning segment lands at the top.
-    const targetAngleForWinningSegment = (winningIndex * segmentAngle) + (segmentAngle / 2);
+    const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
     
-    // Total rotation = multiple full spins for animation + the final angle to land on the prize.
-    // We rotate backwards (negative) so the wheel spins clockwise.
-    // We subtract the target angle to align it with the top pointer.
     const fullSpins = 5 * 360;
-    const currentRotation = rotation % 360;
-    const newRotation = fullSpins - targetAngleForWinningSegment - currentRotation;
+    const newRotation = rotation + fullSpins + targetAngle;
     
-    setRotation(rotation + newRotation);
+    setRotation(newRotation);
 
     const gameRef = doc(db, 'games', gameId);
-
-    if (customerId) {
-        await updateDoc(gameRef, {
-            lastResult: {
-                name: winningSegment.name,
-                isRealPrize: !!winningSegment.isRealPrize,
-                customerId: customerId,
-                timestamp: serverTimestamp(),
-            }
-        });
-    }
+    
+    // DELAY WRITING THE RESULT to create suspense on mobile
+    setTimeout(() => {
+        if (customerId) {
+            updateDoc(gameRef, {
+                lastResult: {
+                    name: winningSegment.name,
+                    isRealPrize: !!winningSegment.isRealPrize,
+                    customerId: customerId,
+                    timestamp: serverTimestamp(),
+                }
+            });
+        }
+    }, 1000); // 1 second delay
 
     setTimeout(async () => {
       setIsSpinning(false);
@@ -183,7 +180,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     if (!gameId || isDemoMode) return;
 
     const gameRef = doc(db, 'games', gameId);
-    let lastSpinRequestTime: number | null = null;
     
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -192,8 +188,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         
         if (spinRequest && spinRequest.timestamp) {
             const newSpinTime = spinRequest.timestamp.toMillis();
-            if (newSpinTime !== lastSpinRequestTime) {
-                lastSpinRequestTime = newSpinTime;
+            if (newSpinTime !== spinRequestTimestamp.current) {
+                spinRequestTimestamp.current = newSpinTime;
                 if (!isSpinningRef.current) {
                     spinHandlerRef.current(spinRequest.customerId);
                 }
