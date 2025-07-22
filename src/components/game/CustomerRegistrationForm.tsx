@@ -124,7 +124,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                         isRealPrize: data.lastResult.isRealPrize,
                     });
                     setUiState('SHOW_RESULT');
-                }, 6500); // This should be slightly less than the wheel animation time
+                }, 9500); // This should be slightly less than the wheel animation time
                 unsubscribe(); // Stop listening once we have the result
             }
         });

@@ -1,15 +1,16 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, DocumentData, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { QrCode, Gift, ThumbsDown, Loader2 } from 'lucide-react';
+import { QrCode, Gift, ThumbsDown, Loader2, RotateCw } from 'lucide-react';
 import SpinningWheel from '@/components/game/SpinningWheel';
 import QRCodeDisplay from '@/components/game/QRCodeDisplay';
 import { Separator } from '@/components/ui/separator';
+import Confetti from './Confetti';
 
 interface GameData extends DocumentData {
   id: string;
@@ -35,18 +36,35 @@ interface SpinResult {
     isRealPrize: boolean;
 }
 
+type UiState = 'IDLE' | 'SPINNING' | 'SHOW_RESULT';
+
 // The page now only needs the gameId and handles all data fetching internally.
 export default function GameClientPage({ gameId }: { gameId: string }) {
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uiState, setUiState] = useState<UiState>('IDLE');
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
+  const [currentPlayer, setCurrentPlayer] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     // Set up a real-time listener to keep the game data in sync.
     const gameRef = doc(db, 'games', gameId);
-    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+    const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
+            
+            // Handle spin request
+            const spinRequest = data.spinRequest;
+            if (spinRequest && spinRequest.customerId) {
+                setUiState('SPINNING');
+                const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
+                const customerSnap = await getDoc(customerRef);
+                if (customerSnap.exists()) {
+                    setCurrentPlayer(customerSnap.data().name);
+                }
+            }
+
             setGame({
                 id: docSnap.id,
                 ...data,
@@ -82,9 +100,18 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
 
   const handleSpinEnd = (result: SpinResult) => {
     setSpinResult(result);
+    setUiState('SHOW_RESULT');
+    setCurrentPlayer(null); // Clear player name
+
+    if (result.isRealPrize) {
+        setShowConfetti(true);
+    }
+    
     // Hide the result and show QR code again after 15 seconds
     setTimeout(() => {
+      setUiState('IDLE');
       setSpinResult(null);
+      setShowConfetti(false);
     }, 15000);
   };
   
@@ -108,6 +135,60 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
     backgroundRepeat: 'no-repeat',
   } : {};
 
+  const renderBottomCard = () => {
+    switch(uiState) {
+        case 'SPINNING':
+            return (
+                <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in">
+                    <CardContent className="p-6 flex flex-col items-center justify-center gap-4">
+                         <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                         <p className="font-headline text-3xl">¡Mucha suerte...!</p>
+                         <p className="font-bold text-4xl text-primary">{currentPlayer || ''}</p>
+                    </CardContent>
+                </Card>
+            );
+        case 'SHOW_RESULT':
+            return (
+                <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in zoom-in-95">
+                    <CardHeader className="p-6">
+                        <CardTitle className="font-headline text-6xl md:text-7xl flex items-center justify-center gap-4 text-primary">
+                            {spinResult?.isRealPrize ? <Gift className="h-16 w-16 md:h-20 md:w-20" /> : <ThumbsDown className="text-red-400 h-16 w-16 md:h-20 md:w-20" />}
+                            {spinResult?.isRealPrize ? '¡Premio!' : '¡Casi!'}
+                        </CardTitle>
+                        <Separator className="bg-primary/20 mt-4"/>
+                    </CardHeader>
+                    <CardContent className="p-6 pt-0">
+                        <p className="text-4xl md:text-5xl font-semibold">
+                            {spinResult?.name}
+                        </p>
+                        <CardDescription className="text-white/80 mt-4 text-lg md:text-xl">
+                            {spinResult?.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
+                        </CardDescription>
+                    </CardContent>
+                </Card>
+            );
+        case 'IDLE':
+        default:
+             return (
+                <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in">
+                    <CardHeader>
+                    <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
+                        <QrCode />
+                        ¡Escanea para Jugar!
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-center gap-4">
+                        <QRCodeDisplay gameId={game.id} />
+                        <Separator className="bg-primary/20"/>
+                        <p className="text-sm">
+                        Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
+                        </p>
+                    </CardContent>
+                </Card>
+            );
+    }
+  }
+
   return (
     <div 
       className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden p-4"
@@ -118,6 +199,8 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                 DEMO
             </div>
         )}
+        {showConfetti && <Confetti />}
+
 
         {/* Roulette container - This container handles scale and vertical offset */}
         <div
@@ -153,41 +236,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                 transformOrigin: 'bottom center'
               }}
             >
-              {spinResult ? (
-                   <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in zoom-in-95">
-                      <CardHeader className="p-6">
-                          <CardTitle className="font-headline text-5xl md:text-6xl flex items-center justify-center gap-4 text-primary">
-                             {spinResult.isRealPrize ? <Gift className="h-14 w-14 md:h-16 md:w-16" /> : <ThumbsDown className="text-red-400 h-14 w-14 md:h-16 md:w-16" />}
-                             {spinResult.isRealPrize ? '¡Premio!' : '¡Casi!'}
-                          </CardTitle>
-                          <Separator className="bg-primary/20 mt-4"/>
-                      </CardHeader>
-                      <CardContent className="p-6 pt-0">
-                          <p className="text-3xl md:text-4xl font-semibold">
-                              {spinResult.name}
-                          </p>
-                          <CardDescription className="text-white/80 mt-4 text-base md:text-lg">
-                             {spinResult.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
-                          </CardDescription>
-                      </CardContent>
-                  </Card>
-              ) : (
-                  <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in">
-                      <CardHeader>
-                      <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
-                          <QrCode />
-                          ¡Escanea para Jugar!
-                      </CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex flex-col items-center justify-center gap-4">
-                          <QRCodeDisplay gameId={game.id} />
-                          <Separator className="bg-primary/20"/>
-                          <p className="text-sm">
-                          Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
-                          </p>
-                      </CardContent>
-                  </Card>
-              )}
+              {renderBottomCard()}
             </div>
         </div>
     </div>

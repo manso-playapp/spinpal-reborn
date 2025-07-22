@@ -91,7 +91,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     // Create a random offset WITHIN the winning segment to make it look more natural.
     // We use a padding (e.g., 10% of the segment width on each side) to avoid stopping on the line.
-    const padding = 0.10;
+    const padding = 0.10; 
     const randomOffsetInSegment = (segmentAngle * padding) + (Math.random() * (segmentAngle * (1 - padding * 2)));
     const randomizedTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
 
@@ -102,16 +102,16 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     // We base the new spin on the current rotation to ensure it always spins forward.
     const fullSpins = (Math.floor(Math.random() * 2) + 4) * 360; 
   
-    const finalRotation = currentRotationRef.current - (currentRotationRef.current % 360) + fullSpins + angleToAlign;
+    const finalRotation = currentRotationRef.current + fullSpins + angleToAlign;
     
     currentRotationRef.current = finalRotation;
     setRotation(finalRotation);
   
     const gameRef = doc(db, 'games', gameId);
     
-    // The spin animation takes 7 seconds
+    // The spin animation takes 10 seconds
     setTimeout(async () => {
-      setWinningSegmentId(winningId);
+      setWinningSegmentId(winningId); // Activate blinking
       setIsSpinning(false);
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
   
@@ -127,7 +127,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
         setWinningSegmentId(null);
       }, 4000); 
   
-    }, 7000); // This duration must match the CSS transition duration for a smooth stop.
+    }, 10000); // This duration must match the CSS transition duration for a smooth stop.
   
   }, [segments, gameId, onSpinEnd]);
 
@@ -163,7 +163,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
 
   const wheelStyle: React.CSSProperties = {
-    transition: 'transform 7s cubic-bezier(0.25, 0.1, 0.25, 1)',
+    transition: 'transform 10s cubic-bezier(0.25, 0.1, 0.25, 1)',
     transform: `rotate(${rotation}deg)`,
     transformOrigin: 'center center',
   };
