@@ -4,78 +4,77 @@
 
 @layer base {
   :root {
-    --background: 43 56% 90%; /* Eggshell */
-    --foreground: 199 69% 22%; /* Midnight Green Eagle Green */
-    --card: 43 56% 92%; /* Slightly lighter Eggshell */
-    --card-foreground: 199 69% 22%;
-    --popover: 43 56% 92%;
-    --popover-foreground: 199 69% 22%;
-    --primary: 160 69% 33%; /* Illuminating Emerald */
-    --primary-foreground: 43 56% 98%;
-    --secondary: 140 25% 81%; /* Tea Green */
-    --secondary-foreground: 199 69% 22%;
-    --muted: 140 25% 85%; /* Lighter Tea Green */
-    --muted-foreground: 199 40% 35%;
-    --accent: 130 50% 68%; /* Granny Smith Apple */
-    --accent-foreground: 199 69% 15%;
+    --background: 165 67% 96%; /* #ebfbf0 */
+    --foreground: 211 98% 13%; /* #012341 */
+    --card: 165 67% 98%; /* Lighter version of background */
+    --card-foreground: 211 98% 13%;
+    --popover: 165 67% 98%;
+    --popover-foreground: 211 98% 13%;
+    --primary: 164 25% 47%; /* #5c9484 */
+    --primary-foreground: 165 67% 98%;
+    --secondary: 217 30% 29%; /* #344460 */
+    --secondary-foreground: 165 67% 96%;
+    --muted: 155 33% 85%; /* Slightly darker accent */
+    --muted-foreground: 217 30% 45%;
+    --accent: 155 33% 80%; /* #b8e0cc */
+    --accent-foreground: 211 98% 13%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 140 20% 75%;
-    --input: 140 20% 78%;
-    --ring: 160 69% 33%;
-    --radius: 0.5rem;
-    --chart-1: 160 70% 40%;
-    --chart-2: 130 50% 60%;
-    --chart-3: 199 70% 30%;
-    --chart-4: 43 60% 80%;
-    --chart-5: 140 30% 70%;
+    --border: 155 33% 80%;
+    --input: 155 33% 85%;
+    --ring: 164 25% 47%;
+    --chart-1: 164 25% 47%;
+    --chart-2: 217 30% 29%;
+    --chart-3: 175 32% 28%;
+    --chart-4: 155 33% 80%;
+    --chart-5: 211 98% 13%;
 
     /* Sidebar Variables */
-    --sidebar-background: 199 80% 15%;
-    --sidebar-foreground: 140 25% 90%;
-    --sidebar-primary: 130 50% 68%; /* Granny Smith Apple */
-    --sidebar-primary-foreground: 199 80% 10%;
-    --sidebar-accent: 199 70% 22%;
-    --sidebar-accent-foreground: 140 25% 95%;
-    --sidebar-border: 199 80% 20%;
-    --sidebar-ring: 130 50% 68%;
+    --sidebar-background: 211 98% 13%; /* #012341 */
+    --sidebar-foreground: 155 33% 85%;
+    --sidebar-primary: 155 33% 80%;
+    --sidebar-primary-foreground: 211 98% 10%;
+    --sidebar-accent: 217 30% 29%;
+    --sidebar-accent-foreground: 165 67% 96%;
+    --sidebar-border: 217 30% 20%;
+    --sidebar-ring: 155 33% 80%;
   }
 
   .dark {
-    --background: 199 70% 12%; /* Dark Midnight Green */
-    --foreground: 140 25% 88%; /* Tea Green family */
-    --card: 199 70% 15%;
-    --card-foreground: 140 25% 90%;
-    --popover: 199 70% 15%;
-    --popover-foreground: 140 25% 90%;
-    --primary: 130 50% 68%; /* Granny Smith Apple */
-    --primary-foreground: 199 80% 10%;
-    --secondary: 199 60% 20%;
-    --secondary-foreground: 140 25% 90%;
-    --muted: 199 60% 20%;
-    --muted-foreground: 140 20% 70%;
-    --accent: 160 69% 33%; /* Illuminating Emerald */
-    --accent-foreground: 0 0% 100%;
+    --background: 211 98% 10%; /* Darker version of #012341 */
+    --foreground: 155 33% 85%;
+    --card: 211 98% 13%;
+    --card-foreground: 155 33% 85%;
+    --popover: 211 98% 13%;
+    --popover-foreground: 155 33% 85%;
+    --primary: 164 25% 47%; /* #5c9484 */
+    --primary-foreground: 211 98% 13%;
+    --secondary: 175 32% 28%; /* #305d59 */
+    --secondary-foreground: 155 33% 85%;
+    --muted: 217 30% 20%;
+    --muted-foreground: 155 33% 70%;
+    --accent: 217 30% 29%; /* #344460 */
+    --accent-foreground: 155 33% 90%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 199 60% 25%;
-    --input: 199 60% 25%;
-    --ring: 130 50% 68%;
-    --chart-1: 130 50% 68%;
-    --chart-2: 160 69% 33%;
-    --chart-3: 140 25% 81%;
-    --chart-4: 43 56% 90%;
-    --chart-5: 199 69% 22%;
+    --border: 217 30% 29%;
+    --input: 217 30% 29%;
+    --ring: 164 25% 47%;
+    --chart-1: 164 25% 47%;
+    --chart-2: 175 32% 28%;
+    --chart-3: 155 33% 80%;
+    --chart-4: 217 30% 29%;
+    --chart-5: 155 33% 70%;
 
     /* Sidebar Variables */
-    --sidebar-background: 199 80% 10%;
-    --sidebar-foreground: 140 25% 90%;
-    --sidebar-primary: 130 50% 68%; /* Granny Smith Apple */
-    --sidebar-primary-foreground: 199 80% 5%;
-    --sidebar-accent: 199 70% 15%;
-    --sidebar-accent-foreground: 140 25% 95%;
-    --sidebar-border: 199 80% 15%;
-    --sidebar-ring: 130 50% 68%;
+    --sidebar-background: 211 98% 10%;
+    --sidebar-foreground: 155 33% 85%;
+    --sidebar-primary: 155 33% 80%;
+    --sidebar-primary-foreground: 211 98% 5%;
+    --sidebar-accent: 217 30% 29%;
+    --sidebar-accent-foreground: 165 67% 96%;
+    --sidebar-border: 211 98% 15%;
+    --sidebar-ring: 155 33% 80%;
   }
 }
 
