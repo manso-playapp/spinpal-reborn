@@ -43,7 +43,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import SpinningWheel from '../game/SpinningWheel';
+import GameClientPage from '@/app/game/GameClientPage';
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 
@@ -978,7 +978,7 @@ export default function EditGameForm({ game }: { game: Game }) {
               </div>
               
               {/* Columna de Vista Previa */}
-              <div className="lg:col-span-1 lg:sticky top-4">
+               <div className="lg:col-span-1 lg:sticky top-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
@@ -987,14 +987,18 @@ export default function EditGameForm({ game }: { game: Game }) {
                     </CardTitle>
                     <Button type="button" variant="ghost" size="sm" onClick={refreshPreview}><RefreshCw className="mr-2 h-4 w-4"/>Refrescar</Button>
                   </CardHeader>
-                  <CardContent className="p-4 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square">
-                     <div className="w-full max-w-md" style={{ transform: 'scale(0.8)' }}>
-                        <SpinningWheel
-                            segments={watchedSegments}
-                            gameId={game.id}
-                            onSpinEnd={() => {}} // No-op for preview
-                            config={watchedConfig}
-                            isDemoMode={true}
+                  <CardContent className="p-4 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-video overflow-hidden">
+                     <div 
+                        className="w-[1080px] h-[1920px] origin-top-left bg-background"
+                        style={{
+                           transform: 'scale(0.35) translateX(-5%) translateY(-5%)',
+                        }}
+                     >
+                        <iframe 
+                           ref={iframeRef}
+                           src={`/juego/${game.id}/preview`}
+                           className="w-full h-full border-none"
+                           title="Vista previa del juego"
                         />
                      </div>
                   </CardContent>
