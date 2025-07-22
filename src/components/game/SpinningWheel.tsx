@@ -70,11 +70,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const handleSpinClick = useCallback(async (spinRequestData) => {
     if (isSpinningRef.current || segments.length === 0) return;
 
-    const { winningSegment, customerId, isDemoSpin } = spinRequestData;
-    const winningIndex = segments.findIndex(s => s.name === winningSegment.name);
+    const { winningSegment, customerId, isDemoSpin, winningIndex } = spinRequestData;
     
-    if (winningIndex === -1) {
-        console.error("Error: Winning segment not found in segments array.");
+    if (winningIndex === undefined || winningIndex < 0 || winningIndex >= segments.length) {
+        console.error("Error: Invalid or missing winningIndex.", spinRequestData);
         return;
     }
 
@@ -128,15 +127,13 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
                 prizeWonAt: serverTimestamp()
             });
             
-            if (clientEmail) {
-                await sendPrizeNotification({
-                    gameId: gameId,
-                    customerId: customerId,
-                    prizeName: winningSegment.name,
-                });
-            } else {
-                console.log("Notificación no enviada: no hay email de cliente configurado para este juego.");
-            }
+            // Only send notification if there is a client email configured
+            await sendPrizeNotification({
+                gameId: gameId,
+                customerId: customerId,
+                prizeName: winningSegment.name,
+            });
+
 
         } catch (error) {
             console.error("DIAGNÓSTICO: ¡ERROR al actualizar premios o notificar!", error);
@@ -225,7 +222,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         }
     }
     
-    handleSpinClick({ winningSegment: finalSegments[winningIndex], isDemoSpin: true, customerId: 'demo' });
+    handleSpinClick({ winningSegment: finalSegments[winningIndex], winningIndex, isDemoSpin: true, customerId: 'demo' });
   };
 
   return (

@@ -151,7 +151,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
     setIsSubmitting(true);
     const submittedEmail = data.email.toLowerCase();
 
-    if (!gameData.exemptedEmails.includes(submittedEmail)) {
+    if (!gameData.isDemoMode && !gameData.exemptedEmails.includes(submittedEmail)) {
         try {
             const customersCollectionRef = collection(db, 'games', gameId, 'customers');
             const q = query(customersCollectionRef, where("email", "==", submittedEmail), limit(1));
@@ -239,7 +239,8 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             spinRequest: {
                 timestamp: serverTimestamp(),
                 customerId: customerId,
-                winningSegment: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize }
+                winningSegment: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize },
+                winningIndex: winningIndex,
             },
             plays: increment(1),
         });

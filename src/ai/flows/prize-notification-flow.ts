@@ -160,6 +160,12 @@ const prizeNotificationFlow = ai.defineFlow(
         const clientEmail = gameData.clientEmail;
         const customerEmail = customerData.email;
 
+        if (!customerEmail) {
+             const message = `Customer ${input.customerId} does not have an email address.`;
+             console.warn(message);
+             return { success: true, message: message }; // Success, but no email sent.
+        }
+
         // 2. Generate just the celebratory phrase using Genkit AI
         let celebratoryPhrase = `¡Felicidades! Has ganado un increíble ${input.prizeName}.`; // Fallback phrase
         try {
