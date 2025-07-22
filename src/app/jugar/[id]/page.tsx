@@ -39,8 +39,7 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4 relative" style={backgroundStyles}>
        {game.mobileBackgroundImage && <div className="absolute inset-0 bg-black/30 z-0"></div>}
        <div className="w-full max-w-md z-10">
-         <div className="flex flex-col items-center justify-center mb-6 text-center text-white">
-            <p>{game.registrationTitle}</p>
+         <div className="text-center text-white mb-6">
             <h1 className="font-headline text-3xl font-bold">
               {game.name}
             </h1>
