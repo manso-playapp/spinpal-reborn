@@ -38,7 +38,7 @@ interface SpinResult {
 interface GameClientPageProps {
   gameId: string;
   isPreview?: boolean;
-  initialData?: any; // Data passed from localStorage for preview
+  initialData?: any; // Data passed from the parent form for preview
 }
 
 
@@ -48,7 +48,7 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
 
   useEffect(() => {
-    // If it's a preview and we already have initialData, don't fetch from Firestore.
+    // If it's a preview and we have fresh initialData, use it.
     if (isPreview && initialData) {
         setGame(initialData);
         setLoading(false);
@@ -91,7 +91,9 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
       setLoading(false);
     };
 
-    getGameData();
+    if (!game || (isPreview && !initialData)) {
+      getGameData();
+    }
   }, [gameId, isPreview, initialData]);
 
 
@@ -148,10 +150,10 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
               gameId={game.id} 
               isDemoMode={game.status === 'demo'}
               config={{
-                borderImage: game.borderImage,
-                borderScale: game.borderScale,
-                centerImage: game.centerImage,
-                centerScale: game.centerScale,
+                borderImage: game.config.borderImage,
+                borderScale: game.config.borderScale,
+                centerImage: game.config.centerImage,
+                centerScale: game.config.centerScale,
               }}
               onSpinEnd={handleSpinEnd}
             />

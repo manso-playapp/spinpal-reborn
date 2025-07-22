@@ -13,6 +13,7 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import { SortableItem } from './SortableItem';
 import SpinningWheel from '../game/SpinningWheel';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import GameClientPage from '../game/GameClientPage';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -165,7 +166,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       clientName: game.clientName || '',
       clientEmail: game.clientEmail || '',
       managementType: game.managementType || 'client',
-      exemptedEmails: (game.exemptedEmails || []).join('\\n'),
+      exemptedEmails: (game.exemptedEmails || []).join('\n'),
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
@@ -192,22 +193,9 @@ export default function EditGameForm({ game }: { game: Game }) {
   const watchedFormData = form.watch();
   const watchedSegments = form.watch('segments');
 
-  // This effect will update the localStorage for the preview iframe
-  useEffect(() => {
-    const previewData = { ...watchedFormData, id: game.id, config: { // Also pass config
-        borderImage: watchedFormData.borderImage,
-        borderScale: watchedFormData.borderScale,
-        centerImage: watchedFormData.centerImage,
-        centerScale: watchedFormData.centerScale,
-    }};
-    localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
-    window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
-  }, [watchedFormData, game.id]);
-  
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
-    const segments = watchedSegments || [];
-    const realPrizeSegments = segments.filter(s => s.isRealPrize);
-    const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
+    const realPrizeSegments = watchedSegments.filter(s => s.isRealPrize);
+    const nonRealPrizeSegments = watchedSegments.filter(s => !s.isRealPrize);
 
     const realPrizeTotal = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
     
@@ -227,7 +215,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     watchedSegments.forEach((segment, index) => {
       if (!segment.isRealPrize) {
         if (segment.probability !== nonRealPrizeProbability) {
-            form.setValue(`segments.${index}.probability`, nonRealPrizeProbability, { shouldDirty: true, shouldValidate: true });
+            form.setValue(`segments.${index}.probability`, nonRealPrizeProbability, { shouldDirty: false, shouldValidate: false });
         }
       }
     });
@@ -260,7 +248,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       const gameRef = doc(db, 'games', game.id);
       
       const emailList = data.exemptedEmails
-        ? data.exemptedEmails.split('\\n').map(email => email.trim().toLowerCase()).filter(email => email)
+        ? data.exemptedEmails.split('\n').map(email => email.trim().toLowerCase()).filter(email => email)
         : [];
       
       const dataToSave = JSON.parse(JSON.stringify(data));
@@ -278,8 +266,6 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
-      // Refresh the iframe preview just in case
-      window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
 
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -316,7 +302,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     centerScale: watchedFormData.centerScale,
   };
 
-  const roulettePreviewKey = JSON.stringify(watchedSegments) + JSON.stringify(currentConfig);
+  const previewData = { ...watchedFormData, id: game.id, config: currentConfig };
 
 
   return (
@@ -439,7 +425,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 <FormLabel className="flex items-center gap-2"><Users /> Correos Exentos de Verificación</FormLabel>
                                 <FormControl>
                                   <Textarea
-                                    placeholder="un-email@ejemplo.com\\notro-email@ejemplo.com"
+                                    placeholder="un-email@ejemplo.com&#10;otro-email@ejemplo.com"
                                     className="min-h-[100px] font-mono text-sm"
                                     {...field}
                                     disabled={loading}
@@ -694,36 +680,36 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                             <FormLabel>Probabilidad</FormLabel>
                                                             <FormControl>
                                                               {watchedSegments[index]?.isRealPrize ? (
-                                                                  <div className="flex items-center gap-4">
-                                                                    <Controller
-                                                                        name={`segments.${index}.probability`}
-                                                                        control={form.control}
-                                                                        render={({ field: renderField }) => (
-                                                                            <Slider
-                                                                                value={[renderField.value ?? 0]}
-                                                                                onValueChange={(val) => renderField.onChange(val[0])}
-                                                                                max={100}
-                                                                                step={1}
-                                                                                className="w-full"
-                                                                            />
-                                                                        )}
-                                                                    />
-                                                                    <div className="relative w-24">
+                                                                <div className="flex items-center gap-4">
+                                                                  <Controller
+                                                                      name={`segments.${index}.probability`}
+                                                                      control={form.control}
+                                                                      render={({ field: { onChange, value } }) => (
+                                                                          <Slider
+                                                                              value={[value || 0]}
+                                                                              onValueChange={(val) => onChange(val[0])}
+                                                                              max={100}
+                                                                              step={1}
+                                                                              className="w-full"
+                                                                          />
+                                                                      )}
+                                                                  />
+                                                                  <div className="relative w-24">
                                                                       <Controller
                                                                           name={`segments.${index}.probability`}
                                                                           control={form.control}
-                                                                          render={({ field: renderField }) => (
+                                                                          render={({ field: { onChange, value } }) => (
                                                                               <Input
-                                                                                type="number"
-                                                                                value={renderField.value || 0}
-                                                                                onChange={(e) => renderField.onChange(parseFloat(e.target.value) || 0)}
-                                                                                className="text-center font-mono"
+                                                                                  type="number"
+                                                                                  value={value || 0}
+                                                                                  onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+                                                                                  className="text-center font-mono"
                                                                               />
                                                                           )}
                                                                       />
                                                                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                                                                    </div>
                                                                   </div>
+                                                                </div>
                                                               ) : (
                                                                   <Input 
                                                                     value={`${(field.value || 0).toFixed(2)}% (auto)`} 
@@ -761,25 +747,25 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                   <FormField control={form.control} name={`segments.${index}.fontSize`} render={({ field }) => (
                                                       <FormItem>
                                                         <FormLabel>Tamaño ({field.value}px)</FormLabel>
-                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={4} max={40} step={1} />
+                                                        <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={4} max={40} step={1} />
                                                       </FormItem>
                                                   )}/>
                                                   <FormField control={form.control} name={`segments.${index}.lineHeight`} render={({ field }) => (
                                                       <FormItem>
                                                         <FormLabel>Interlineado ({field.value})</FormLabel>
-                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={0.5} max={3} step={0.1} />
+                                                        <Slider value={[field.value ?? 1]} onValueChange={(v) => field.onChange(v[0])} min={0.5} max={3} step={0.1} />
                                                       </FormItem>
                                                   )}/>
                                                    <FormField control={form.control} name={`segments.${index}.letterSpacing`} render={({ field }) => (
                                                       <FormItem>
                                                         <FormLabel>Interletrado ({field.value}px)</FormLabel>
-                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={-5} max={10} step={0.1} />
+                                                        <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={-5} max={10} step={0.1} />
                                                       </FormItem>
                                                   )}/>
                                                   <FormField control={form.control} name={`segments.${index}.distanceFromCenter`} render={({ field }) => (
                                                       <FormItem>
-                                                        <FormLabel>Distancia del Centro ({Math.round(field.value*100)}%)</FormLabel>
-                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={0} max={1} step={0.01} />
+                                                        <FormLabel>Distancia del Centro ({Math.round((field.value ?? 0)*100)}%)</FormLabel>
+                                                        <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={0} max={1} step={0.01} />
                                                       </FormItem>
                                                   )}/>
                                                 </TabsContent>
@@ -793,8 +779,8 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                    )}/>
                                                    <FormField control={form.control} name={`segments.${index}.iconScale`} render={({ field }) => (
                                                       <FormItem>
-                                                        <FormLabel>Escala del Icono ({field.value.toFixed(2)})</FormLabel>
-                                                        <Slider value={[field.value]} onValueChange={(v) => field.onChange(v[0])} min={0.1} max={2} step={0.05} />
+                                                        <FormLabel>Escala del Icono ({field.value?.toFixed(2)})</FormLabel>
+                                                        <Slider value={[field.value ?? 1]} onValueChange={(v) => field.onChange(v[0])} min={0.1} max={2} step={0.05} />
                                                       </FormItem>
                                                    )}/>
                                                 </TabsContent>
@@ -998,7 +984,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <div className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[450px]">
                           <div className="w-full max-w-md">
                             <SpinningWheel
-                              key={roulettePreviewKey}
+                              key={JSON.stringify(watchedSegments) + JSON.stringify(currentConfig)}
                               segments={watchedSegments}
                               gameId={game.id}
                               isDemoMode={true}
@@ -1012,13 +998,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                       <TabsContent value="game">
                         <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
                           <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-top-left">
-                             <iframe
-                                key={roulettePreviewKey}
-                                src={`/juego/${game.id}/preview`}
-                                className="w-full h-full border-0"
-                                scrolling="no"
-                                title="Game Preview"
-                            />
+                             <GameClientPage gameId={game.id} isPreview={true} initialData={previewData} />
                           </div>
                         </div>
                       </TabsContent>
