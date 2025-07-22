@@ -272,11 +272,20 @@ service cloud.firestore {
       // Admins pueden borrar clientes
       allow delete: if request.auth != null; 
       
-      // Jugadores solo pueden actualizar 'hasPlayed' en su propio documento (no implementado aún, pero útil para el futuro)
       // Admins pueden actualizar cualquier campo.
-      allow update: if request.auth != null || (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasPlayed']));
+      // Jugadores (sin autenticar) solo pueden actualizar el campo 'hasPlayed'.
+      allow update: if request.auth != null || 
+                    (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasPlayed']));
     }
     
+    match /outbound_emails/{emailId} {
+      // El servidor escribe aquí después de una lógica interna segura.
+      // Cualquiera puede crear un registro de email saliente.
+      allow create: if true;
+      // Solo los administradores autenticados pueden leer o borrar los registros.
+      allow read, delete: if request.auth != null;
+    }
+
     // Colección de prueba para verificar la conexión
     match /health_check/{doc} {
       allow read, write: if true;
