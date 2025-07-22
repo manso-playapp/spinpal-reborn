@@ -35,19 +35,34 @@ interface SpinResult {
     isRealPrize: boolean;
 }
 
-export default function GameClientPage({ gameId }: { gameId: string }) {
-  const [game, setGame] = useState<GameData | null>(null);
-  const [loading, setLoading] = useState(true);
+interface GameClientPageProps {
+  gameId: string;
+  isPreview?: boolean;
+  initialData?: any; // Data passed from localStorage for preview
+}
+
+
+export default function GameClientPage({ gameId, isPreview = false, initialData = null }: GameClientPageProps) {
+  const [game, setGame] = useState<GameData | null>(initialData);
+  const [loading, setLoading] = useState(!initialData);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
 
   useEffect(() => {
+    // If it's a preview and we already have initialData, don't fetch from Firestore.
+    if (isPreview && initialData) {
+        setGame(initialData);
+        setLoading(false);
+        return;
+    }
+
+    // Otherwise, fetch from Firestore. This runs for the public page or as a fallback for the preview.
     const getGameData = async () => {
+      setLoading(true);
       const gameRef = doc(db, 'games', gameId);
       const gameSnap = await getDoc(gameRef);
 
       if (!gameSnap.exists()) {
         setLoading(false);
-        // This will trigger the notFound UI in production
         notFound();
         return;
       }
@@ -65,6 +80,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
         rouletteScale: data.rouletteScale || 1,
         rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
         qrVerticalOffset: data.qrVerticalOffset || 0,
+        // The config object should now be passed directly in initialData for previews
         config: {
           borderImage: data.borderImage || '',
           borderScale: data.borderScale || 1,
@@ -74,13 +90,14 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
       });
       setLoading(false);
     };
+
     getGameData();
-  }, [gameId]);
+  }, [gameId, isPreview, initialData]);
 
 
   const handleSpinEnd = (result: SpinResult) => {
+    if (isPreview) return; // Don't show results in preview mode after spin
     setSpinResult(result);
-    // Hide the result and show QR code again after 15 seconds
     setTimeout(() => {
       setSpinResult(null);
     }, 15000);
@@ -95,7 +112,6 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
   }
 
   if (!game) {
-    // notFound() is handled in useEffect, this is a fallback.
     return null;
   }
   
@@ -131,7 +147,12 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
               segments={game.segments} 
               gameId={game.id} 
               isDemoMode={game.status === 'demo'}
-              config={game.config}
+              config={{
+                borderImage: game.borderImage,
+                borderScale: game.borderScale,
+                centerImage: game.centerImage,
+                centerScale: game.centerScale,
+              }}
               onSpinEnd={handleSpinEnd}
             />
           </div>

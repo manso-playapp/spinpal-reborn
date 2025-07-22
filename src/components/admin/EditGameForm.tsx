@@ -199,13 +199,20 @@ export default function EditGameForm({ game }: { game: Game }) {
     };
   }, [watchedFormData.segments]);
 
-  // Force iframe refresh when form data changes
+  // This effect will update the localStorage for the preview iframe
   useEffect(() => {
-    const subscription = form.watch(() => {
-      setPreviewKey(Date.now());
+    const subscription = form.watch((value) => {
+        try {
+            const previewData = { ...value, id: game.id };
+            localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
+            // Trigger a custom event to notify the iframe
+            window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
+        } catch (error) {
+            console.error("Could not save preview data to localStorage", error);
+        }
     });
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, game.id]);
 
 
   const sensors = useSensors(
@@ -252,7 +259,7 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
-      // Refresh the iframe preview
+      // Refresh the iframe preview just in case
       setPreviewKey(Date.now());
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -288,13 +295,6 @@ export default function EditGameForm({ game }: { game: Game }) {
     centerImage: watchedFormData.centerImage,
     centerScale: watchedFormData.centerScale,
   };
-
-  const backgroundPreviewStyles: React.CSSProperties = watchedFormData.backgroundImage ? {
-    backgroundImage: `url(${watchedFormData.backgroundImage})`,
-    backgroundSize: watchedFormData.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-  } : {};
 
   const roulettePreviewKey = JSON.stringify(watchedFormData.segments) + JSON.stringify(currentConfig);
 
@@ -626,7 +626,11 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                                 <FormControl>
                                                                     {watchedFormData.segments[index]?.isRealPrize ? (
                                                                         <div className="flex items-center gap-2">
-                                                                            <Slider value={[probField.value || 0]} onValueChange={(vals) => probField.onChange(vals[0])} max={100 - (realPrizeTotalProbability - (probField.value || 0))} step={1} />
+                                                                            <Slider 
+                                                                                value={[probField.value || 0]} 
+                                                                                onValueChange={(vals) => probField.onChange(vals[0])} 
+                                                                                max={100 - (realPrizeTotalProbability - (probField.value || 0))} 
+                                                                                step={1} />
                                                                             <span className="text-xs font-mono w-16 text-right">{(probField.value || 0)}%</span>
                                                                         </div>
                                                                     ) : (
@@ -953,16 +957,9 @@ export default function EditGameForm({ game }: { game: Game }) {
                              <iframe
                                 key={previewKey}
                                 src={`/juego/${game.id}/preview`}
-                                className="w-full h-full border-0 origin-top-left absolute"
+                                className="w-full h-full border-0"
                                 scrolling="no"
                                 title="Game Preview"
-                                style={{
-                                    width: '333.33%',
-                                    height: '333.33%',
-                                    transform: 'scale(0.3) translate(-50%, -50%)',
-                                    top: '50%',
-                                    left: '50%',
-                                }}
                             />
                           </div>
                         </div>
