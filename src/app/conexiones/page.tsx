@@ -154,9 +154,15 @@ async function checkServices(): Promise<{
       }
     }
   } else {
-      const errorMessage = `No has configurado tus credenciales de Firebase en el archivo .env. Ve al Paso 0 de la guía para obtenerlas y pegarlas en el archivo.`;
-      status.auth = { connected: false, message: errorMessage, isConfigured: 'no' };
-      status.firestore = { connected: false, message: errorMessage, isConfigured: 'no' };
+      const commonError = {
+        connected: false,
+        message: 'No has configurado tus credenciales de Firebase en el archivo .env.',
+        details: 'Ve al Paso 0 de la guía para obtenerlas y pegarlas en el archivo.',
+        isConfigured: 'no' as const,
+        actionUrl: `https://console.firebase.google.com/project/${projectId}/settings/general`
+      };
+      status.auth = commonError;
+      status.firestore = commonError;
   }
 
   return status;
@@ -202,7 +208,7 @@ const ServiceStatusCard = ({
       </div>
       {children}
       {status.actionUrl && (
-        <Button asChild variant="outline" size="sm" className="self-start">
+        <Button asChild variant="outline" size="sm" className="self-start mt-2">
           <Link href={status.actionUrl} target="_blank">
             Ir a la configuración <ExternalLink className="ml-2 h-4 w-4" />
           </Link>
