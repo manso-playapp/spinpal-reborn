@@ -45,8 +45,9 @@ async function checkServices(): Promise<{
     gemini: {
       connected: false,
       message: 'La clave de API de Gemini no está configurada.',
-      details: 'Añade tu clave al archivo .env para habilitar las funciones de IA.',
+      details: 'Añade tu clave al archivo .env para habilitar las funciones de IA. Puedes obtenerla gratis desde Google AI Studio.',
       isConfigured: 'no' as const,
+      actionUrl: 'https://aistudio.google.com/app/apikey'
     },
     resend: {
         connected: false,
@@ -66,6 +67,7 @@ async function checkServices(): Promise<{
         message: 'La clave de API de Gemini está configurada correctamente.',
         details: '¡Todo listo para integrar funciones de IA en tu aplicación!',
         isConfigured: 'yes',
+        actionUrl: 'https://aistudio.google.com/app/apikey'
       };
   }
 
@@ -152,7 +154,7 @@ async function checkServices(): Promise<{
       }
     }
   } else {
-      const errorMessage = `No has configurado tus credenciales de Firebase en el archivo .env. Por favor, sigue las instrucciones para obtenerlas.`;
+      const errorMessage = `No has configurado tus credenciales de Firebase en el archivo .env. Ve al Paso 0 de la guía para obtenerlas y pegarlas en el archivo.`;
       status.auth = { connected: false, message: errorMessage, isConfigured: 'no' };
       status.firestore = { connected: false, message: errorMessage, isConfigured: 'no' };
   }
@@ -242,6 +244,27 @@ export default async function ConexionesPage() {
         <div>
             <h2 className="text-3xl font-bold font-headline text-center mb-6">Guía de Configuración Inicial</h2>
             <div className="space-y-8">
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><KeyRound/>Paso 0: Credenciales de Firebase (.env)</CardTitle>
+                        <CardDescription>Conecta tu aplicación con tu proyecto de Firebase.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p>Para que la aplicación pueda funcionar, necesitas obtener tus credenciales de Firebase y pegarlas en el archivo <code>.env</code> que se encuentra en la raíz de tu proyecto.</p>
+                        <Button asChild variant="outline">
+                            <Link href={`https://console.firebase.google.com/project/${projectId}/settings/general`} target="_blank">
+                                Ir a la Configuración del Proyecto en Firebase <ExternalLink className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
+                            <li>En la consola de Firebase, ve a la "Configuración del Proyecto" (el ícono del engranaje).</li>
+                            <li>En la pestaña "General", baja hasta la sección "Tus apps".</li>
+                            <li>Busca tu aplicación web y haz clic en el botón de opción "Configuración" y selecciona el formato **"CDN"**.</li>
+                            <li>Verás un objeto de configuración. Copia los valores y pégalos en las variables correspondientes del archivo <code>.env</code>.</li>
+                        </ul>
+                    </CardContent>
+                </Card>
                 
                 <Card>
                     <CardHeader>
@@ -397,3 +420,5 @@ service cloud.firestore {
     </div>
   );
 }
+
+    

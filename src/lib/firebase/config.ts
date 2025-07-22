@@ -1,6 +1,6 @@
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,7 +11,27 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app: FirebaseApp;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Check if all required Firebase config keys are present
+const areFirebaseKeysPresent = firebaseConfig.apiKey &&
+                               firebaseConfig.authDomain &&
+                               firebaseConfig.projectId &&
+                               firebaseConfig.storageBucket &&
+                               firebaseConfig.messagingSenderId &&
+                               firebaseConfig.appId;
+
+if (areFirebaseKeysPresent) {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  auth = getAuth(app);
+  db = getFirestore(app);
+} else {
+    if (process.env.NODE_ENV !== 'test') { // Avoid spamming logs during tests
+        console.warn("Firebase configuration is missing or incomplete in .env file. Firebase services will be disabled.");
+    }
+}
+
+
+export { auth, db };
