@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for handling prize notifications.
+ * @fileOverview A flow for handling prize notifications via Resend.
  *
  * - sendPrizeNotification - A function that handles the prize notification process.
  * - PrizeNotificationInput - The input type for the sendPrizeNotification function.
@@ -12,6 +12,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { Resend } from 'resend';
 
 // Helper to generate a random validation code
 const generateValidationCode = () => {
@@ -104,6 +105,20 @@ const prizeNotificationFlow = ai.defineFlow(
     outputSchema: PrizeNotificationOutputSchema,
   },
   async (input) => {
+    const resendApiKey = process.env.RESEND_API_KEY;
+
+    if (!resendApiKey) {
+        const message = 'Resend API key is not configured in .env file.';
+        console.error(message);
+        return {
+            success: false,
+            message: message,
+        };
+    }
+    const resend = new Resend(resendApiKey);
+    // IMPORTANT: To use a different sender, you must verify your domain in Resend.
+    const fromAddress = 'onboarding@resend.dev'; 
+
     try {
         // 1. Fetch Game and Customer data from Firestore
         const gameRef = doc(db, 'games', input.gameId);
@@ -129,16 +144,14 @@ const prizeNotificationFlow = ai.defineFlow(
         const customerEmail = customerData.email;
 
         // 2. Generate email content using Genkit AI
-        const [customerEmailContent, clientEmailContent] = await Promise.all([
-            // Customer email
+        const [customerEmailResult, clientEmailResult] = await Promise.allSettled([
             emailPrompt({
                 gameName: gameData.name,
                 prizeName: input.prizeName,
                 validationCode,
                 customerName: customerData.name,
                 emailType: 'customer',
-            }).then(result => result.output),
-            // Client email (only if clientEmail is configured)
+            }),
             clientEmail 
             ? emailPrompt({
                 gameName: gameData.name,
@@ -146,55 +159,93 @@ const prizeNotificationFlow = ai.defineFlow(
                 validationCode,
                 customerName: customerData.name,
                 emailType: 'client',
-            }).then(result => result.output)
+            })
             : Promise.resolve(null),
         ]);
 
+        const customerEmailContent = customerEmailResult.status === 'fulfilled' ? customerEmailResult.value.output : null;
         if (!customerEmailContent) {
             throw new Error('Failed to generate customer email content.');
         }
         
-        // 3. Queue emails by saving them to Firestore
-        const emailQueueRef = collection(db, 'outbound_emails');
-        const emailsToQueue = [];
+        const clientEmailContent = (clientEmailResult.status === 'fulfilled' && clientEmailResult.value) ? clientEmailResult.value.output : null;
 
-        // Queue customer email
-        emailsToQueue.push(addDoc(emailQueueRef, {
-            to: customerEmail,
-            gameId: input.gameId,
-            customerId: input.customerId,
-            prize: input.prizeName,
-            validationCode: validationCode,
-            message: {
-                subject: customerEmailContent.subject,
-                html: customerEmailContent.body,
-            },
-            status: 'queued',
-            createdAt: serverTimestamp(),
-        }));
+        // 3. Send emails via Resend and log the results to Firestore
+        const emailLogRef = collection(db, 'outbound_emails');
+        
+        const sendPromises = [];
 
-        // Queue client email if applicable
-        if (clientEmail && clientEmailContent) {
-            emailsToQueue.push(addDoc(emailQueueRef, {
-                to: clientEmail,
+        // Send and log customer email
+        sendPromises.push((async () => {
+            let logData: any = {
+                to: customerEmail,
                 gameId: input.gameId,
                 customerId: input.customerId,
                 prize: input.prizeName,
                 validationCode: validationCode,
                 message: {
-                    subject: clientEmailContent.subject,
-                    html: clientEmailContent.body,
+                    subject: customerEmailContent.subject,
+                    html: customerEmailContent.body,
                 },
-                status: 'queued',
                 createdAt: serverTimestamp(),
-            }));
+            };
+            try {
+                const { data, error } = await resend.emails.send({
+                    from: fromAddress,
+                    to: customerEmail,
+                    subject: customerEmailContent.subject,
+                    html: customerEmailContent.body,
+                });
+                if (error) throw error;
+                logData.status = 'sent';
+                logData.resendId = data?.id;
+            } catch (e: any) {
+                logData.status = 'failed';
+                logData.error = e.message;
+                console.error(`Failed to send email to customer ${customerEmail}:`, e);
+            }
+            await addDoc(emailLogRef, logData);
+        })());
+
+        // Send and log client email if applicable
+        if (clientEmail && clientEmailContent) {
+            sendPromises.push((async () => {
+                let logData: any = {
+                    to: clientEmail,
+                    gameId: input.gameId,
+                    customerId: input.customerId,
+                    prize: input.prizeName,
+                    validationCode: validationCode,
+                    message: {
+                        subject: clientEmailContent.subject,
+                        html: clientEmailContent.body,
+                    },
+                    createdAt: serverTimestamp(),
+                };
+                try {
+                    const { data, error } = await resend.emails.send({
+                        from: fromAddress,
+                        to: clientEmail,
+                        subject: clientEmailContent.subject,
+                        html: clientEmailContent.body,
+                    });
+                    if (error) throw error;
+                    logData.status = 'sent';
+                    logData.resendId = data?.id;
+                } catch (e: any) {
+                    logData.status = 'failed';
+                    logData.error = e.message;
+                    console.error(`Failed to send email to client ${clientEmail}:`, e);
+                }
+                await addDoc(emailLogRef, logData);
+            })());
         }
         
-        await Promise.all(emailsToQueue);
+        await Promise.all(sendPromises);
 
         return {
             success: true,
-            message: 'Notification emails have been successfully queued.',
+            message: 'Notification emails have been processed.',
             validationCode: validationCode,
         };
 
@@ -207,5 +258,3 @@ const prizeNotificationFlow = ai.defineFlow(
     }
   }
 );
-
-    
