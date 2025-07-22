@@ -111,9 +111,9 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     // The spin animation takes 10 seconds
     setTimeout(async () => {
-      setWinningSegmentId(winningId); // Activate blinking
       setIsSpinning(false);
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
+      setWinningSegmentId(winningId); // Activate blinking after spin ends
   
       // Clean up the spin request from Firestore.
       try {
