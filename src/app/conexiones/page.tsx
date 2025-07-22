@@ -104,7 +104,7 @@ async function checkServices(): Promise<{
       status.auth = {
         connected: true,
         message: 'El servicio de Autenticación de Firebase está conectado correctamente.',
-        details: 'Recuerda habilitar el proveedor "Correo/Contraseña" y crear un usuario administrador.',
+        details: 'Recuerda habilitar los proveedores de inicio de sesión que necesites.',
         isConfigured: 'yes',
       };
     }
@@ -275,19 +275,18 @@ export default async function ConexionesPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><KeyRound/>Paso 1: Configurar Autenticación</CardTitle>
-                        <CardDescription>Permite que los administradores inicien sesión en la aplicación.</CardDescription>
+                        <CardDescription>Permite que los administradores y clientes inicien sesión.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <p>Para que el login de administrador funcione, necesitas habilitar este método de inicio de sesión en Firebase.</p>
+                        <p>Para que el login funcione, necesitas habilitar los métodos de inicio de sesión en Firebase.</p>
                         <Button asChild variant="outline">
                             <Link href={`https://console.firebase.google.com/project/${projectId}/authentication/providers`} target="_blank">
                                 Ir a Firebase Auth <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
                         <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                            <li>En la pestaña <strong>"Sign-in method"</strong>, busca y habilita el proveedor <strong>"Correo electrónico/Contraseña"</strong>.</li>
-                            <li>Ve a la pestaña <strong>"Users"</strong> y haz clic en <strong>"Add user"</strong>.</li>
-                            <li>Introduce un correo y contraseña. Usarás estas credenciales para acceder en <code>/login</code>.</li>
+                            <li>En la pestaña <strong>"Sign-in method"</strong>, busca y habilita <strong>"Correo electrónico/Contraseña"</strong> (para el admin) y <strong>"Google"</strong> (para los clientes).</li>
+                            <li>Ve a la pestaña <strong>"Users"</strong> y haz clic en <strong>"Add user"</strong> para crear tu usuario administrador.</li>
                         </ul>
                     </CardContent>
                 </Card>
@@ -318,7 +317,7 @@ export default async function ConexionesPage() {
                         <CardDescription>Protege tu base de datos contra accesos no autorizados.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                       <p>Estas reglas aseguran que solo los usuarios autenticados puedan modificar los datos.</p>
+                       <p>Estas reglas aseguran que solo los usuarios autorizados puedan modificar los datos.</p>
                        <Button asChild variant="outline">
                             <Link href={`https://console.firebase.google.com/project/${projectId}/firestore/rules`} target="_blank">
                                 Ir a las Reglas de Firestore <ExternalLink className="ml-2 h-4 w-4" />
@@ -330,37 +329,48 @@ export default async function ConexionesPage() {
 service cloud.firestore {
   match /databases/{database}/documents {
   
+    // Función para verificar si el usuario es el Super Administrador
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.email == 'grupomanso@gmail.com';
+    }
+    
+    // Función para verificar si el usuario es el cliente dueño del juego
+    function isGameClient(gameId) {
+      return request.auth != null && request.auth.token.email == get(/databases/$(database)/documents/games/$(gameId)).data.clientEmail;
+    }
+
     match /games/{gameId} {
       allow read: if true;
-      // Admins pueden escribir todo el documento (crear, editar, borrar)
-      allow write: if request.auth != null; 
+      allow write: if isSuperAdmin(); // Solo el super-admin puede crear, editar o borrar juegos
       
-      // Jugadores (sin autenticar) solo pueden actualizar los campos permitidos.
-      // Se usa hasAny y hasOnly para asegurar que no se modifiquen otros campos.
+      // Los jugadores no autenticados solo pueden actualizar los campos de giro.
       allow update: if request.auth == null
                       && request.resource.data.diff(resource.data).affectedKeys().hasAny(['spinRequest', 'plays', 'prizesAwarded', 'lastResult'])
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest', 'plays', 'prizesAwarded', 'lastResult']);
     }
 
     match /games/{gameId}/customers/{customerId} {
-      allow read: if true;
-      allow create: if true; // Cualquiera puede registrarse (crear su propio documento de cliente)
+      // Un cliente puede leer la lista de sus participantes, y el super admin también.
+      // El público general puede leer un documento si es necesario (ej: para verificar si ya jugó).
+      allow read: if isSuperAdmin() || isGameClient(gameId) || request.auth == null;
       
-      // Admins pueden borrar clientes
-      allow delete: if request.auth != null; 
+      // Cualquiera puede registrarse (crear su propio documento de cliente).
+      allow create: if true; 
       
-      // Admins pueden actualizar cualquier campo.
-      // Jugadores (sin autenticar) solo pueden actualizar el campo 'hasPlayed'.
-      allow update: if request.auth != null || 
-                    (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasPlayed']));
+      // El super-admin o el cliente dueño del juego pueden borrar participantes.
+      allow delete: if isSuperAdmin() || isGameClient(gameId);
+      
+      // Admins/clientes pueden actualizar cualquier campo.
+      // Jugadores (sin autenticar) solo pueden actualizar el campo 'hasPlayed' o el premio ganado.
+      allow update: if isSuperAdmin() || isGameClient(gameId) ||
+                    (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasAny(['hasPlayed', 'prizeWonName', 'prizeWonAt']));
     }
     
     match /outbound_emails/{emailId} {
-      // El servidor escribe aquí después de una lógica interna segura.
-      // Cualquiera puede crear un registro de email saliente.
+      // El servidor escribe aquí después de una lógica interna segura. Cualquiera puede crear un log.
       allow create: if true;
-      // Solo los administradores autenticados pueden leer o borrar los registros.
-      allow read, delete: if request.auth != null;
+      // Solo el Super Admin puede leer o borrar los registros.
+      allow read, delete: if isSuperAdmin();
     }
 
     // Colección de prueba para verificar la conexión

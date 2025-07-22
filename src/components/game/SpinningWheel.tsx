@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
@@ -156,17 +156,25 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
         try {
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
+            const gameSnap = await getDoc(gameRef); // Get latest game data
+            const clientEmail = gameSnap.data()?.clientEmail;
+
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
             await updateDoc(customerRef, {
                 prizeWonName: winningSegment.name,
                 prizeWonAt: serverTimestamp()
             });
             
-            await sendPrizeNotification({
-                gameId: gameId,
-                customerId: customerId,
-                prizeName: winningSegment.name,
-            });
+            // Only send notification if there is a client email configured
+            if (clientEmail) {
+                await sendPrizeNotification({
+                    gameId: gameId,
+                    customerId: customerId,
+                    prizeName: winningSegment.name,
+                });
+            } else {
+                console.log("Notificación no enviada: no hay email de cliente configurado para este juego.");
+            }
 
         } catch (error) {
             console.error("DIAGNÓSTICO: ¡ERROR al actualizar premios o notificar!", error);

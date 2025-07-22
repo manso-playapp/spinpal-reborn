@@ -20,8 +20,8 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
     if (loading) return;
 
     if (!user) {
-      if (pathname !== '/login') {
-        router.replace('/login');
+      if (pathname !== '/login' && pathname !== '/') {
+        router.replace('/');
       }
       return;
     }
@@ -32,12 +32,11 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
     }
 
     if (clientOnly && isSuperAdmin) {
-        // An admin is trying to access a client-only page (allow for impersonation)
-        // No redirect here, page component will handle logic
-    }
-    
-    if (clientOnly && !isSuperAdmin && pathname !== '/client/dashboard') {
-        // A client is somewhere they shouldn't be
+        // An admin is trying to access a client-only page.
+        // We allow this for impersonation purposes. 
+        // The page component will handle the specific logic.
+    } else if (clientOnly && !isSuperAdmin && !pathname.startsWith('/client/dashboard')) {
+        // A client is somewhere they shouldn't be, other than their dashboard.
         router.replace('/client/dashboard');
     }
 
@@ -59,9 +58,14 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
   }
 
   // Final check to prevent flashing content for unauthorized users
-  if (!user || (adminOnly && !isSuperAdmin)) {
-    return null; // or a more specific loading/unauthorized component
+  if (!user && (adminOnly || clientOnly)) {
+    return null; // Don't render anything if not logged in and page requires auth
   }
+  
+  if (adminOnly && !isSuperAdmin) {
+     return null; // Or a specific loading/unauthorized component
+  }
+
 
   return <>{children}</>;
 }

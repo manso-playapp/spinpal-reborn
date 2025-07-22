@@ -22,12 +22,9 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isSuperAdmin } = useAuth();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
-
-  const superAdminEmail = 'grupomanso@gmail.com';
-  const isSuperAdmin = user && user.email === superAdminEmail;
 
   const handleReportBug = () => {
     const subject = "PlayApp - Reporte de Error/Sugerencia";
