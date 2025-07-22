@@ -43,6 +43,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import SpinningWheel from '../game/SpinningWheel';
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 
@@ -199,6 +200,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedSegments = form.watch('segments');
+  const watchedConfig = form.watch('config');
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
     const realPrizeSegments = watchedSegments.filter(s => s.isRealPrize);
@@ -250,9 +252,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   };
 
   const refreshPreview = () => {
-    if (iframeRef.current) {
-        iframeRef.current.src = `/juego/${game.id}/preview?t=${new Date().getTime()}`;
-    }
+    // This function is now just for show, but could be useful if we re-add an iframe
   }
   
   const onSubmit = async (data: GameFormValues) => {
@@ -285,7 +285,6 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
-      refreshPreview();
 
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -983,31 +982,17 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <Eye className="h-5 w-5"/>
                         Vista Previa
                     </CardTitle>
-                    <Button variant="ghost" size="icon" onClick={refreshPreview} type="button">
-                        <RefreshCw className="h-4 w-4"/>
-                        <span className="sr-only">Refrescar</span>
-                    </Button>
                   </CardHeader>
-                  <CardContent>
-                     <div className="relative mx-auto h-[680px] w-[380px] overflow-hidden rounded-[2rem] bg-muted/50 p-4 shadow-inner">
-                        <div
-                            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-                            style={{
-                                width: '1080px',
-                                height: '1920px',
-                                transform: 'scale(0.35)',
-                                transformOrigin: 'center center',
-                            }}
-                        >
-                            <iframe
-                                ref={iframeRef}
-                                src={`/juego/${game.id}/preview`}
-                                className="h-full w-full bg-background"
-                                title="Vista Previa del Juego"
-                                scrolling="no"
-                            ></iframe>
-                        </div>
-                    </div>
+                  <CardContent className="p-4 bg-muted/50 flex items-center justify-center rounded-b-lg">
+                     <div className="w-full max-w-md">
+                        <SpinningWheel
+                            segments={watchedSegments}
+                            gameId={game.id}
+                            onSpinEnd={() => {}} // No-op for preview
+                            config={watchedConfig}
+                            isDemoMode={true}
+                        />
+                     </div>
                   </CardContent>
                 </Card>
               </div>

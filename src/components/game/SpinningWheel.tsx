@@ -28,6 +28,7 @@ interface SpinningWheelProps {
   segments: Segment[];
   gameId: string;
   onSpinEnd: (result: { name: string; isRealPrize: boolean }) => void;
+  isDemoMode?: boolean;
   config?: {
     borderImage?: string;
     borderScale?: number;
@@ -39,7 +40,7 @@ interface SpinningWheelProps {
 const VIEWBOX_SIZE = 500;
 const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
 
-export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, config = {} }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -87,7 +88,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     // Add randomness to the number of spins for a more natural feel
     const fullSpins = (6 + Math.random() * 2) * 360; 
     
-    const finalRotation = fullSpins + targetAngle - 90;
+    const finalRotation = fullSpins + targetAngle;
     
     setRotation(finalRotation);
 
@@ -115,6 +116,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
 
   useEffect(() => {
+    if (isDemoMode) return; // Do not listen for spins in demo/preview mode
+
     const gameRef = doc(db, 'games', gameId);
     
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
@@ -134,7 +137,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
       }
     });
     return () => unsubscribe();
-  }, [gameId]);
+  }, [gameId, isDemoMode]);
 
 
   const wheelStyle: React.CSSProperties = {
