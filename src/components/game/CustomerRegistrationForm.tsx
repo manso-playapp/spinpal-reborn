@@ -61,27 +61,14 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
   });
 
   useEffect(() => {
-    if (isDemoMode) {
-      setLoadingState(false);
-      return;
-    };
-    
-    try {
-        const storageKey = `spinpal-played-${gameId}`;
-        if (window.localStorage.getItem(storageKey)) {
-            setSubmissionState('submitted');
-        }
-    } catch (e) {
-        console.warn("Could not read from localStorage:", e);
-    } finally {
-        setLoadingState(false);
-    }
-  }, [gameId, isDemoMode]);
+    // This useEffect now ONLY handles the initial loading state and demo mode.
+    // It no longer checks localStorage, ensuring the form always shows by default.
+    setLoadingState(false);
+  }, []);
 
 
   const onSubmit = async (data: CustomerFormValues) => {
     setSubmissionState('submitting');
-    const storageKey = `spinpal-played-${gameId}`;
     
     try {
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
@@ -90,11 +77,6 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
 
       if (!querySnapshot.empty) {
         setSubmissionState('already_played');
-        try {
-            window.localStorage.setItem(storageKey, 'true');
-        } catch (e) {
-            console.warn("Could not write to localStorage:", e);
-        }
         return;
       }
 
@@ -119,11 +101,6 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
       await batch.commit();
 
       setSubmissionState('submitted');
-       try {
-        window.localStorage.setItem(storageKey, 'true');
-      } catch (e) {
-        console.warn("Could not write to localStorage:", e);
-      }
 
     } catch (error) {
       console.error('Error registering customer and spinning: ', error);
@@ -187,7 +164,9 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
                 {submissionState === 'already_played' ? '¡Ya has participado!' : '¡Giro solicitado!'}
             </CardTitle>
             <CardDescription>
-                {successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!'}
+                {submissionState === 'already_played'
+                  ? 'Este correo electrónico ya ha sido utilizado para participar. ¡Gracias!'
+                  : successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!'}
             </CardDescription>
         </CardContent>
       </Card>
