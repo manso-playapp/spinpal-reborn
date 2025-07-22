@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail } from 'lucide-react';
 import Link from 'next/link';
 import {
   Table,
@@ -235,6 +235,15 @@ export default function AdminDashboard() {
             </Link>
           </Button>
           {user && user.email === superAdminEmail && (
+            <>
+            <Button asChild size="sm" variant="outline" className="h-8 gap-1">
+              <Link href="/admin/correos">
+                <Mail className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Correos
+                </span>
+              </Link>
+            </Button>
             <Button asChild size="sm" variant="outline" className="h-8 gap-1">
               <Link href="/conexiones">
                 <LinkIcon className="h-3.5 w-3.5" />
@@ -243,6 +252,7 @@ export default function AdminDashboard() {
                 </span>
               </Link>
             </Button>
+            </>
           )}
           <Button onClick={signOut} variant="outline" size="icon" className="h-8 w-8">
             <LogOut className="h-4 w-4" />

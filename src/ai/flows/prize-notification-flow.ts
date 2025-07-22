@@ -83,9 +83,7 @@ const emailPrompt = ai.definePrompt({
         - Clearly state the prize they have won.
         - Prominently display the validation code and explain that they need to show it to redeem their prize.
         - Thank them for participating in the "{{gameName}}" game.
-        {{/if}}
-        
-        {{#if (eq emailType "client")}}
+        {{else}}
         **Email Type:** Client Notification Email
         **Instructions:**
         - Write a notification email to the business owner (client).
