@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, increment, deleteField } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
@@ -121,10 +121,15 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     setTimeout(async () => {
       setIsSpinning(false);
       const winningSegment = normalizedSegments[winningIndex];
+      const gameRef = doc(db, 'games', gameId);
+
+      // Clean up the spin request to prevent re-spins on reload
+      await updateDoc(gameRef, {
+        spinRequest: deleteField(),
+      });
       
       if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
         try {
-            const gameRef = doc(db, 'games', gameId);
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
             
             // Call the prize notification flow
@@ -323,4 +328,3 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   );
 }
 
-    
