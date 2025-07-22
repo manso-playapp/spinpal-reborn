@@ -111,27 +111,25 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
     setIsSpinning(true);
     
-    // 1. Decide el premio ganador LÓGICAMENTE
     const winningIndex = getWinningSegmentIndex();
     const winningSegment = normalizedSegments[winningIndex];
     
     const segmentCount = normalizedSegments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // 2. Calcula el ángulo de rotación exacto para ESE premio
-    // El puntero está en 270 grados (arriba). El primer gajo empieza en 0 (derecha).
-    // Queremos que el medio del gajo ganador aterrice en 270.
-    const winningSegmentMiddleAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
+    // The pointer is at the top (270 degrees in SVG coords), but we treat it as 0 for simplicity.
+    // The middle of the first segment (index 0) is at segmentAngle / 2.
+    // We want to rotate so the middle of the winning segment lands at the top.
+    const targetAngleForWinningSegment = (winningIndex * segmentAngle) + (segmentAngle / 2);
     
-    // El ángulo de destino es la diferencia necesaria para llevar el medio del gajo a la cima.
-    // 270 es la posición del puntero. Le restamos el ángulo del medio del gajo ganador.
-    const targetAngle = 270 - winningSegmentMiddleAngle;
-
-    // 5 giros completos + el ángulo de ajuste final
+    // Total rotation = multiple full spins for animation + the final angle to land on the prize.
+    // We rotate backwards (negative) so the wheel spins clockwise.
+    // We subtract the target angle to align it with the top pointer.
     const fullSpins = 5 * 360;
-    const newRotation = rotation - (rotation % 360) + fullSpins + targetAngle;
+    const currentRotation = rotation % 360;
+    const newRotation = fullSpins - targetAngleForWinningSegment - currentRotation;
     
-    setRotation(newRotation);
+    setRotation(rotation + newRotation);
 
     const gameRef = doc(db, 'games', gameId);
 
@@ -233,10 +231,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         {/* Layer 1: Spinning Wheel SVG (Bottom) */}
         <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 z-0" style={wheelStyle}>
-              <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
+              <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center', transform: 'rotate(-90deg)' }}>
                 <g style={{ transformOrigin: 'center center' }}>
                   {normalizedSegments.map((segment, index) => {
-                    const startAngle = index * segmentAngle - 90;
+                    const startAngle = index * segmentAngle;
                     const endAngle = startAngle + segmentAngle;
 
                     const [startX, startY] = getCoordinatesForAngle(startAngle, WHEEL_RADIUS);
