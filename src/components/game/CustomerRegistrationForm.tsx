@@ -99,7 +99,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
         });
 
         return () => unsubscribe();
-    }, [gameId, uiState]); // depend on uiState to avoid re-subscribing unnecessarily
+    }, [gameId]); // Removed uiState dependency to prevent re-subscribing on every state change
 
     // Step 2: Escuchar el resultado del giro
     useEffect(() => {
@@ -162,22 +162,29 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
     // Step 4: Iniciar el giro
     const handleSpin = async () => {
-        if (!customerId || !gameData?.segments || gameData.segments.length === 0) {
+        // Double-check all required data exists before spinning
+        if (!customerId || !gameData || !gameData.segments || gameData.segments.length === 0) {
             setErrorMessage('Faltan datos críticos para iniciar el giro.');
             setUiState('ERROR');
             return;
         }
+
         setIsSubmitting(true);
 
         try {
-            // Lógica de sorteo robusta
-            const realPrizeSegments = gameData.segments.filter(s => s.isRealPrize);
-            const nonRealPrizeSegments = gameData.segments.filter(s => !s.isRealPrize);
+            // Filter only valid segments with an ID
+            const validSegments = gameData.segments.filter(s => s && s.id);
+            if (validSegments.length < 2) {
+                 throw new Error('El juego no tiene suficientes premios válidos configurados.');
+            }
+
+            const realPrizeSegments = validSegments.filter(s => s.isRealPrize);
+            const nonRealPrizeSegments = validSegments.filter(s => !s.isRealPrize);
             const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
             const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
             const nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
             
-            const finalProbabilities = gameData.segments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
+            const finalProbabilities = validSegments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
 
             const random = Math.random() * 100;
             let accumulatedProb = 0;
@@ -190,15 +197,17 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     break;
                 }
             }
-            if (winningIndex === -1) winningIndex = finalProbabilities.length - 1;
             
-            const winningSegment = gameData.segments[winningIndex];
+            if (winningIndex === -1) {
+                winningIndex = finalProbabilities.length - 1;
+            }
+            
+            const winningSegment = validSegments[winningIndex];
 
             if (!winningSegment || !winningSegment.id) {
                 throw new Error('No se pudo determinar un premio ganador válido.');
             }
 
-            // Preparar escrituras atómicas
             const gameRef = doc(db, 'games', gameId);
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
             const batch = writeBatch(db);
@@ -224,9 +233,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             await batch.commit();
             setUiState('WAITING_FOR_RESULT');
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error triggering spin:', error);
-            setErrorMessage('Hubo un problema al iniciar el giro.');
+            setErrorMessage(error.message || 'Hubo un problema al iniciar el giro.');
             setUiState('ERROR');
         } finally {
             setIsSubmitting(false);
@@ -280,7 +289,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                             <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input type="tel" placeholder="Tu teléfono" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                     )}
-                                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                    <Button type="submit" className="w-full" disabled={isSubmitting || !gameData}>
                                         {isSubmitting ? <Loader2 className="animate-spin" /> : 'Registrarme'}
                                     </Button>
                                 </form>
@@ -297,7 +306,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                             <CardDescription>Presiona el botón para girar la ruleta.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button size="lg" className="w-full h-16 text-xl" onClick={handleSpin} disabled={isSubmitting}>
+                            <Button size="lg" className="w-full h-16 text-xl" onClick={handleSpin} disabled={isSubmitting || !gameData}>
                                 {isSubmitting ? <Loader2 className="animate-spin" /> : <><RotateCw className="mr-3 h-6 w-6" />¡Girar la Ruleta!</>}
                             </Button>
                         </CardContent>
@@ -353,6 +362,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                 <AlertTitle>Error</AlertTitle>
                                 <AlertDescription>{errorMessage}</AlertDescription>
                             </Alert>
+                             <Button variant="outline" className="mt-4 w-full" onClick={() => setUiState('FORM')}>
+                                Volver a intentar
+                            </Button>
                         </CardContent>
                     </Card>
                 );
