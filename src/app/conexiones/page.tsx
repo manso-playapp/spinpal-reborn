@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -346,7 +346,7 @@ service cloud.firestore {
                 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Mail/>Paso 4: Verificar Dominio de Envío de Emails</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Mail/>Paso 4: Verificar Dominio de Envío de Emails (DKIM)</CardTitle>
                         <CardDescription>Asegura que tus correos no lleguen a la carpeta de spam.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -369,6 +369,26 @@ service cloud.firestore {
                             <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como "Verified".</li>
                             <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`src/ai/flows/prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
                         </ul>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ShieldAlert/>Paso 5: Configurar DMARC para Evitar la Carpeta de Spam</CardTitle>
+                        <CardDescription>Este es el paso final y crucial para una buena entrega de correos.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                       <p>Aunque tu dominio esté verificado (Paso 4, que configura DKIM), los proveedores como Gmail necesitan una política DMARC para confiar plenamente en tus correos. Sin esto, es muy probable que terminen en spam.</p>
+                       <p>Debes añadir un registro DNS más en tu proveedor de dominio (DONWEB, etc.):</p>
+                       <div className="p-4 bg-muted rounded-md text-sm space-y-2">
+                           <p><strong>Tipo de Registro:</strong> <code>TXT</code></p>
+                           <p><strong>Host / Nombre:</strong> <code>_dmarc.mansoestudiocreativo.com</code> (¡Recuerda, usa tu dominio!)</p>
+                           <p><strong>Valor:</strong> <code>v=DMARC1; p=none;</code></p>
+                       </div>
+                       <ul className="list-disc list-inside space-y-2 pl-4 text-muted-foreground">
+                            <li>El valor <code>p=none</code> le dice a los servidores de correo que no tomen ninguna acción si un correo falla la verificación, pero que te empiecen a enviar reportes. Es la forma más segura de empezar.</li>
+                            <li>Una vez que lo configures, la entrega a la bandeja de entrada debería mejorar drásticamente.</li>
+                       </ul>
                     </CardContent>
                 </Card>
             </div>
