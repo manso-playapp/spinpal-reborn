@@ -165,7 +165,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       clientName: game.clientName || '',
       clientEmail: game.clientEmail || '',
       managementType: game.managementType || 'client',
-      exemptedEmails: (game.exemptedEmails || []).join('\n'),
+      exemptedEmails: (game.exemptedEmails || []).join('\\n'),
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
@@ -204,8 +204,9 @@ export default function EditGameForm({ game }: { game: Game }) {
   }, [watchedFormData, game.id]);
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
-    const realPrizeSegments = watchedFormData.segments.filter(s => s.isRealPrize);
-    const nonRealPrizeSegments = watchedFormData.segments.filter(s => !s.isRealPrize);
+    const segments = watchedFormData.segments || [];
+    const realPrizeSegments = segments.filter(s => s.isRealPrize);
+    const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
 
     const realPrizeTotal = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
     
@@ -248,7 +249,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       const gameRef = doc(db, 'games', game.id);
       
       const emailList = data.exemptedEmails
-        ? data.exemptedEmails.split('\n').map(email => email.trim().toLowerCase()).filter(email => email)
+        ? data.exemptedEmails.split('\\n').map(email => email.trim().toLowerCase()).filter(email => email)
         : [];
       
       const dataToSave = JSON.parse(JSON.stringify(data));
@@ -427,7 +428,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 <FormLabel className="flex items-center gap-2"><Users /> Correos Exentos de Verificación</FormLabel>
                                 <FormControl>
                                   <Textarea
-                                    placeholder="un-email@ejemplo.com\notro-email@ejemplo.com"
+                                    placeholder="un-email@ejemplo.com\\notro-email@ejemplo.com"
                                     className="min-h-[100px] font-mono text-sm"
                                     {...field}
                                     disabled={loading}
@@ -991,3 +992,4 @@ export default function EditGameForm({ game }: { game: Game }) {
     
 
     
+
