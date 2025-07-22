@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp } from 'firestore/firestore';
+import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
