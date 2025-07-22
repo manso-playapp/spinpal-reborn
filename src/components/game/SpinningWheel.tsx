@@ -30,7 +30,6 @@ interface SpinningWheelProps {
   segments: Segment[];
   gameId: string;
   isDemoMode?: boolean;
-  showDemoButton?: boolean;
   config?: {
     borderImage?: string;
     borderScale?: number;
@@ -43,7 +42,7 @@ interface SpinningWheelProps {
 const VIEWBOX_SIZE = 500;
 const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
 
-export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, showDemoButton = false, config = {}, onSpinEnd }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, config = {}, onSpinEnd }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -66,7 +65,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const segments = useMemo(() => initialSegments, [initialSegments]);
 
   const handleSpinClick = useCallback(async (spinRequestData) => {
-    if (isSpinningRef.current || segments.length === 0) return;
+    if (isSpinningRef.current || !segments || segments.length === 0) return;
 
     const { winningId } = spinRequestData;
 
@@ -87,13 +86,15 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    const randomOffset = (Math.random() * 0.7 + 0.15) * segmentAngle;
-    const targetAngle = 360 - (winningIndex * segmentAngle + randomOffset) - 90;
+    // Calculate the target angle to center the winning segment under the pointer
+    const randomOffsetInSegment = (Math.random() * 0.8 + 0.1) * segmentAngle; // Land somewhere within 10-90% of the segment
+    const targetAngle = 360 - (winningIndex * segmentAngle + randomOffsetInSegment);
     
-    const fullSpins = 5 * 360;
-    const newRotation = rotation + fullSpins + targetAngle;
+    const fullSpins = 6 * 360; // More spins for a better visual effect
+    // We subtract 90 degrees because the SVG wheel is drawn from the 3 o'clock position, but our pointer is at 12 o'clock (top).
+    const finalRotation = fullSpins + targetAngle - 90;
     
-    setRotation(newRotation);
+    setRotation(finalRotation);
 
     const gameRef = doc(db, 'games', gameId);
     
@@ -101,6 +102,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       setIsSpinning(false);
       
       try {
+        // Clean up the spin request from Firestore after the spin is complete.
         await updateDoc(gameRef, { spinRequest: deleteField() });
       } catch (error) {
         console.error("Error cleaning up spinRequest field:", error);
@@ -108,9 +110,9 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
 
-    }, 7000); // Match transition duration
+    }, 7000); // This duration must match the CSS transition duration for a smooth stop.
 
-  }, [segments, gameId, rotation, onSpinEnd]);
+  }, [segments, gameId, onSpinEnd]);
 
   const spinHandlerRef = useRef(handleSpinClick);
   useEffect(() => {
@@ -119,7 +121,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
 
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId || isDemoMode) return; // Don't listen for spins in demo/preview mode
 
     const gameRef = doc(db, 'games', gameId);
     
@@ -128,6 +130,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         const data = docSnap.data();
         const spinRequest = data.spinRequest;
         
+        // Check for a new spin request
         if (spinRequest && spinRequest.timestamp) {
             const newSpinTime = spinRequest.timestamp.toMillis();
             if (newSpinTime !== spinRequestTimestamp.current) {
@@ -140,66 +143,27 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       }
     });
     return () => unsubscribe();
-  }, [gameId]);
+  }, [gameId, isDemoMode]);
 
 
   const wheelStyle: React.CSSProperties = {
-    transition: 'transform 7s cubic-bezier(0.2, 0.8, 0.3, 1)',
+    transition: 'transform 7s cubic-bezier(0.25, 0.1, 0.25, 1)',
     transform: `rotate(${rotation}deg)`,
     transformOrigin: 'center center',
   };
 
-  if (!shouldRender) {
+  if (!shouldRender || !segments) {
     return <div className="w-full max-w-md aspect-square bg-muted rounded-full animate-pulse" />;
   }
 
   const segmentCount = segments.length;
+  if (segmentCount === 0) return null; // Don't render if there are no segments
   const segmentAngle = 360 / segmentCount;
 
   const getCoordinatesForAngle = (angle: number, radius: number) => {
     const x = WHEEL_RADIUS + radius * Math.cos(angle * Math.PI / 180);
     const y = WHEEL_RADIUS + radius * Math.sin(angle * Math.PI / 180);
     return [x, y];
-  };
-
-  const handleDemoSpin = () => {
-    const realPrizeSegments = segments.filter(s => s.isRealPrize);
-    const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
-    
-    const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
-    const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
-    
-    let nonRealPrizeProb = 0;
-    if (nonRealPrizeSegments.length > 0) {
-        nonRealPrizeProb = remainingProbability / nonRealPrizeSegments.length;
-    }
-    
-    const finalSegments = segments.map(seg => ({
-      ...seg,
-      finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
-    }));
-
-    const random = Math.random() * 100;
-    let accumulatedProb = 0;
-    let winningIndex = -1;
-
-    for (let i = 0; i < finalSegments.length; i++) {
-        accumulatedProb += (finalSegments[i].finalProbability || 0);
-        if (random < accumulatedProb) {
-            winningIndex = i;
-            break;
-        }
-    }
-
-    if (winningIndex === -1) winningIndex = finalSegments.length - 1;
-    
-    const winningSegment = finalSegments[winningIndex];
-
-    handleSpinClick({ 
-        winningId: winningSegment.id, 
-        isDemoSpin: true, 
-        customerId: 'demo' 
-    });
   };
 
   return (
@@ -321,13 +285,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             </div>
         )}
       </div>
-
-      {isDemoMode && showDemoButton && (
-        <Button onClick={handleDemoSpin} disabled={isSpinning}>
-          <RotateCw className="mr-2 h-4 w-4" />
-          {isSpinning ? 'Girando...' : 'Girar en modo Demo'}
-        </Button>
-      )}
     </div>
   );
 }

@@ -47,7 +47,7 @@ import { Separator } from '../ui/separator';
 import QRCodeDisplay from '../game/QRCodeDisplay';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
-const generateUniqueId = () => Math.random().toString(36).substr(2, 9);
+const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 
 const segmentSchema = z.object({
   id: z.string().default(() => generateUniqueId()),
@@ -173,7 +173,8 @@ export default function EditGameForm({ game }: { game: Game }) {
       clientName: game.clientName || '',
       clientEmail: game.clientEmail || '',
       managementType: game.managementType || 'client',
-      exemptedEmails: (game.exemptedEmails || []).join('\n'),
+      exemptedEmails: (game.exemptedEmails || []).join(', '),
+      // Sanitize segments on load to ensure they all have IDs
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
@@ -257,7 +258,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       const gameRef = doc(db, 'games', game.id);
       
       const emailList = data.exemptedEmails
-        ? data.exemptedEmails.split('\n').map(email => email.trim().toLowerCase()).filter(email => email)
+        ? data.exemptedEmails.split(',').map(email => email.trim().toLowerCase()).filter(email => email)
         : [];
       
       const dataToSave = JSON.parse(JSON.stringify(data));
@@ -309,9 +310,6 @@ export default function EditGameForm({ game }: { game: Game }) {
       id: generateUniqueId(),
     });
   };
-  
-  const previewData = { ...watchedFormData, id: game.id };
-
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -433,14 +431,14 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 <FormLabel className="flex items-center gap-2"><Users /> Correos Exentos de Verificación</FormLabel>
                                 <FormControl>
                                   <Textarea
-                                    placeholder="un-email@ejemplo.com\notro-email@ejemplo.com"
+                                    placeholder="un-email@ejemplo.com, otro@ejemplo.com"
                                     className="min-h-[100px] font-mono text-sm"
                                     {...field}
                                     disabled={loading}
                                   />
                                 </FormControl>
                                 <FormDescription>
-                                  Lista de correos (uno por línea) que pueden jugar múltiples veces. Ideal para pruebas.
+                                  Lista de correos (separados por comas) que pueden jugar múltiples veces. Ideal para pruebas.
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
@@ -983,34 +981,11 @@ export default function EditGameForm({ game }: { game: Game }) {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Tabs defaultValue="roulette" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
-                        <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="roulette">
-                        <div className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[450px]">
-                          <div className="w-full max-w-md">
-                            <SpinningWheel
-                              key={JSON.stringify(watchedSegments) + JSON.stringify(watchedFormData.config)}
-                              segments={watchedSegments}
-                              gameId={game.id}
-                              isDemoMode={true}
-                              showDemoButton={true}
-                              config={watchedFormData.config}
-                              onSpinEnd={() => {}}
-                            />
-                          </div>
+                     <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
+                        <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-top-left">
+                           <GameClientPage gameId={game.id} />
                         </div>
-                      </TabsContent>
-                      <TabsContent value="game">
-                        <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
-                          <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-top-left">
-                             <GameClientPage gameId={game.id} isPreview={true} initialData={previewData} />
-                          </div>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
+                      </div>
                   </CardContent>
                 </Card>
               </div>
@@ -1020,6 +995,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
-
-
-

@@ -35,26 +35,14 @@ interface SpinResult {
     isRealPrize: boolean;
 }
 
-interface GameClientPageProps {
-  gameId: string;
-  isPreview?: boolean;
-  initialData?: any; // Data passed from the parent form for preview
-}
-
-
-export default function GameClientPage({ gameId, isPreview = false, initialData = null }: GameClientPageProps) {
-  const [game, setGame] = useState<GameData | null>(initialData);
-  const [loading, setLoading] = useState(!initialData);
+// The page now only needs the gameId and handles all data fetching internally.
+export default function GameClientPage({ gameId }: { gameId: string }) {
+  const [game, setGame] = useState<GameData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
 
   useEffect(() => {
-    if (isPreview && initialData) {
-        setGame(initialData);
-        setLoading(false);
-        return;
-    }
-
-    // If not in preview, set up a real-time listener
+    // Set up a real-time listener to keep the game data in sync.
     const gameRef = doc(db, 'games', gameId);
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -85,17 +73,16 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
     }, (error) => {
         console.error("Error fetching game data in real-time:", error);
         setLoading(false);
-        // Optionally, show an error state to the user
     });
 
     // Cleanup listener on component unmount
     return () => unsubscribe();
-  }, [gameId, isPreview, initialData]);
+  }, [gameId]);
 
 
   const handleSpinEnd = (result: SpinResult) => {
-    if (isPreview) return; 
     setSpinResult(result);
+    // Hide the result and show QR code again after 15 seconds
     setTimeout(() => {
       setSpinResult(null);
     }, 15000);
@@ -110,6 +97,7 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
   }
 
   if (!game) {
+    // This case should ideally not be reached if notFound() works correctly.
     return null;
   }
   
@@ -131,6 +119,7 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
             </div>
         )}
 
+        {/* Roulette container - This container handles scale and vertical offset */}
         <div
             className="absolute inset-0 flex justify-center items-center pointer-events-none"
             style={{
@@ -138,18 +127,19 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
                 transformOrigin: 'center center',
             }}
         >
+          {/* This inner container handles the content's max-width */}
           <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
             <SpinningWheel 
               segments={game.segments} 
               gameId={game.id} 
               isDemoMode={game.status === 'demo'}
-              showDemoButton={isPreview}
               config={game.config}
               onSpinEnd={handleSpinEnd}
             />
           </div>
         </div>
 
+        {/* QR / Result container */}
         <div 
           className="absolute bottom-4 px-4 w-full flex justify-center items-center"
           style={{ 
