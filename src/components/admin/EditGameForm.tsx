@@ -207,17 +207,17 @@ export default function EditGameForm({ game }: { game: Game }) {
     const realPrizeSegments = watchedFormData.segments.filter(s => s.isRealPrize);
     const nonRealPrizeSegments = watchedFormData.segments.filter(s => !s.isRealPrize);
 
-    const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
+    const realPrizeTotal = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
     
-    let nonRealPrizeProbability = 0;
+    let nonRealPrizeProb = 0;
     if (nonRealPrizeSegments.length > 0) {
-      const remainingProbability = 100 - realPrizeTotalProbability;
-      nonRealPrizeProbability = remainingProbability > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
+      const remainingProbability = 100 - realPrizeTotal;
+      nonRealPrizeProb = remainingProbability > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
     }
     
     return {
-      realPrizeTotalProbability,
-      nonRealPrizeProbability: parseFloat(nonRealPrizeProbability.toFixed(2))
+      realPrizeTotalProbability: realPrizeTotal,
+      nonRealPrizeProbability: parseFloat(nonRealPrizeProb.toFixed(2))
     };
   }, [watchedFormData.segments]);
   
