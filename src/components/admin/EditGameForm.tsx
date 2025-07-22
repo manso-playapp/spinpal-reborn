@@ -144,6 +144,8 @@ export default function EditGameForm({ game }: { game: Game }) {
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
+  const [previewKey, setPreviewKey] = useState(Date.now());
+
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -242,6 +244,8 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
+      // Refresh the iframe preview
+      setPreviewKey(Date.now());
       // router.push('/admin'); // This line was removed
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -907,84 +911,39 @@ export default function EditGameForm({ game }: { game: Game }) {
                         Vista Previa
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                   <CardContent>
                     <Tabs defaultValue="roulette" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
-                            <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="roulette">
-                            <div className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[500px]">
-                                <div className="w-full max-w-md">
-                                    <SpinningWheel
-                                        segments={watchedFormData.segments}
-                                        gameId={game.id}
-                                        isDemoMode={true}
-                                        showDemoButton={true}
-                                        config={currentConfig}
-                                        onSpinEnd={() => {}}
-                                    />
-                                </div>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="game">
-                            <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] h-[500px] sm:h-[600px] md:h-[500px]">
-                                <div className="w-full h-full bg-background shadow-lg overflow-hidden relative transform scale-[0.8] origin-center rounded-lg">
-                                    <div 
-                                    className="absolute inset-0"
-                                    style={backgroundPreviewStyles}
-                                    >
-                                    {/* Contenedor de la ruleta */}
-                                    <div
-                                        className="absolute inset-0 flex justify-center items-center pointer-events-none"
-                                        style={{
-                                            transform: `translateY(${watchedFormData.rouletteVerticalOffset}px) scale(${watchedFormData.rouletteScale})`,
-                                            transformOrigin: 'center center',
-                                        }}
-                                    >
-                                    <div className="w-full max-w-full">
-                                        <SpinningWheel 
-                                        segments={watchedFormData.segments} 
-                                        gameId={game.id} 
-                                        isDemoMode={true}
-                                        config={currentConfig}
-                                        onSpinEnd={() => {}}
-                                        />
-                                    </div>
-                                    </div>
-                                    {/* Contenedor del QR */}
-                                    <div 
-                                    className="absolute bottom-4 px-4 w-full flex justify-center items-center"
-                                    style={{ 
-                                        transform: `translateY(${watchedFormData.qrVerticalOffset}px)`
-                                    }}
-                                    >
-                                        <div 
-                                        className="w-full max-w-sm text-center"
-                                        style={{
-                                            transform: `scale(${watchedFormData.qrCodeScale})`,
-                                            transformOrigin: 'bottom center'
-                                        }}
-                                        >
-                                        <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
-                                            <CardHeader className="p-2">
-                                            <CardTitle className="font-headline text-base flex items-center justify-center gap-2">
-                                                <QrCode size={16}/>
-                                                ¡Escanea!
-                                            </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="flex flex-col items-center justify-center gap-2 p-2 pt-0">
-                                                <QRCodeDisplay gameId={game.id} scale={0.4} />
-                                            </CardContent>
-                                        </Card>
-                                        </div>
-                                    </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </TabsContent>
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
+                        <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="roulette">
+                        <div className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[450px]">
+                          <div className="w-full max-w-md">
+                            <SpinningWheel
+                              segments={watchedFormData.segments}
+                              gameId={game.id}
+                              isDemoMode={true}
+                              showDemoButton={true}
+                              config={currentConfig}
+                              onSpinEnd={() => {}}
+                            />
+                          </div>
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="game">
+                        <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[16/9] w-full">
+                          <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-center">
+                            <iframe
+                              key={previewKey}
+                              src={`/juego/${game.id}/preview`}
+                              className="w-full h-full border-0"
+                              scrolling="no"
+                              title="Game Preview"
+                            />
+                          </div>
+                        </div>
+                      </TabsContent>
                     </Tabs>
                   </CardContent>
                 </Card>
