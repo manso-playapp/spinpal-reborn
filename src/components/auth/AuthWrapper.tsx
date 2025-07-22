@@ -1,21 +1,49 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function AuthWrapper({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+interface AuthWrapperProps {
+    children: React.ReactNode;
+    adminOnly?: boolean;
+    clientOnly?: boolean;
+}
+
+export default function AuthWrapper({ children, adminOnly = false, clientOnly = false }: AuthWrapperProps) {
+  const { user, loading, isSuperAdmin } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
+    if (loading) return;
 
-  if (loading || !user) {
+    if (!user) {
+      if (pathname !== '/login') {
+        router.replace('/login');
+      }
+      return;
+    }
+
+    if (adminOnly && !isSuperAdmin) {
+        // A non-admin user is trying to access an admin-only page
+        router.replace('/client/dashboard');
+    }
+
+    if (clientOnly && isSuperAdmin) {
+        // An admin is trying to access a client-only page (allow for impersonation)
+        // No redirect here, page component will handle logic
+    }
+    
+    if (clientOnly && !isSuperAdmin && pathname !== '/client/dashboard') {
+        // A client is somewhere they shouldn't be
+        router.replace('/client/dashboard');
+    }
+
+  }, [user, loading, router, isSuperAdmin, adminOnly, clientOnly, pathname]);
+
+  if (loading) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-background">
         <div className="w-full max-w-4xl space-y-4 p-4">
@@ -28,6 +56,11 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
         </div>
       </div>
     );
+  }
+
+  // Final check to prevent flashing content for unauthorized users
+  if (!user || (adminOnly && !isSuperAdmin)) {
+    return null; // or a more specific loading/unauthorized component
   }
 
   return <>{children}</>;

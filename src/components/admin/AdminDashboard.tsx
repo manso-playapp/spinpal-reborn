@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User } from 'lucide-react';
+import { PlusCircle, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -39,6 +39,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 
 interface Game {
@@ -220,6 +221,7 @@ export default function AdminDashboard() {
   };
 
   return (
+    <TooltipProvider>
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center justify-between">
             <div>
@@ -271,6 +273,17 @@ export default function AdminDashboard() {
                         </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                        
+                        {game.clientEmail && (
+                            <DropdownMenuItem asChild>
+                                <Link href={`/client/dashboard?clientEmail=${game.clientEmail}`}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Ver como Cliente
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+
+
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
@@ -394,5 +407,6 @@ export default function AdminDashboard() {
         </div>
         )}
     </main>
+    </TooltipProvider>
   );
 }

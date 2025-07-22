@@ -1,10 +1,66 @@
+
+'use client';
+
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import Logo from '@/components/logo';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
+  const { user, loading, isSuperAdmin } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isClientLoading, setIsClientLoading] = React.useState(false);
+
+
+  React.useEffect(() => {
+    if (!loading && user) {
+      if (isSuperAdmin) {
+        router.push('/admin');
+      } else {
+        router.push('/client/dashboard');
+      }
+    }
+  }, [user, loading, isSuperAdmin, router]);
+
+
+  const handleClientLogin = async () => {
+    if (!auth) {
+        toast({ variant: "destructive", title: "Error", description: "Firebase no está configurado."});
+        return;
+    };
+    setIsClientLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+        // The useEffect hook will handle the redirect
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Error de inicio de sesión",
+            description: error.message || "No se pudo iniciar sesión con Google. Inténtalo de nuevo."
+        });
+        setIsClientLoading(false);
+    }
+  }
+
+
+  if (loading || user) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Cargando...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl border-primary/20">
@@ -24,12 +80,18 @@ export default function Home() {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
-          <Button asChild size="lg" variant="secondary" className="h-12 text-base">
-            {/* Este enlace puede apuntar a una futura página de login de cliente */}
-            <Link href="#">
-              Acceso Cliente
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+          <Button size="lg" variant="secondary" className="h-12 text-base" onClick={handleClientLogin} disabled={isClientLoading}>
+            {isClientLoading ? (
+                <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Iniciando...
+                </>
+            ) : (
+                <>
+                    Acceso Cliente
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+            )}
           </Button>
         </CardContent>
       </Card>
