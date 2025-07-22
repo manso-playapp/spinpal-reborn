@@ -3,10 +3,11 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, increment, getDoc } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
+import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
 
 interface Segment {
   id?: string;
@@ -104,7 +105,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     return normalizedSegments.length - 1; // Fallback
   }, [normalizedSegments]);
 
-  const handleSpinClick = useCallback(() => {
+  const handleSpinClick = useCallback((customerId?: string) => {
     if (isSpinningRef.current || normalizedSegments.length === 0) return;
 
     setIsSpinning(true);
@@ -117,15 +118,24 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const fullSpins = 5 * 360;
     setRotation(prevRotation => prevRotation + fullSpins + targetAngle);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsSpinning(false);
-      // Logic to update prizesAwarded if needed can go here, but it's better handled
-      // when the spin is requested to avoid race conditions.
-      if (!isDemoMode) {
-        const winningSegment = normalizedSegments[winningIndex];
-        if (winningSegment?.isRealPrize) {
+      const winningSegment = normalizedSegments[winningIndex];
+      
+      if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
+        try {
             const gameRef = doc(db, 'games', gameId);
-            updateDoc(gameRef, { prizesAwarded: increment(1) }).catch(console.error);
+            await updateDoc(gameRef, { prizesAwarded: increment(1) });
+            
+            // Call the prize notification flow
+            await sendPrizeNotification({
+                gameId: gameId,
+                customerId: customerId,
+                prizeName: winningSegment.name,
+            });
+
+        } catch (error) {
+            console.error("Error sending prize notification or updating prize count:", error);
         }
       }
     }, 7000); // Match transition duration
@@ -154,7 +164,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             if (newSpinTime !== lastSpinRequestTime) {
                 lastSpinRequestTime = newSpinTime;
                 if (!isSpinningRef.current) {
-                    spinHandlerRef.current();
+                    spinHandlerRef.current(spinRequest.customerId);
                 }
             }
         }
@@ -304,7 +314,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       </div>
 
       {isDemoMode && showDemoButton && (
-        <Button onClick={handleSpinClick} disabled={isSpinning}>
+        <Button onClick={() => handleSpinClick()} disabled={isSpinning}>
           <RotateCw className="mr-2 h-4 w-4" />
           {isSpinning ? 'Girando...' : 'Girar en modo Demo'}
         </Button>
@@ -312,3 +322,5 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     </div>
   );
 }
+
+    

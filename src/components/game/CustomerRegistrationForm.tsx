@@ -19,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -37,6 +38,7 @@ const formSchema = z.object({
   email: z.string().email({
     message: 'Por favor, introduce un correo electrónico válido.',
   }),
+  phone: z.string().optional(),
 });
 
 type CustomerFormValues = z.infer<typeof formSchema>;
@@ -59,6 +61,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     defaultValues: {
       name: '',
       email: '',
+      phone: '',
     },
   });
   
@@ -85,6 +88,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
       const newCustomerRef = await addDoc(collection(db, 'games', gameId, 'customers'), {
         name: data.name,
         email: data.email.toLowerCase(),
+        phone: data.phone || '',
         registeredAt: serverTimestamp(),
         hasPlayed: false, // Not played yet
       });
@@ -120,6 +124,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         await updateDoc(gameRef, {
             spinRequest: {
                 timestamp: serverTimestamp(),
+                customerId: customerId, // Pass customerId to the spin request
             },
             plays: increment(1),
         });
@@ -286,6 +291,19 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Teléfono (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input type="tel" placeholder="Tu número de teléfono" {...field} disabled={isSubmitting} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
@@ -305,3 +323,5 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     </Card>
   );
 }
+
+    

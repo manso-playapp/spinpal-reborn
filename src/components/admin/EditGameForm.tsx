@@ -65,6 +65,7 @@ const segmentSchema = z.object({
 const formSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   status: z.enum(['activo', 'demo']),
+  clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios para la ruleta.'),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
@@ -87,6 +88,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
+  clientEmail?: string;
   segments?: z.infer<typeof segmentSchema>[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
@@ -139,6 +141,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
+      clientEmail: game.clientEmail || '',
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
@@ -306,6 +309,22 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 <FormControl>
                                   <Input {...field} disabled={loading} />
                                 </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="clientEmail"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email del Cliente (para notificaciones)</FormLabel>
+                                <FormControl>
+                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} disabled={loading} />
+                                </FormControl>
+                                 <FormDescription>
+                                  Dirección donde el dueño del juego recibirá un aviso cuando un premio sea ganado.
+                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -854,3 +873,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
+
+    
