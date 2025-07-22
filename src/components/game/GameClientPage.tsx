@@ -118,12 +118,13 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
         )}
 
         {/* Roulette container */}
-        <div 
-            className="absolute w-full max-w-2xl text-center left-1/2 -translate-x-1/2"
-            style={{ 
-              transform: `translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})` 
+        <div
+            className="absolute w-full max-w-2xl text-center left-1/2"
+            style={{
+                transform: `translateX(-50%) translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})`,
+                transformOrigin: 'top center',
             }}
-          >
+        >
               <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
                 <SpinningWheel 
                   segments={game.segments} 
