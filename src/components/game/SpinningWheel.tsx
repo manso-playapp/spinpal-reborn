@@ -48,7 +48,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const [shouldRender, setShouldRender] = useState(false);
   const [winningSegmentId, setWinningSegmentId] = useState<string | null>(null);
   const spinRequestTimestamp = useRef<number | null>(null);
-  const currentRotationRef = useRef(0);
   
   const isSpinningRef = useRef(isSpinning);
   useEffect(() => {
@@ -95,14 +94,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const randomOffsetInSegment = (segmentAngle * padding) + (Math.random() * (segmentAngle * (1 - padding * 2)));
     const randomizedTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
 
-    // Calculate the rotation needed to align our random point with the pointer.
     // Add a random number of full spins for variety.
-    // We base the new spin on the current rotation to ensure it always spins forward.
     const fullSpins = (Math.floor(Math.random() * 2) + 4) * 360; 
   
-    const finalRotation = currentRotationRef.current + fullSpins + (POINTER_ANGLE - randomizedTargetAngle);
+    const finalRotation = fullSpins + (360 - randomizedTargetAngle) + POINTER_ANGLE;
     
-    currentRotationRef.current = finalRotation;
     setRotation(finalRotation);
   
     const gameRef = doc(db, 'games', gameId);
@@ -161,7 +157,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
 
   const wheelStyle: React.CSSProperties = {
-    transition: 'transform 10s cubic-bezier(0.25, 0.1, 0.25, 1)',
+    transition: isSpinning ? 'transform 10s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none',
     transform: `rotate(${rotation}deg)`,
     transformOrigin: 'center center',
   };
