@@ -222,6 +222,16 @@ export default function EditGameForm({ game }: { game: Game }) {
       nonRealPrizeProbability: parseFloat(nonRealPrizeProb.toFixed(2))
     };
   }, [watchedSegments]);
+
+  useEffect(() => {
+    watchedSegments.forEach((segment, index) => {
+      if (!segment.isRealPrize) {
+        if (segment.probability !== nonRealPrizeProbability) {
+            form.setValue(`segments.${index}.probability`, nonRealPrizeProbability, { shouldDirty: true });
+        }
+      }
+    });
+  }, [nonRealPrizeProbability, watchedSegments, form]);
   
 
   const sensors = useSensors(
@@ -661,55 +671,75 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                   )}/>
                                                 </TabsContent>
                                                 <TabsContent value="probability" className="pt-4 space-y-6">
-                                                  <div className="flex items-center justify-between rounded-lg border p-3">
-                                                      <div className="space-y-0.5">
-                                                        <Label>Premio Real</Label>
-                                                        <FormDescription>Define si este premio cuenta para las estadísticas y consume probabilidad.</FormDescription>
-                                                      </div>
-                                                      <Controller control={form.control} name={`segments.${index}.isRealPrize`} render={({ field: { onChange, value } }) => ( <Checkbox checked={!!value} onCheckedChange={onChange} /> )}/>
-                                                  </div>
                                                   <FormField
-                                                    control={form.control}
-                                                    name={`segments.${index}.probability`}
-                                                    render={({ field }) => {
-                                                        return (
-                                                            <FormItem>
-                                                                <FormLabel>Probabilidad</FormLabel>
-                                                                {watchedSegments[index]?.isRealPrize ? (
-                                                                    <>
-                                                                    <div className="flex items-center gap-4">
-                                                                        <Controller
-                                                                            name={`segments.${index}.probability`}
-                                                                            control={form.control}
-                                                                            render={({ field: sliderField }) => (
-                                                                                <Slider
-                                                                                    value={[sliderField.value || 0]}
-                                                                                    onValueChange={(val) => sliderField.onChange(val[0])}
-                                                                                    max={100}
-                                                                                    step={1}
-                                                                                    className="w-full"
-                                                                                />
-                                                                            )}
+                                                      control={form.control}
+                                                      name={`segments.${index}.isRealPrize`}
+                                                      render={({ field }) => (
+                                                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                                              <div className="space-y-0.5">
+                                                                  <FormLabel>Premio Real</FormLabel>
+                                                                  <FormDescription>Define si este premio cuenta para las estadísticas y consume probabilidad.</FormDescription>
+                                                              </div>
+                                                              <FormControl>
+                                                                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                              </FormControl>
+                                                          </FormItem>
+                                                      )}
+                                                  />
+                                                  <FormField
+                                                      control={form.control}
+                                                      name={`segments.${index}.probability`}
+                                                      render={({ field }) => (
+                                                          <FormItem>
+                                                              <FormLabel>Probabilidad</FormLabel>
+                                                              {watchedSegments[index]?.isRealPrize ? (
+                                                                  <div className="flex items-center gap-4">
+                                                                      <Controller
+                                                                          name={`segments.${index}.probability`}
+                                                                          control={form.control}
+                                                                          render={({ field: sliderField }) => (
+                                                                              <Slider
+                                                                                  value={[sliderField.value || 0]}
+                                                                                  onValueChange={(val) => sliderField.onChange(val[0])}
+                                                                                  max={100}
+                                                                                  step={1}
+                                                                                  className="w-full"
+                                                                              />
+                                                                          )}
+                                                                      />
+                                                                      <div className="relative w-24">
+                                                                          <Controller
+                                                                              name={`segments.${index}.probability`}
+                                                                              control={form.control}
+                                                                              render={({ field: inputField }) => (
+                                                                                  <Input
+                                                                                    type="number"
+                                                                                    value={inputField.value || 0}
+                                                                                    onChange={(e) => inputField.onChange(parseFloat(e.target.value) || 0)}
+                                                                                    className="text-center font-mono"
+                                                                                  />
+                                                                              )}
+                                                                          />
+                                                                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                                                                      </div>
+                                                                  </div>
+                                                              ) : (
+                                                                    <Controller
+                                                                      name={`segments.${index}.probability`}
+                                                                      control={form.control}
+                                                                      render={({ field: inputField }) => (
+                                                                        <Input 
+                                                                          value={`${(inputField.value || 0).toFixed(2)}% (auto)`} 
+                                                                          disabled 
+                                                                          className="text-center bg-muted/50 border-dashed" 
                                                                         />
-                                                                        <div className="relative w-24">
-                                                                            <Input
-                                                                                type="number"
-                                                                                value={field.value || 0}
-                                                                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                                                                className="text-center font-mono"
-                                                                            />
-                                                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <FormDescription>Define la probabilidad de que este premio salga.</FormDescription>
-                                                                    </>
-                                                                ) : (
-                                                                    <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 border-dashed" />
-                                                                )}
-                                                            </FormItem>
-                                                        );
-                                                    }}
-                                                />
+                                                                      )}
+                                                                  />
+                                                              )}
+                                                              <FormMessage />
+                                                          </FormItem>
+                                                      )}
+                                                  />
                                                 </TabsContent>
                                                 <TabsContent value="text" className="pt-4 grid grid-cols-2 gap-x-6 gap-y-4">
                                                   <FormField control={form.control} name={`segments.${index}.textColor`} render={({ field }) => (
