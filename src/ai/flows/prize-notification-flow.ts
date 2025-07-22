@@ -117,7 +117,7 @@ const prizeNotificationFlow = ai.defineFlow(
     }
     const resend = new Resend(resendApiKey);
     // IMPORTANT: To use a different sender, you must verify your domain in Resend.
-    const fromAddress = 'onboarding@resend.dev'; 
+    const fromAddress = 'noreply@mansoestudiocreativo.com'; 
 
     try {
         // 1. Fetch Game and Customer data from Firestore
