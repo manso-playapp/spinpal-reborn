@@ -56,6 +56,13 @@ interface SpinResult {
     isRealPrize: boolean;
 }
 
+// Emails in this list will bypass the "already played" check.
+const EXEMPTED_EMAILS = [
+    'test@test.com',
+    'dev@spinpal.com',
+    'grupomanso@gmail.com',
+];
+
 export default function CustomerRegistrationForm({ gameId, isDemoMode, successMessage }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [uiState, setUiState] = useState<UiState>('loading');
@@ -109,20 +116,39 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
 
   const onSubmit = async (data: CustomerFormValues) => {
     setIsSubmitting(true);
+    const submittedEmail = data.email.toLowerCase();
+
+    // Check if the email is in the exempted list
+    if (!EXEMPTED_EMAILS.includes(submittedEmail)) {
+        try {
+            const customersCollectionRef = collection(db, 'games', gameId, 'customers');
+            const q = query(customersCollectionRef, where("email", "==", submittedEmail), limit(1));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                setUiState('already_played');
+                setIsSubmitting(false);
+                return;
+            }
+        } catch (error) {
+            console.error('Error checking for existing customer:', error);
+            // We can decide to let them through or show an error.
+            // For now, let's show a generic error to be safe.
+             toast({
+                variant: 'destructive',
+                title: 'Error de Verificación',
+                description: 'No se pudo comprobar si ya has participado. Inténtalo de nuevo.',
+            });
+            setIsSubmitting(false);
+            return;
+        }
+    }
     
+    // Proceed with registration
     try {
-      const customersCollectionRef = collection(db, 'games', gameId, 'customers');
-      const q = query(customersCollectionRef, where("email", "==", data.email.toLowerCase()), limit(1));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        setUiState('already_played');
-        return;
-      }
-
       const newCustomerRef = await addDoc(collection(db, 'games', gameId, 'customers'), {
         name: data.name,
-        email: data.email.toLowerCase(),
+        email: submittedEmail,
         phone: data.phone || '',
         registeredAt: serverTimestamp(),
         hasPlayed: false,

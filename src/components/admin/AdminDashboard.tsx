@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -5,23 +6,23 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail } from 'lucide-react';
+import { LogOut, PlusCircle, Link as LinkIcon, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -37,7 +38,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Papa from 'papaparse';
 
 
@@ -183,7 +183,6 @@ export default function AdminDashboard() {
       
       const customersData = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        // Check if registeredAt exists and is a Firestore Timestamp before converting
         const registrationDate = data.registeredAt && typeof data.registeredAt.toDate === 'function'
           ? data.registeredAt.toDate().toLocaleString()
           : 'N/A';
@@ -221,10 +220,9 @@ export default function AdminDashboard() {
   };
 
   return (
-    <TooltipProvider>
     <div className="flex min-h-screen flex-col bg-muted/40">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-        <h1 className="font-headline text-xl font-semibold">Dashboard de Juegos</h1>
+        <h1 className="font-headline text-xl font-semibold">Mis Juegos</h1>
         <div className="ml-auto flex items-center gap-2">
           <Button asChild size="sm" variant="outline" className="h-8 gap-1">
             <Link href="/admin/juegos/crear">
@@ -261,193 +259,86 @@ export default function AdminDashboard() {
         </div>
       </header>
       <main className="flex-1 p-4 sm:px-6 sm:py-0">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gamepad2 />
-              Mis Juegos
-            </CardTitle>
-            <CardDescription>
-              Aquí puedes ver y gestionar todos tus juegos de ruleta.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-                <div className="space-y-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                </div>
-            ) : games.length === 0 ? (
-                <div className="p-4 text-center border-2 border-dashed border-border rounded-lg">
-                    <h2 className="text-xl font-semibold">Aún no tienes juegos</h2>
-                    <p className="text-muted-foreground mt-2">
-                        ¡Crea tu primer juego para empezar a verlo aquí!
-                    </p>
-                </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nombre del Juego</TableHead>
-                    <TableHead className="hidden md:table-cell">Estado</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Jugadas</TableHead>
-                    <TableHead className="hidden md:table-cell text-center">Premios</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {games.map((game) => (
-                    <TableRow key={game.id}>
-                      <TableCell className="font-medium">{game.name}</TableCell>
-                      <TableCell className="hidden md:table-cell">
+          {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-64 w-full" />
+                  <Skeleton className="h-64 w-full" />
+              </div>
+          ) : games.length === 0 ? (
+              <div className="mt-8 p-8 text-center border-2 border-dashed border-border rounded-lg">
+                  <Gamepad2 className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h2 className="mt-4 text-xl font-semibold">Aún no tienes juegos</h2>
+                  <p className="text-muted-foreground mt-2">
+                      ¡Haz clic en "Crear Juego" para empezar a configurar tu primera ruleta!
+                  </p>
+              </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {games.map((game) => (
+                <Card key={game.id} className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="font-headline text-lg mb-1">{game.name}</CardTitle>
                         <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className={game.status === 'activo' ? 'bg-green-600 text-white' : ''}>
                           {game.status === 'activo' ? 'Activo' : 'Demo'}
                         </Badge>
-                      </TableCell>
-                       <TableCell className="hidden text-center md:table-cell">{game.plays || 0}</TableCell>
-                       <TableCell className="hidden text-center md:table-cell">{game.prizesAwarded || 0}</TableCell>
-                      <TableCell className="text-right">
-                         <div className="flex items-center justify-end gap-2">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button asChild variant="outline" size="icon" className="h-8 w-8">
-                                        <Link href={`/admin/clientes/${game.id}`}>
-                                            <Users className="h-4 w-4" />
-                                            <span className="sr-only">Ver Clientes</span>
-                                        </Link>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Ver Clientes</p>
-                                </TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button asChild variant="outline" size="icon" className="h-8 w-8">
-                                        <Link href={`/admin/juegos/editar/${game.id}`}>
-                                            <Edit className="h-4 w-4" />
-                                            <span className="sr-only">Editar Juego</span>
-                                        </Link>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Editar Juego</p>
-                                </TooltipContent>
-                            </Tooltip>
-                            
-                             <AlertDialog>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="outline" size="icon" className="h-8 w-8">
-                                                <RotateCcw className="h-4 w-4" />
-                                                <span className="sr-only">Resetear Contadores</span>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Resetear Contadores</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>¿Resetear contadores?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Esta acción restablecerá las jugadas y premios de <span className="font-bold">{game.name}</span> a 0. No se puede deshacer.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                     <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleResetCounters(game.id, game.name)}>
-                                            Sí, resetear
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDownloadData(game.id, game.name)}>
-                                        <Download className="h-4 w-4" />
-                                        <span className="sr-only">Descargar Datos</span>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Descargar Datos (CSV)</p>
-                                </TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleDuplicateGame(game.id)}>
-                                        <CopyPlus className="h-4 w-4" />
-                                        <span className="sr-only">Duplicar Juego</span>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Duplicar Juego</p>
-                                </TooltipContent>
-                            </Tooltip>
-
+                      </div>
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
                             <AlertDialog>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="outline" size="icon" className="h-8 w-8">
-                                                <LinkIcon className="h-4 w-4" />
-                                                <span className="sr-only">Ver Link para TV</span>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Ver Link para TV</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Enlace Público del Juego</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Usa este enlace para mostrar la ruleta en una pantalla o TV.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <div className="flex items-center space-x-2">
-                                        <Input value={getGameUrl(game.id)} readOnly />
-                                        <Button variant="outline" size="icon" onClick={() => copyToClipboard(getGameUrl(game.id))}>
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                     <AlertDialogFooter>
-                                        <AlertDialogCancel>Cerrar</AlertDialogCancel>
-                                        <AlertDialogAction asChild>
-                                            <Link href={getGameUrl(game.id)} target="_blank">
-                                                Abrir en nueva pestaña
-                                            </Link>
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                  <RotateCcw className="mr-2 h-4 w-4" />
+                                  <span>Resetear Contadores</span>
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>¿Resetear contadores?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Esta acción restablecerá las jugadas y premios de <span className="font-bold">{game.name}</span> a 0. No se puede deshacer.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleResetCounters(game.id, game.name)}>
+                                        Sí, resetear
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
                             </AlertDialog>
 
-                             <AlertDialog>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon" className="h-8 w-8">
-                                                <Trash2 className="h-4 w-4" />
-                                                <span className="sr-only">Eliminar Juego</span>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Eliminar Juego</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <AlertDialogContent>
+                            <DropdownMenuItem onClick={() => handleDuplicateGame(game.id)}>
+                              <CopyPlus className="mr-2 h-4 w-4" />
+                              Duplicar
+                            </DropdownMenuItem>
+
+                             <DropdownMenuItem onClick={() => handleDownloadData(game.id, game.name)}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Descargar Datos (CSV)
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <span>Eliminar Juego</span>
+                                  </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
                                     <AlertDialogHeader>
                                     <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                        Esta acción no se puede deshacer. Se eliminará permanentemente el juego
-                                        <span className="font-bold"> {game.name}</span> y todos sus datos asociados.
+                                        Esta acción no se puede deshacer. Se eliminará permanentemente el juego <span className="font-bold">{game.name}</span> y todos sus datos asociados.
                                     </AlertDialogDescription>
                                     </AlertDialogHeader>
                                      <AlertDialogFooter>
@@ -458,17 +349,66 @@ export default function AdminDashboard() {
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
-                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow">
+                      <div className="flex justify-around text-center border-t border-b py-4 my-4">
+                          <div className="px-2">
+                              <p className="text-2xl font-bold">{game.plays || 0}</p>
+                              <p className="text-xs text-muted-foreground">Jugadas</p>
+                          </div>
+                          <div className="border-l"></div>
+                          <div className="px-2">
+                              <p className="text-2xl font-bold">{game.prizesAwarded || 0}</p>
+                              <p className="text-xs text-muted-foreground">Premios</p>
+                          </div>
+                      </div>
+                  </CardContent>
+                  <CardFooter className="flex flex-col gap-2">
+                      <Button asChild className="w-full">
+                          <Link href={`/admin/juegos/editar/${game.id}`}><Edit className="mr-2 h-4 w-4"/> Configurar</Link>
+                      </Button>
+                      <div className="grid grid-cols-2 gap-2 w-full">
+                          <Button asChild variant="secondary">
+                            <Link href={`/admin/clientes/${game.id}`}><Users className="mr-2 h-4 w-4" /> Clientes</Link>
+                          </Button>
+                           <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                  <Button variant="secondary"><LinkIcon className="mr-2 h-4 w-4" /> TV Link</Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                  <AlertDialogTitle>Enlace Público del Juego</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                      Usa este enlace para mostrar la ruleta en una pantalla o TV.
+                                  </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <div className="flex items-center space-x-2">
+                                      <Input value={getGameUrl(game.id)} readOnly />
+                                      <Button variant="outline" size="icon" onClick={() => copyToClipboard(getGameUrl(game.id))}>
+                                          <Copy className="h-4 w-4" />
+                                      </Button>
+                                  </div>
+                                   <AlertDialogFooter>
+                                      <AlertDialogCancel>Cerrar</AlertDialogCancel>
+                                      <AlertDialogAction asChild>
+                                          <Link href={getGameUrl(game.id)} target="_blank">
+                                              Abrir enlace
+                                          </Link>
+                                      </AlertDialogAction>
+                                  </AlertDialogFooter>
+                              </AlertDialogContent>
+                          </AlertDialog>
+                      </div>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
       </main>
     </div>
-    </TooltipProvider>
   );
 }
