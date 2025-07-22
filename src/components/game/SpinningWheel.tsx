@@ -100,7 +100,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const fullSpins = (Math.floor(Math.random() * 3) + 5) * 360; // 5 to 7 fast spins
     
     // Calculate final rotation based on current accumulated rotation
-    const rotationFromCurrent = fullSpins - (currentRotationRef.current % 360) - randomizedTargetAngle + POINTER_ANGLE;
+    const rotationFromCurrent = fullSpins - (currentRotationRef.current % 360) + (POINTER_ANGLE - randomizedTargetAngle);
     const finalRotation = currentRotationRef.current + rotationFromCurrent;
     
     currentRotationRef.current = finalRotation;
@@ -257,6 +257,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                                 key={i}
                                 x="0"
                                 dy={i === 0 ? '-0.3em' : `${(segment.lineHeight || 1)}em`}
+                                style={ i > 0 ? { fontSize: '110%' } : {}}
                               >
                                 {part.trim()}
                               </tspan>
