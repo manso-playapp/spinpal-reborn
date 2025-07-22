@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon } from 'lucide-react';
+import { PlusCircle, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -45,6 +45,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
+  clientEmail?: string;
   plays: number;
   prizesAwarded: number;
   createdAt: {
@@ -257,15 +258,15 @@ export default function AdminDashboard() {
             <Card key={game.id} className="flex flex-col hover:border-primary transition-colors duration-300">
                 <CardHeader>
                 <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                    <CardTitle className="font-headline text-lg mb-1">{game.name}</CardTitle>
-                    <Badge variant={game.status === 'activo' ? 'default' : 'secondary'}>
-                        {game.status === 'activo' ? 'Activo' : 'Demo'}
-                    </Badge>
+                    <div className="flex-1 pr-2">
+                        <CardTitle className="font-headline text-lg mb-1">{game.name}</CardTitle>
+                        <Badge variant={game.status === 'activo' ? 'default' : 'secondary'}>
+                            {game.status === 'activo' ? 'Activo' : 'Demo'}
+                        </Badge>
                     </div>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 -mt-2 -mr-2 flex-shrink-0">
                             <MoreVertical className="h-4 w-4" />
                         </Button>
                         </DropdownMenuTrigger>
@@ -331,6 +332,12 @@ export default function AdminDashboard() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
+                 {game.clientEmail && (
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                        <User className="h-3 w-3" />
+                        <span>{game.clientEmail}</span>
+                    </div>
+                )}
                 </CardHeader>
                 <CardContent className="flex-grow">
                     <div className="flex justify-around text-center border-t border-b py-4 my-4">

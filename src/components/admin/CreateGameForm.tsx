@@ -36,6 +36,7 @@ const formSchema = z.object({
     message: 'El nombre debe tener al menos 3 caracteres.',
   }),
   status: z.enum(['activo', 'demo']),
+  clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -50,6 +51,7 @@ export default function CreateGameForm() {
     defaultValues: {
       name: '',
       status: 'demo',
+      clientEmail: '',
     },
   });
 
@@ -59,6 +61,7 @@ export default function CreateGameForm() {
       const docRef = await addDoc(collection(db, 'games'), {
         name: data.name,
         status: data.status,
+        clientEmail: data.clientEmail || '',
         plays: 0,
         prizesAwarded: 0,
         createdAt: serverTimestamp(),
@@ -130,6 +133,27 @@ export default function CreateGameForm() {
                     <FormMessage />
                     </FormItem>
                 )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="clientEmail"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Email del Cliente (Opcional)</FormLabel>
+                        <FormControl>
+                            <Input
+                            type="email"
+                            placeholder="propietario@tienda.com"
+                            {...field}
+                            disabled={loading}
+                            />
+                        </FormControl>
+                        <FormDescription>
+                            Asigna este juego a un cliente para futura gestión de permisos.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
                 <FormField
                 control={form.control}
