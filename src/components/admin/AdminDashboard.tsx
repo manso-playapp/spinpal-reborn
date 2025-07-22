@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye } from 'lucide-react';
+import { PlusCircle, Gamepad2, Edit, Trash2, Copy, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -46,6 +46,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
+  clientName?: string;
   clientEmail?: string;
   plays: number;
   prizesAwarded: number;
@@ -276,7 +277,7 @@ export default function AdminDashboard() {
                         
                         {game.clientEmail && (
                             <DropdownMenuItem asChild>
-                                <Link href={`/client/dashboard?clientEmail=${game.clientEmail}`}>
+                                <Link href={`/client/dashboard?clientEmail=${game.clientEmail}&clientName=${game.clientName || ''}`}>
                                     <Eye className="mr-2 h-4 w-4" />
                                     Ver como Cliente
                                 </Link>
@@ -345,10 +346,20 @@ export default function AdminDashboard() {
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-                 {game.clientEmail && (
-                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-                        <User className="h-3 w-3" />
-                        <span>{game.clientEmail}</span>
+                 {(game.clientName || game.clientEmail) && (
+                    <div className="mt-2 text-xs text-muted-foreground flex flex-col items-start gap-1">
+                        {game.clientName && (
+                            <div className="flex items-center gap-1.5">
+                                <Briefcase className="h-3 w-3" />
+                                <span className="font-medium text-foreground">{game.clientName}</span>
+                            </div>
+                        )}
+                        {game.clientEmail && (
+                            <div className="flex items-center gap-1.5">
+                                <User className="h-3 w-3" />
+                                <span>{game.clientEmail}</span>
+                            </div>
+                        )}
                     </div>
                 )}
                 </CardHeader>

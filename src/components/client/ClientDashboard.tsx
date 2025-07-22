@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Users, Link as LinkIcon, Copy, AlertTriangle } from 'lucide-react';
+import { Gamepad2, Users, Link as LinkIcon, Copy, AlertTriangle, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -38,6 +38,8 @@ interface Game {
   status: 'activo' | 'demo';
   plays: number;
   prizesAwarded: number;
+  clientName?: string;
+  clientEmail?: string;
 }
 
 export default function ClientDashboard() {
@@ -49,16 +51,21 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [impersonatedEmail, setImpersonatedEmail] = useState<string | null>(null);
   const [viewTitle, setViewTitle] = useState('Mis Juegos');
+  const [clientData, setClientData] = useState<{name: string, email: string} | null>(null);
+
 
   useEffect(() => {
     const clientEmailParam = searchParams.get('clientEmail');
-    
+    const clientNameParam = searchParams.get('clientName');
+
     if (clientEmailParam && isSuperAdmin) {
         setImpersonatedEmail(clientEmailParam);
-        setViewTitle(`Juegos de: ${clientEmailParam}`);
+        const title = clientNameParam ? `Juegos de: ${clientNameParam}` : `Juegos de: ${clientEmailParam}`;
+        setViewTitle(title);
+        setClientData({name: clientNameParam || 'Cliente sin nombre', email: clientEmailParam});
     } else if (user) {
         setImpersonatedEmail(user.email);
-        setViewTitle('Mis Juegos');
+        // We will fetch the client's name from one of their games
     }
 
   }, [searchParams, isSuperAdmin, user]);
@@ -85,6 +92,13 @@ export default function ClientDashboard() {
           id: doc.id,
           ...doc.data(),
         })) as Game[];
+        
+        if (!isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
+            setViewTitle(`Juegos de: ${gamesData[0].clientName}`);
+        } else if (!isSuperAdmin) {
+            setViewTitle('Mis Juegos');
+        }
+
         setGames(gamesData);
         setLoading(false);
       },
@@ -95,7 +109,7 @@ export default function ClientDashboard() {
     );
 
     return () => unsubscribe();
-  }, [impersonatedEmail, user]);
+  }, [impersonatedEmail, user, isSuperAdmin]);
 
   const getGameUrl = (gameId: string) => {
     if (typeof window !== 'undefined') {

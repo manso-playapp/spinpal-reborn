@@ -65,6 +65,7 @@ const segmentSchema = z.object({
 const formSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   status: z.enum(['activo', 'demo']),
+  clientName: z.string().optional(),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   exemptedEmails: z.string().optional(),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios para la ruleta.'),
@@ -89,6 +90,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
+  clientName?: string;
   clientEmail?: string;
   exemptedEmails?: string[];
   segments?: z.infer<typeof segmentSchema>[];
@@ -143,6 +145,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     defaultValues: {
       name: game.name || '',
       status: game.status || 'demo',
+      clientName: game.clientName || '',
       clientEmail: game.clientEmail || '',
       exemptedEmails: (game.exemptedEmails || []).join('\n'),
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
@@ -323,10 +326,26 @@ export default function EditGameForm({ game }: { game: Game }) {
                           />
                           <FormField
                             control={form.control}
+                            name="clientName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Nombre del Cliente</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Nombre de la empresa o persona" {...field} disabled={loading} />
+                                </FormControl>
+                                <FormDescription>
+                                  El nombre que identifica al propietario de este juego.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
                             name="clientEmail"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Email del Cliente (para notificaciones)</FormLabel>
+                                <FormLabel>Email del Cliente (para notificaciones y acceso)</FormLabel>
                                 <FormControl>
                                   <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} disabled={loading} />
                                 </FormControl>
@@ -345,7 +364,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 <FormLabel className="flex items-center gap-2"><Users /> Correos Exentos de Verificación</FormLabel>
                                 <FormControl>
                                   <Textarea
-                                    placeholder="un-email@ejemplo.com&#10;otro-email@ejemplo.com"
+                                    placeholder="un-email@ejemplo.com\notro-email@ejemplo.com"
                                     className="min-h-[100px] font-mono text-sm"
                                     {...field}
                                     disabled={loading}

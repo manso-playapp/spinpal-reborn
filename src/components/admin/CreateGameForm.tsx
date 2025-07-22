@@ -35,8 +35,9 @@ const formSchema = z.object({
   name: z.string().min(3, {
     message: 'El nombre debe tener al menos 3 caracteres.',
   }),
-  status: z.enum(['activo', 'demo']),
+  clientName: z.string().optional(),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
+  status: z.enum(['activo', 'demo']),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -51,6 +52,7 @@ export default function CreateGameForm() {
     defaultValues: {
       name: '',
       status: 'demo',
+      clientName: '',
       clientEmail: '',
     },
   });
@@ -61,6 +63,7 @@ export default function CreateGameForm() {
       const docRef = await addDoc(collection(db, 'games'), {
         name: data.name,
         status: data.status,
+        clientName: data.clientName || '',
         clientEmail: data.clientEmail || '',
         plays: 0,
         prizesAwarded: 0,
@@ -136,6 +139,26 @@ export default function CreateGameForm() {
                 />
                  <FormField
                     control={form.control}
+                    name="clientName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nombre del Cliente (Opcional)</FormLabel>
+                        <FormControl>
+                            <Input
+                            placeholder="Nombre de la empresa o persona"
+                            {...field}
+                            disabled={loading}
+                            />
+                        </FormControl>
+                        <FormDescription>
+                            El nombre que identifica al propietario de este juego.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
                     name="clientEmail"
                     render={({ field }) => (
                         <FormItem>
@@ -149,7 +172,7 @@ export default function CreateGameForm() {
                             />
                         </FormControl>
                         <FormDescription>
-                            Asigna este juego a un cliente para futura gestión de permisos.
+                            Asigna este juego a un cliente para futura gestión de permisos y notificaciones.
                         </FormDescription>
                         <FormMessage />
                         </FormItem>
