@@ -121,9 +121,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = normalizedSegments.length;
     const segmentAngle = 360 / segmentCount;
     
-    const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
+    // Correct calculation for the target angle. We want to point the top (at -90 deg) to the middle of the winning segment.
+    const targetAngle = -(winningIndex * segmentAngle + segmentAngle / 2);
 
     const fullSpins = 5 * 360;
+    // Add the current rotation to continue spinning from the last position
     const newRotation = rotation + fullSpins + targetAngle;
     setRotation(newRotation);
 
@@ -161,12 +163,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
             console.log("DIAGNÓSTICO: ¡Éxito! Contador de premios incrementado.");
             
-            await sendPrizeNotification({
+            const notificationResult = await sendPrizeNotification({
                 gameId: gameId,
                 customerId: customerId,
                 prizeName: winningSegment.name,
             });
-            console.log("DIAGNÓSTICO: ¡Éxito! Notificación de premio procesada.");
+            console.log("DIAGNÓSTICO: Resultado de la notificación de premio:", notificationResult);
 
         } catch (error) {
             console.error("DIAGNÓSTICO: ¡ERROR al actualizar premios o notificar!", error);
