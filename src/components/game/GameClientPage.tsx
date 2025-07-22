@@ -119,9 +119,9 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
 
         {/* Roulette container */}
         <div 
-            className="w-full max-w-2xl text-center flex flex-col items-center justify-center absolute inset-0"
+            className="absolute w-full max-w-2xl text-center left-1/2 -translate-x-1/2"
             style={{ 
-              transform: `translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})` 
+              transform: `translateX(-50%) translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})` 
             }}
           >
               <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
@@ -139,24 +139,30 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
         <div 
           className="absolute bottom-4 px-4 w-full flex justify-center items-center"
           style={{ 
-            transform: `translateY(${game.qrVerticalOffset}px) scale(${game.qrCodeScale})`
+            transform: `translateY(${game.qrVerticalOffset}px)`
           }}
         >
-            <div className="w-full max-w-md text-center">
+            <div 
+              className="w-full max-w-md text-center"
+              style={{
+                transform: `scale(${game.qrCodeScale})`,
+                transformOrigin: 'bottom center'
+              }}
+            >
               {spinResult ? (
                    <Card className="shadow-lg bg-black/50 backdrop-blur-md border-white/30 text-white animate-in fade-in zoom-in-95">
                       <CardHeader className="p-6">
-                          <CardTitle className="font-headline text-6xl flex items-center justify-center gap-4">
-                             {spinResult.isRealPrize ? <Gift className="text-yellow-400 h-16 w-16" /> : <ThumbsDown className="text-red-400 h-16 w-16" />}
+                          <CardTitle className="font-headline text-5xl md:text-6xl flex items-center justify-center gap-4">
+                             {spinResult.isRealPrize ? <Gift className="text-yellow-400 h-14 w-14 md:h-16 md:w-16" /> : <ThumbsDown className="text-red-400 h-14 w-14 md:h-16 md:w-16" />}
                              {spinResult.isRealPrize ? '¡Premio!' : '¡Casi!'}
                           </CardTitle>
                           <Separator className="bg-white/20 mt-4"/>
                       </CardHeader>
                       <CardContent className="p-6 pt-0">
-                          <p className="text-4xl font-semibold">
+                          <p className="text-3xl md:text-4xl font-semibold">
                               {spinResult.name}
                           </p>
-                          <CardDescription className="text-white/80 mt-4 text-lg">
+                          <CardDescription className="text-white/80 mt-4 text-base md:text-lg">
                              {spinResult.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
                           </CardDescription>
                       </CardContent>
