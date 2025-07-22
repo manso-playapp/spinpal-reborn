@@ -251,7 +251,7 @@ export default function EditGameForm({ game }: { game: Game }) {
 
   const refreshPreview = () => {
     if (iframeRef.current) {
-        iframeRef.current.src = iframeRef.current.src;
+        iframeRef.current.src = `/juego/${game.id}/preview?t=${new Date().getTime()}`;
     }
   }
   
@@ -992,7 +992,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                      <div className="mt-4 p-2 bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
                         <iframe
                             ref={iframeRef}
-                            src={`/juego/preview/${game.id}`}
+                            src={`/juego/${game.id}/preview`}
                             className="w-full h-full bg-background shadow-lg rounded-lg border-0 transform origin-top-left"
                             title="Vista Previa del Juego"
                         ></iframe>
