@@ -233,7 +233,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             winningIndex = segments.length - 1;
         }
 
-        const winningSegment = winningIndex !== -1 ? segments[winningIndex] : null;
+        const winningSegment = segments[winningIndex];
 
         if (!winningSegment || !winningSegment.id) {
             console.error("ERROR CRITICO: El segmento ganador no se pudo determinar o no tiene ID.", { winningSegment });
@@ -276,13 +276,15 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             customerUpdateData.prizeWonAt = serverTimestamp();
             
             try {
-                await sendPrizeNotification({
+                // Do not await this, let it run in the background
+                sendPrizeNotification({
                     gameId: gameId,
                     customerId: customerId,
                     prizeName: winningSegment.name,
                 });
             } catch (emailError) {
                 console.error("Failed to send prize notification email:", emailError);
+                // We don't block the user flow for email errors
             }
         }
 
