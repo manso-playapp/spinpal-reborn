@@ -39,6 +39,8 @@ interface SpinningWheelProps {
 
 const VIEWBOX_SIZE = 500;
 const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
+// The pointer is at the top, which is 270 degrees in a standard cartesian plane (0 at 3 o'clock).
+const POINTER_ANGLE = 270;
 
 export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
@@ -65,7 +67,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
   const handleSpinClick = useCallback(async (spinRequestData) => {
     if (isSpinningRef.current || !segments || segments.length === 0) return;
-
+  
     const { winningId } = spinRequestData;
     const winningIndex = segments.findIndex(s => s.id === winningId);
     
@@ -77,45 +79,49 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     }
     
     const winningSegment = segments[winningIndex];
-
+  
     setIsSpinning(true);
     
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Calculate the exact angle to the middle of the winning segment.
-    const targetAngle = 360 - (winningIndex * segmentAngle + (segmentAngle / 2));
-    
+    // Calculate the middle angle of the winning segment.
+    const winningSegmentMiddleAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
+
+    // Calculate the rotation needed to align the middle of the winning segment with the pointer.
+    // We subtract from POINTER_ANGLE to align correctly.
+    const angleToAlign = POINTER_ANGLE - winningSegmentMiddleAngle;
+
     // Add a random number of full spins for variety.
     const fullSpins = (6 + Math.random() * 2) * 360; 
-
+  
     // The final rotation is the current rotation plus the new spin distance.
-    const finalRotation = rotation + fullSpins + targetAngle;
+    const finalRotation = rotation + fullSpins + angleToAlign;
     
     setRotation(finalRotation);
-
+  
     const gameRef = doc(db, 'games', gameId);
     
     setTimeout(async () => {
-      // Announce winner visually by blinking
+      // Announce winner visually by blinking, which now happens after the spin.
       setWinningSegmentId(winningId);
-
+  
       setIsSpinning(false);
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
-
-      // Clean up the spin request and blinking effect
+  
+      // Clean up the spin request.
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
       } catch (error) {
         console.error("Error cleaning up spinRequest field:", error);
       }
-       // Stop blinking after a few seconds
+       // Stop blinking after a few seconds.
       setTimeout(() => {
         setWinningSegmentId(null);
       }, 4000); 
-
+  
     }, 7000); // This duration must match the CSS transition duration for a smooth stop.
-
+  
   }, [segments, gameId, onSpinEnd, rotation]);
 
   const spinHandlerRef = useRef(handleSpinClick);
@@ -187,7 +193,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
         {/* Layer 1: Spinning Wheel SVG (Bottom) */}
         <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 z-0" style={wheelStyle}>
-              <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center', transform: 'rotate(-90deg)' }}>
+              <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
                 <g style={{ transformOrigin: 'center center' }}>
                   {segments.map((segment, index) => {
                     const startAngle = index * segmentAngle;
