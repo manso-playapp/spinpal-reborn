@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
@@ -15,7 +16,6 @@ async function getGameData(id: string) {
   return { 
     id: gameSnap.id, 
     name: data.name || "Juego sin nombre",
-    status: data.status || "demo",
     registrationTitle: data.registrationTitle || `Estás jugando a`,
     registrationSubtitle: data.registrationSubtitle,
   };
@@ -41,7 +41,7 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
                 <p className="text-muted-foreground mt-2">{game.registrationSubtitle}</p>
             )}
           </div>
-        <CustomerRegistrationForm gameId={game.id} isDemoMode={game.status === 'demo'} successMessage={game.successMessage} />
+        <CustomerRegistrationForm gameId={game.id} />
       </div>
     </div>
   );

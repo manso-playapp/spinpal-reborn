@@ -45,8 +45,6 @@ type CustomerFormValues = z.infer<typeof formSchema>;
 
 interface CustomerRegistrationFormProps {
   gameId: string;
-  isDemoMode: boolean;
-  successMessage?: string;
 }
 
 type UiState = 'loading' | 'form' | 'spin_button' | 'waiting_result' | 'already_played' | 'error' | 'final_result' | 'success_message';
@@ -56,19 +54,19 @@ interface SpinResult {
     isRealPrize: boolean;
 }
 
-// Emails in this list will bypass the "already played" check.
-const EXEMPTED_EMAILS = [
-    'test@test.com',
-    'dev@spinpal.com',
-    'grupomanso@gmail.com',
-];
+interface GameData {
+    isDemoMode: boolean;
+    exemptedEmails: string[];
+    successMessage?: string;
+}
 
-export default function CustomerRegistrationForm({ gameId, isDemoMode, successMessage }: CustomerRegistrationFormProps) {
+export default function CustomerRegistrationForm({ gameId }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [uiState, setUiState] = useState<UiState>('loading');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
+  const [gameData, setGameData] = useState<GameData | null>(null);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -80,8 +78,28 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
   });
   
   useEffect(() => {
-    setUiState('form');
-  }, []);
+    const fetchGameData = async () => {
+        try {
+            const gameRef = doc(db, 'games', gameId);
+            const docSnap = await getDoc(gameRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setGameData({
+                    isDemoMode: data.status === 'demo',
+                    exemptedEmails: data.exemptedEmails || [],
+                    successMessage: data.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+                });
+                setUiState('form');
+            } else {
+                setUiState('error');
+            }
+        } catch (error) {
+            console.error("Error fetching game data:", error);
+            setUiState('error');
+        }
+    };
+    fetchGameData();
+  }, [gameId]);
 
   const fetchResultAfterDelay = async (cId: string) => {
     // Wait for the spin animation to finish (7s) + a small buffer (0.5s)
@@ -115,11 +133,12 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
 
 
   const onSubmit = async (data: CustomerFormValues) => {
+    if (!gameData) return;
     setIsSubmitting(true);
     const submittedEmail = data.email.toLowerCase();
 
     // Check if the email is in the exempted list
-    if (!EXEMPTED_EMAILS.includes(submittedEmail)) {
+    if (!gameData.exemptedEmails.includes(submittedEmail)) {
         try {
             const customersCollectionRef = collection(db, 'games', gameId, 'customers');
             const q = query(customersCollectionRef, where("email", "==", submittedEmail), limit(1));
@@ -207,7 +226,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     }
   };
   
-  if (uiState === 'loading') {
+  if (uiState === 'loading' || !gameData) {
     return (
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
@@ -271,7 +290,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
            <Loader2 className="h-16 w-16 animate-spin text-primary" />
            <p className="text-xl font-semibold text-foreground">¡Mucha Suerte!</p>
-           <p className="text-sm text-muted-foreground">{successMessage}</p>
+           <p className="text-sm text-muted-foreground">{gameData.successMessage}</p>
         </CardContent>
       </Card>
     )
@@ -304,7 +323,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     );
   }
 
-  if (isDemoMode) {
+  if (gameData.isDemoMode) {
      return (
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>

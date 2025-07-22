@@ -34,7 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2 } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -66,6 +66,7 @@ const formSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   status: z.enum(['activo', 'demo']),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
+  exemptedEmails: z.string().optional(),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios para la ruleta.'),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
@@ -89,6 +90,7 @@ interface Game {
   name: string;
   status: 'activo' | 'demo';
   clientEmail?: string;
+  exemptedEmails?: string[];
   segments?: z.infer<typeof segmentSchema>[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
@@ -142,6 +144,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       name: game.name || '',
       status: game.status || 'demo',
       clientEmail: game.clientEmail || '',
+      exemptedEmails: (game.exemptedEmails || []).join('\n'),
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
@@ -210,10 +213,15 @@ export default function EditGameForm({ game }: { game: Game }) {
     try {
       const gameRef = doc(db, 'games', game.id);
       
+      const emailList = data.exemptedEmails
+        ? data.exemptedEmails.split('\n').map(email => email.trim().toLowerCase()).filter(email => email)
+        : [];
+      
       const dataToSave = JSON.parse(JSON.stringify(data));
       
       const updateData: Partial<Game> = {
         ...dataToSave,
+        exemptedEmails: emailList,
         plays: game.plays || 0,
         prizesAwarded: game.prizesAwarded || 0,
       };
@@ -324,6 +332,27 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 </FormControl>
                                  <FormDescription>
                                   Dirección donde el dueño del juego recibirá un aviso cuando un premio sea ganado.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                           <FormField
+                            control={form.control}
+                            name="exemptedEmails"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2"><Users /> Correos Exentos de Verificación</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder="un-email@ejemplo.com&#10;otro-email@ejemplo.com"
+                                    className="min-h-[100px] font-mono text-sm"
+                                    {...field}
+                                    disabled={loading}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Lista de correos (uno por línea) que pueden jugar múltiples veces. Ideal para pruebas.
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
@@ -811,6 +840,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     isDemoMode={true}
                                     showDemoButton={true}
                                     config={currentConfig}
+                                    onSpinEnd={() => {}}
                                 />
                             </div>
                         </TabsContent>
@@ -838,6 +868,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                         gameId={game.id} 
                                         isDemoMode={true}
                                         config={currentConfig}
+                                        onSpinEnd={() => {}}
                                       />
                                     </div>
                                   </div>
@@ -873,5 +904,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </div>
   );
 }
-
-    
