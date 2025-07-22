@@ -84,13 +84,15 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Point directly to the middle of the winning segment
+    // Calculate the exact angle to the middle of the winning segment.
     const targetAngle = 360 - (winningIndex * segmentAngle + (segmentAngle / 2));
     
-    // Add randomness to the number of spins for a more natural feel
+    // Add a random number of full spins for variety.
     const fullSpins = (6 + Math.random() * 2) * 360; 
-    
-    const finalRotation = fullSpins + targetAngle;
+
+    // The final rotation is the current rotation plus the new spin distance.
+    // This ensures the wheel always spins forward.
+    const finalRotation = rotation + fullSpins + targetAngle;
     
     setRotation(finalRotation);
 
@@ -110,7 +112,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
     }, 7000); // This duration must match the CSS transition duration for a smooth stop.
 
-  }, [segments, gameId, onSpinEnd]);
+  }, [segments, gameId, onSpinEnd, rotation]);
 
   const spinHandlerRef = useRef(handleSpinClick);
   useEffect(() => {
