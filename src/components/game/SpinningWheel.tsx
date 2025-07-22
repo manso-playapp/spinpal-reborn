@@ -110,24 +110,28 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     if (isSpinningRef.current || normalizedSegments.length === 0) return;
 
     setIsSpinning(true);
+    
+    // 1. Decide el premio ganador LÓGICAMENTE
     const winningIndex = getWinningSegmentIndex();
     const winningSegment = normalizedSegments[winningIndex];
     
     const segmentCount = normalizedSegments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Correct calculation for target angle
-    // The pointer is at 12 o'clock (which is 270 degrees in SVG's angle system).
-    // The middle of the winning segment should land there.
+    // 2. Calcula el ángulo de rotación exacto para ESE premio
+    // El puntero está en 270 grados (arriba). El primer gajo empieza en 0 (derecha).
+    // Queremos que el medio del gajo ganador aterrice en 270.
     const winningSegmentMiddleAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
     
-    // We adjust by -90 because SVG path arcs start from the 3 o'clock position (0 degrees)
-    // instead of the 12 o'clock position.
-    const targetAngle = 360 - winningSegmentMiddleAngle;
+    // El ángulo de destino es la diferencia necesaria para llevar el medio del gajo a la cima.
+    // 270 es la posición del puntero. Le restamos el ángulo del medio del gajo ganador.
+    const targetAngle = 270 - winningSegmentMiddleAngle;
 
+    // 5 giros completos + el ángulo de ajuste final
     const fullSpins = 5 * 360;
-    const finalRotation = rotation - (rotation % 360) + fullSpins + targetAngle;
-    setRotation(finalRotation);
+    const newRotation = rotation - (rotation % 360) + fullSpins + targetAngle;
+    
+    setRotation(newRotation);
 
     const gameRef = doc(db, 'games', gameId);
 
