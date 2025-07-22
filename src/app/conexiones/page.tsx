@@ -341,12 +341,14 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow read: if true;
-      allow write: if isSuperAdmin(); // Solo el super-admin puede crear, editar o borrar juegos
-      
-      // Los jugadores no autenticados solo pueden actualizar los campos de giro.
-      allow update: if request.auth == null
-                      && request.resource.data.diff(resource.data).affectedKeys().hasAny(['spinRequest', 'plays', 'prizesAwarded', 'lastResult'])
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest', 'plays', 'prizesAwarded', 'lastResult']);
+      // Solo el super-admin puede crear o borrar juegos.
+      allow create, delete: if isSuperAdmin();
+      // El super-admin puede actualizar todo.
+      // El cliente dueño del juego puede actualizarlo (excepto cambiar de dueño).
+      // El jugador no autenticado solo puede actualizar los campos de giro.
+      allow update: if isSuperAdmin() || 
+                      (isGameClient(gameId) && request.resource.data.clientEmail == resource.data.clientEmail) ||
+                      (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest', 'plays', 'prizesAwarded', 'lastResult']));
     }
 
     match /games/{gameId}/customers/{customerId} {
@@ -363,7 +365,7 @@ service cloud.firestore {
       // Admins/clientes pueden actualizar cualquier campo.
       // Jugadores (sin autenticar) solo pueden actualizar el campo 'hasPlayed' o el premio ganado.
       allow update: if isSuperAdmin() || isGameClient(gameId) ||
-                    (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasAny(['hasPlayed', 'prizeWonName', 'prizeWonAt']));
+                    (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasPlayed', 'prizeWonName', 'prizeWonAt']));
     }
     
     match /outbound_emails/{emailId} {
