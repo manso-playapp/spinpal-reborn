@@ -43,7 +43,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import GameClientPage from '@/components/game/GameClientPage';
+import SpinningWheel from '@/components/game/SpinningWheel';
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 
@@ -162,7 +162,6 @@ export default function EditGameForm({ game }: { game: Game }) {
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -193,6 +192,8 @@ export default function EditGameForm({ game }: { game: Game }) {
       }
     },
   });
+  
+  const watchedFormData = form.watch();
 
   const { fields, append, remove, move, insert } = useFieldArray({
     control: form.control,
@@ -250,15 +251,6 @@ export default function EditGameForm({ game }: { game: Game }) {
     }
   };
 
-  const refreshPreview = () => {
-    if (iframeRef.current) {
-        // Reloading the iframe src is one way, but can be flashy.
-        // Since GameClientPage uses onSnapshot, changes should appear automatically.
-        // A forced reload can be a fallback if real-time updates fail.
-        iframeRef.current.src = `/juego/${game.id}/preview?t=${new Date().getTime()}`;
-    }
-  }
-  
   const onSubmit = async (data: GameFormValues) => {
     setLoading(true);
     try {
@@ -289,8 +281,6 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
-      // The preview will refresh automatically via onSnapshot listener in the iframe.
-      // refreshPreview();
 
     } catch (error) {
       console.error('Error updating game: ', error);
@@ -988,10 +978,17 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <Eye className="h-5 w-5"/>
                         Vista Previa
                     </CardTitle>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => refreshPreview()}><RefreshCw className="mr-2 h-4 w-4"/>Refrescar</Button>
                   </CardHeader>
-                  <CardContent className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-video overflow-hidden">
-                     <GameClientPage gameId={game.id} />
+                  <CardContent className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square overflow-hidden">
+                    <div style={{ transform: 'scale(0.8)' }}>
+                        <SpinningWheel
+                            gameId={game.id}
+                            segments={watchedFormData.segments}
+                            config={watchedFormData.config}
+                            onSpinEnd={() => {}} // No-op for preview
+                            isDemoMode={true}
+                        />
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -1001,3 +998,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
+
+    
