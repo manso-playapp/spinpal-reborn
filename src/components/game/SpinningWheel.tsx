@@ -7,7 +7,6 @@ import { doc, onSnapshot, updateDoc, increment, deleteField, serverTimestamp, ge
 import { Button } from '../ui/button';
 import { RotateCw } from 'lucide-react';
 import Image from 'next/image';
-import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
 
 interface Segment {
   id?: string;
@@ -69,7 +68,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const handleSpinClick = useCallback(async (spinRequestData) => {
     if (isSpinningRef.current || segments.length === 0) return;
 
-    const { winningSegment: rawWinningSegment, customerId, isDemoSpin, winningId } = spinRequestData;
+    const { customerId, isDemoSpin, winningId } = spinRequestData;
 
     const winningIndex = segments.findIndex(s => s.id === winningId);
     
@@ -99,52 +98,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
     const gameRef = doc(db, 'games', gameId);
     
-    setTimeout(() => {
-        if (customerId && !isDemoSpin) {
-            updateDoc(gameRef, {
-                lastResult: {
-                    name: winningSegment.name,
-                    isRealPrize: !!winningSegment.isRealPrize,
-                    customerId: customerId,
-                    timestamp: serverTimestamp(),
-                }
-            });
-        }
-    }, 1000);
-
     setTimeout(async () => {
       setIsSpinning(false);
       
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
       } catch (error) {
-        console.error("DIAGNÓSTICO: ¡ERROR AL LIMPIAR spinRequest!", error);
+        console.error("Error cleaning up spinRequest field:", error);
       }
       
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
 
-      if (!isDemoMode && winningSegment?.isRealPrize && customerId && !isDemoSpin) {
-        try {
-            const customerRef = doc(db, 'games', gameId, 'customers', customerId);
-            
-            await updateDoc(gameRef, { prizesAwarded: increment(1) });
-            await updateDoc(customerRef, {
-                prizeWonName: winningSegment.name,
-                prizeWonAt: serverTimestamp()
-            });
-            
-            // Only send notification if there is a client email configured
-            await sendPrizeNotification({
-                gameId: gameId,
-                customerId: customerId,
-                prizeName: winningSegment.name,
-            });
-
-
-        } catch (error) {
-            console.error("DIAGNÓSTICO: ¡ERROR al actualizar premios o notificar!", error);
-        }
-      }
     }, 7000); // Match transition duration
 
   }, [segments, gameId, isDemoMode, rotation, onSpinEnd]);
@@ -233,7 +197,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const winningSegment = finalSegments[winningIndex];
 
     handleSpinClick({ 
-        winningSegment: winningSegment, 
         winningId: winningSegment.id, 
         isDemoSpin: true, 
         customerId: 'demo' 

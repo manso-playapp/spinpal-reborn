@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc, onSnapshot, getDoc, writeBatch } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
+import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
 
 
 const baseFormSchema = z.object({
@@ -221,7 +222,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const random = Math.random() * 100;
         let accumulatedProb = 0;
-        let winningSegment: (Segment & { finalProbability: number }) | null = null;
+        let winningSegment = null;
 
         for (let i = 0; i < finalSegments.length; i++) {
             accumulatedProb += (finalSegments[i].finalProbability || 0);
@@ -235,22 +236,52 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             winningSegment = finalSegments[finalSegments.length - 1]; // Fallback
         }
 
-        const spinRequestData = {
-            timestamp: serverTimestamp(),
-            customerId: customerId,
-            winningId: winningSegment.id,
-            winningSegment: {
+        // Use a batch to perform multiple writes atomically
+        const batch = writeBatch(db);
+
+        // 1. Set the spin request to trigger the animation
+        batch.update(gameRef, {
+            spinRequest: {
+                timestamp: serverTimestamp(),
+                customerId: customerId,
+                winningId: winningSegment.id,
+            },
+            plays: increment(1),
+            lastResult: { // Write the result immediately for the user's phone
               name: winningSegment.name,
               isRealPrize: !!winningSegment.isRealPrize,
-            },
-          };
-        
-        await updateDoc(gameRef, {
-            spinRequest: spinRequestData,
-            plays: increment(1),
+              customerId: customerId,
+              timestamp: serverTimestamp(),
+            }
         });
+        
+        // 2. Mark the customer as played
+        batch.update(customerRef, { hasPlayed: true });
+        
+        // 3. If it's a real prize, update counters and prize info
+        if (winningSegment.isRealPrize) {
+            batch.update(gameRef, { prizesAwarded: increment(1) });
+            batch.update(customerRef, {
+                prizeWonName: winningSegment.name,
+                prizeWonAt: serverTimestamp()
+            });
+        }
+        
+        await batch.commit();
 
-        await updateDoc(customerRef, { hasPlayed: true });
+        // 4. Send notification email if it's a real prize (after batch commit)
+        if (winningSegment.isRealPrize) {
+             try {
+                await sendPrizeNotification({
+                    gameId: gameId,
+                    customerId: customerId,
+                    prizeName: winningSegment.name,
+                });
+            } catch (emailError) {
+                console.error("Failed to send prize notification email:", emailError);
+                // Non-fatal, the user has won, but we should log this.
+            }
+        }
         
         setUiState('success_message');
 
