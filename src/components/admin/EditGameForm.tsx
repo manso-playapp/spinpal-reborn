@@ -232,7 +232,7 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
-      router.push('/admin');
+      // router.push('/admin'); // This line was removed
     } catch (error) {
       console.error('Error updating game: ', error);
       toast({
