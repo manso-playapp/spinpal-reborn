@@ -49,54 +49,71 @@ export async function sendPrizeNotification(
 }
 
 
-const emailPrompt = ai.definePrompt({
-    name: 'prizeNotificationEmailPrompt',
+const emailPhrasePrompt = ai.definePrompt({
+    name: 'prizeNotificationPhrasePrompt',
     input: {
         schema: z.object({
-            gameName: z.string(),
             prizeName: z.string(),
-            validationCode: z.string(),
-            customerName: z.string(),
-            emailType: z.enum(['customer', 'client']),
         })
     },
     output: {
         schema: z.object({
-            subject: z.string().describe("The subject line of the email."),
-            body: z.string().describe("The full HTML body of the email. It should be friendly, well-formatted, and visually appealing. Use simple HTML tags like <p>, <strong>, <em>, and <br>."),
+            celebratoryPhrase: z.string().describe("A short, very enthusiastic, and celebratory phrase for winning the specific prize. For example: '¡Qué suerte! Has ganado un increíble...' or '¡Enhorabuena! Te llevas un fantástico...'"),
         })
     },
     prompt: `
-        You are an expert in writing clear, friendly, and professional emails. 
-        Your task is to generate the subject and HTML body for a prize notification email.
-        You must strictly return a JSON object with a "subject" and a "body" property.
+        You are an expert in writing exciting and short marketing copy.
+        Your task is to generate a single, short, celebratory phrase for a user who has just won a prize.
+        The phrase should be in Spanish.
 
-        **Game Name:** {{{gameName}}}
         **Prize Won:** {{{prizeName}}}
-        **Winner's Name:** {{{customerName}}}
-        **Validation Code:** {{{validationCode}}}
 
-        {{#if (eq emailType "customer")}}
-        **Email Type:** Customer Congratulatory Email
-        **Instructions:**
-        - Write a congratulatory email to the customer.
-        - The tone should be enthusiastic and celebratory.
-        - Clearly state the prize they have won.
-        - Prominently display the validation code and explain that they need to show it to redeem their prize.
-        - Thank them for participating in the "{{gameName}}" game.
-        {{else}}
-        **Email Type:** Client Notification Email
-        **Instructions:**
-        - Write a notification email to the business owner (client).
-        - The tone should be informative and professional.
-        - Clearly state that a customer named "{{customerName}}" has won the prize "{{prizeName}}".
-        - Provide the validation code so the client can verify the prize when the customer comes to claim it.
-        - Mention the game was "{{gameName}}".
-        {{/if}}
-
-        Generate only the JSON object with the subject and body.
+        Generate ONLY the JSON object with the "celebratoryPhrase" property.
     `,
 });
+
+// Template function for the customer email
+const createCustomerEmail = (customerName: string, prizeName: string, validationCode: string, gameName: string, celebratoryPhrase: string) => {
+    const subject = `¡Felicidades, ${customerName}! ¡Has ganado en ${gameName}!`;
+    const body = `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto; background-color: #f9f9f9;">
+            <h1 style="color: #333; text-align: center;">¡Felicidades, ${customerName}!</h1>
+            <p style="text-align: center; font-size: 1.1em;">${celebratoryPhrase}</p>
+            <div style="background-color: #fff; border: 2px dashed #ccc; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+                <p style="font-size: 1.5em; font-weight: bold; color: #2c3e50; margin: 0;">${prizeName}</p>
+            </div>
+            <p>Para canjear tu premio, presenta el siguiente código de validación en nuestro local:</p>
+            <div style="text-align: center; background-color: #e0e0e0; padding: 15px; border-radius: 8px; font-size: 1.8em; font-weight: bold; letter-spacing: 3px; color: #333; margin: 20px 0;">
+                ${validationCode}
+            </div>
+            <p>Gracias por participar en el juego <strong>${gameName}</strong>.</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin-top: 20px;">
+            <p style="font-size: 0.8em; color: #777; text-align: center;">Este es un mensaje automático. Por favor, no respondas a este correo.</p>
+        </div>
+    `;
+    return { subject, body };
+};
+
+// Template function for the client notification email
+const createClientEmail = (customerName: string, prizeName: string, validationCode: string, gameName: string) => {
+    const subject = `Notificación de Premio: ${customerName} ha ganado en ${gameName}`;
+    const body = `
+        <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
+            <h1 style="color: #333;">Notificación de Premio</h1>
+            <p>Este es un aviso para informarte que un participante ha ganado un premio en tu juego <strong>${gameName}</strong>.</p>
+            <ul>
+                <li><strong>Ganador/a:</strong> ${customerName}</li>
+                <li><strong>Premio:</strong> ${prizeName}</li>
+            </ul>
+            <p>Cuando el cliente se presente a reclamar su premio, deberá mostrar el siguiente código de validación:</p>
+            <div style="text-align: center; background-color: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 1.6em; font-weight: bold; color: #333; margin: 20px 0;">
+                ${validationCode}
+            </div>
+            <p>Por favor, verifica el código para asegurar una entrega correcta del premio.</p>
+        </div>
+    `;
+    return { subject, body };
+};
 
 
 const prizeNotificationFlow = ai.defineFlow(
@@ -143,49 +160,37 @@ const prizeNotificationFlow = ai.defineFlow(
         const clientEmail = gameData.clientEmail;
         const customerEmail = customerData.email;
 
-        // 2. Generate email content using Genkit AI, with robust error handling
-        let customerEmailContent, clientEmailContent;
-
+        // 2. Generate just the celebratory phrase using Genkit AI
+        let celebratoryPhrase = `¡Felicidades! Has ganado un increíble ${input.prizeName}.`; // Fallback phrase
         try {
-            const customerEmailResult = await emailPrompt({
-                gameName: gameData.name,
-                prizeName: input.prizeName,
-                validationCode,
-                customerName: customerData.name,
-                emailType: 'customer',
-            });
-            customerEmailContent = customerEmailResult.output;
-            if (!customerEmailContent) {
-                 throw new Error('AI prompt for customer email returned empty output.');
+            const phraseResult = await emailPhrasePrompt({ prizeName: input.prizeName });
+            if (phraseResult.output?.celebratoryPhrase) {
+                celebratoryPhrase = phraseResult.output.celebratoryPhrase;
+            } else {
+                 console.warn('AI prompt for celebratory phrase returned empty output. Using fallback.');
             }
         } catch (error) {
-            console.error('CRITICAL: Failed to generate customer email content.', error);
-            // We cannot proceed without the customer email.
-            throw new Error('Failed to generate required customer email.');
+            console.error('WARNING: Failed to generate celebratory phrase. Using fallback.', error);
         }
 
-        if (clientEmail) {
-            try {
-                 const clientEmailResult = await emailPrompt({
-                    gameName: gameData.name,
-                    prizeName: input.prizeName,
-                    validationCode,
-                    customerName: customerData.name,
-                    emailType: 'client',
-                });
-                clientEmailContent = clientEmailResult.output;
-                if (!clientEmailContent) {
-                    console.warn('AI prompt for client email returned empty output. Proceeding without client email.');
-                }
-            } catch(error) {
-                console.error('WARNING: Failed to generate client email content. The customer will still be notified.', error);
-                // Continue execution, the client email is not critical.
-                clientEmailContent = null; 
-            }
-        }
+        // 3. Construct emails using the fixed templates
+        const customerEmailContent = createCustomerEmail(
+            customerData.name,
+            input.prizeName,
+            validationCode,
+            gameData.name,
+            celebratoryPhrase
+        );
+
+        const clientEmailContent = clientEmail ? createClientEmail(
+            customerData.name,
+            input.prizeName,
+            validationCode,
+            gameData.name
+        ) : null;
 
 
-        // 3. Send emails via Resend and log the results to Firestore
+        // 4. Send emails via Resend and log the results to Firestore
         const emailLogRef = collection(db, 'outbound_emails');
         const sendPromises = [];
 
@@ -221,7 +226,7 @@ const prizeNotificationFlow = ai.defineFlow(
             await addDoc(emailLogRef, logData);
         })());
 
-        // Send and log client email if applicable and successfully generated
+        // Send and log client email if applicable
         if (clientEmail && clientEmailContent) {
             sendPromises.push((async () => {
                 let logData: any = {
@@ -272,3 +277,5 @@ const prizeNotificationFlow = ai.defineFlow(
     }
   }
 );
+
+    
