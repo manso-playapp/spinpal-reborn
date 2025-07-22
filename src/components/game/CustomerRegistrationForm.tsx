@@ -209,6 +209,10 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
     try {
         const { segments } = gameData;
         
+        if (!segments || segments.length === 0) {
+            throw new Error("No segments configured for this game.");
+        }
+
         const realPrizeSegments = segments.filter(s => s.isRealPrize);
         const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
         const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
@@ -216,7 +220,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         let nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
         
         const finalProbabilities = segments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
-        
+
         const random = Math.random() * 100;
         let accumulatedProb = 0;
         let winningIndex = -1;
@@ -229,8 +233,8 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             }
         }
         
-        if (winningIndex === -1 && segments.length > 0) {
-            winningIndex = segments.length - 1;
+        if (winningIndex === -1) {
+            winningIndex = finalProbabilities.length - 1;
         }
 
         const winningSegment = segments[winningIndex];
@@ -248,7 +252,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const gameRef = doc(db, 'games', gameId);
         const customerRef = doc(db, 'games', gameId, 'customers', customerId);
-
         const batch = writeBatch(db);
 
         const gameUpdateData: { [key: string]: any } = {
@@ -276,7 +279,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             customerUpdateData.prizeWonAt = serverTimestamp();
             
             try {
-                // Do not await this, let it run in the background
                 sendPrizeNotification({
                     gameId: gameId,
                     customerId: customerId,
@@ -284,7 +286,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 });
             } catch (emailError) {
                 console.error("Failed to send prize notification email:", emailError);
-                // We don't block the user flow for email errors
             }
         }
 
@@ -295,14 +296,14 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         
         setUiState('success_message');
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error triggering spin: ', error);
-        setUiState('error');
         toast({
             variant: 'destructive',
             title: 'Error al girar',
-            description: 'Hubo un problema al iniciar el giro. Por favor, inténtalo de nuevo.',
+            description: error.message || 'Hubo un problema al iniciar el giro. Por favor, inténtalo de nuevo.',
         });
+        setUiState('error');
     } finally {
         setIsSubmitting(false);
     }
