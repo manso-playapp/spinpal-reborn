@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -73,6 +73,7 @@ const formSchema = z.object({
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios.').max(16, 'No puedes tener más de 16 premios.'),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
+  mobileBackgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).optional(),
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   isPhoneRequired: z.boolean().optional(),
@@ -115,6 +116,7 @@ interface Game {
   segments?: z.infer<typeof segmentSchema>[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
+  mobileBackgroundImage?: string;
   registrationTitle?: string;
   registrationSubtitle?: string;
   isPhoneRequired?: boolean;
@@ -163,8 +165,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
+  
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -174,10 +175,10 @@ export default function EditGameForm({ game }: { game: Game }) {
       clientEmail: game.clientEmail || '',
       managementType: game.managementType || 'client',
       exemptedEmails: (game.exemptedEmails || []).join(', '),
-      // Sanitize segments on load to ensure they all have IDs
       segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
+      mobileBackgroundImage: game.mobileBackgroundImage || '',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
       isPhoneRequired: game.isPhoneRequired || false,
@@ -233,15 +234,6 @@ export default function EditGameForm({ game }: { game: Game }) {
     });
   }, [nonRealPrizeProbability, watchedSegments, form]);
   
-  const refreshPreview = () => {
-    if (iframeRef.current) {
-        // Appending a timestamp to the URL is a common way to force a full refresh
-        const newSrc = `${window.location.origin}/juego/${game.id}/preview?t=${new Date().getTime()}`;
-        iframeRef.current.src = newSrc;
-    }
-  };
-
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -271,7 +263,6 @@ export default function EditGameForm({ game }: { game: Game }) {
         ? data.exemptedEmails.split(',').map(email => email.trim().toLowerCase()).filter(email => email)
         : [];
       
-      // Creating a deep copy to avoid modifying the original form data
       const dataToSave = JSON.parse(JSON.stringify(data));
       
       const updateData: Partial<Game> = {
@@ -281,7 +272,6 @@ export default function EditGameForm({ game }: { game: Game }) {
         prizesAwarded: game.prizesAwarded || 0,
       };
       
-      // Clean up deprecated fields from the root of the document
       delete updateData.borderImage;
       delete updateData.borderScale;
       delete updateData.centerImage;
@@ -495,7 +485,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                             )}
                           />
                           <div className="space-y-4">
-                            <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Imagen de Fondo</h3>
+                            <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Imagen de Fondo (TV)</h3>
                             <FormField
                               control={form.control}
                               name="backgroundImage"
@@ -922,69 +912,88 @@ export default function EditGameForm({ game }: { game: Game }) {
                             )}
                         />
                         <Separator />
-                        <FormField
-                          control={form.control}
-                          name="registrationTitle"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Título en Pantalla de Registro</FormLabel>
-                              <FormControl>
-                                <Input {...field} disabled={loading} placeholder="Ej: Estás jugando a" />
-                              </FormControl>
-                              <FormDescription>El texto que aparece encima del nombre del juego en la pantalla del móvil.</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="registrationSubtitle"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Subtítulo en Pantalla de Registro</FormLabel>
-                              <FormControl>
-                                <Input {...field} disabled={loading} placeholder="Ej: Completa tus datos para ganar" />
-                              </FormControl>
-                              <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="isPhoneRequired"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                  <FormLabel className="text-base">Requerir Teléfono</FormLabel>
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-medium flex items-center gap-2"><Smartphone /> Pantalla de Registro (Móvil)</h3>
+                             <FormField
+                              control={form.control}
+                              name="mobileBackgroundImage"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>URL de Imagen de Fondo (Móvil)</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="https://ejemplo.com/fondo-movil.jpg" {...field} disabled={loading} />
+                                  </FormControl>
                                   <FormDescription>
-                                    Si se activa, el campo de teléfono será obligatorio para poder registrarse.
+                                    Fondo para la pantalla de registro en el móvil. Si se deja en blanco, usará el color de fondo por defecto.
                                   </FormDescription>
-                                </div>
-                                <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    disabled={loading}
-                                  />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        <FormField
-                          control={form.control}
-                          name="successMessage"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Mensaje de Éxito</FormLabel>
-                              <FormControl>
-                                <Textarea {...field} disabled={loading} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio."/>
-                              </FormControl>
-                              <FormDescription>El mensaje que ve el jugador en su móvil después de solicitar el giro.</FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="registrationTitle"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Título en Pantalla de Registro</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} disabled={loading} placeholder="Ej: Estás jugando a" />
+                                  </FormControl>
+                                  <FormDescription>El texto que aparece encima del nombre del juego en la pantalla del móvil.</FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="registrationSubtitle"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Subtítulo en Pantalla de Registro</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} disabled={loading} placeholder="Ej: Completa tus datos para ganar" />
+                                  </FormControl>
+                                  <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="isPhoneRequired"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                      <FormLabel className="text-base">Requerir Teléfono</FormLabel>
+                                      <FormDescription>
+                                        Si se activa, el campo de teléfono será obligatorio para poder registrarse.
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        disabled={loading}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            <FormField
+                              control={form.control}
+                              name="successMessage"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Mensaje de Éxito</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} disabled={loading} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio."/>
+                                  </FormControl>
+                                  <FormDescription>El mensaje que ve el jugador en su móvil después de solicitar el giro.</FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                        </div>
                       </CardContent>
                     </Card>
                   </TabsContent>
@@ -1004,19 +1013,17 @@ export default function EditGameForm({ game }: { game: Game }) {
                       <Eye className="h-5 w-5" />
                       Vista Previa de la Ruleta
                     </CardTitle>
-                     <Button type="button" variant="ghost" size="icon" onClick={refreshPreview} className="h-7 w-7">
-                        <RefreshCw className="h-4 w-4"/>
-                    </Button>
                   </CardHeader>
                   <CardContent ref={previewContainerRef} className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square overflow-hidden">
-                    {/* The iframe now loads a specific preview page */}
-                     <iframe
-                        ref={iframeRef}
-                        src={`/juego/${game.id}/preview`}
-                        className="w-full h-full border-0"
-                        title="Vista Previa del Juego"
-                        key={game.id} // Force re-render if game id changes
-                    ></iframe>
+                     <div className="w-full max-w-md">
+                        <SpinningWheel 
+                            segments={watchedFormData.segments}
+                            gameId={game.id}
+                            onSpinEnd={() => {}}
+                            isDemoMode={true}
+                            config={watchedFormData.config}
+                        />
+                    </div>
                   </CardContent>
                 </Card>
               </div>

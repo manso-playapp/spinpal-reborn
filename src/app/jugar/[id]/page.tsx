@@ -18,6 +18,7 @@ async function getGameData(id: string) {
     name: data.name || "Juego sin nombre",
     registrationTitle: data.registrationTitle || `Estás jugando a`,
     registrationSubtitle: data.registrationSubtitle,
+    mobileBackgroundImage: data.mobileBackgroundImage || '',
   };
 }
 
@@ -27,11 +28,19 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
   if (!game) {
     notFound();
   }
+  
+  const backgroundStyles: React.CSSProperties = game.mobileBackgroundImage ? {
+    backgroundImage: `url(${game.mobileBackgroundImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  } : {};
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-         <div className="flex flex-col items-center justify-center mb-6 text-center">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4 relative" style={backgroundStyles}>
+       {game.mobileBackgroundImage && <div className="absolute inset-0 bg-black/30 z-0"></div>}
+       <div className="w-full max-w-md z-10">
+         <div className={`flex flex-col items-center justify-center mb-6 text-center rounded-xl p-6 ${game.mobileBackgroundImage ? 'bg-background/80 backdrop-blur-sm' : ''}`}>
             <Gamepad2 className="h-12 w-12 text-primary mb-4" />
             <p className="text-muted-foreground">{game.registrationTitle}</p>
             <h1 className="font-headline text-3xl font-bold">
