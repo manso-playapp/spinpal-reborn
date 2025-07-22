@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -154,7 +155,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
       if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
         try {
+            const customerRef = doc(db, 'games', gameId, 'customers', customerId);
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
+            await updateDoc(customerRef, {
+                prizeWonName: winningSegment.name,
+                prizeWonAt: serverTimestamp()
+            });
             
             await sendPrizeNotification({
                 gameId: gameId,

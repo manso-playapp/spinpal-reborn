@@ -1,4 +1,5 @@
 
+
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -40,7 +41,7 @@ export default async function ClientCustomerListPage({ params }: { params: { id:
                         </Link>
                     </Button>
                     <h1 className="font-headline text-2xl font-semibold">
-                        Clientes de: <span className="font-bold">{game.name}</span>
+                        Participantes de: <span className="font-bold">{game.name}</span>
                     </h1>
                 </div>
                 <CustomerList gameId={params.id} gameName={game.name} />
