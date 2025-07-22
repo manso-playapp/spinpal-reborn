@@ -86,7 +86,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Calculate the start and end angles of the winning segment
+    // Calculate the start angle of the winning segment
     const winningSegmentStartAngle = winningIndex * segmentAngle;
     
     // Create a random offset WITHIN the winning segment to make it look more natural.
@@ -96,13 +96,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const randomizedTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
 
     // Calculate the rotation needed to align our random point with the pointer.
-    const angleToAlign = POINTER_ANGLE - randomizedTargetAngle;
-    
     // Add a random number of full spins for variety.
     // We base the new spin on the current rotation to ensure it always spins forward.
     const fullSpins = (Math.floor(Math.random() * 2) + 4) * 360; 
   
-    const finalRotation = currentRotationRef.current + fullSpins + angleToAlign;
+    const finalRotation = currentRotationRef.current + fullSpins + (POINTER_ANGLE - randomizedTargetAngle);
     
     currentRotationRef.current = finalRotation;
     setRotation(finalRotation);
