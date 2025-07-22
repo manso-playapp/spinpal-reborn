@@ -262,17 +262,17 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
   if (uiState === 'error') {
        return (
-       <Card className="w-full max-w-md shadow-lg">
-        <CardContent className="pt-6">
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>
-                 Ha ocurrido un error inesperado. Por favor, recarga la página e inténtalo de nuevo.
-                </AlertDescription>
-            </Alert>
-        </CardContent>
-      </Card>
+        <Card className="w-full max-w-md shadow-lg">
+            <CardContent className="pt-6">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>
+                    Ha ocurrido un error inesperado. Por favor, recarga la página e inténtalo de nuevo.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
     );
   }
   
@@ -283,7 +283,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
           <div className="mx-auto bg-yellow-100 rounded-full p-4 w-fit dark:bg-yellow-800/50">
             <AlertCircle className="h-12 w-12 text-yellow-600" />
           </div>
-        </Header>
+        </CardHeader>
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">
                 ¡Ya has participado!
@@ -319,7 +319,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 <ThumbsDown className="h-12 w-12 text-gray-600" />
             )}
           </div>
-        </Header>
+        </CardHeader>
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">
                  {spinResult.isRealPrize ? '¡Felicidades!' : '¡Casi!'}
@@ -342,7 +342,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
           <div className="mx-auto bg-green-100 rounded-full p-4 w-fit dark:bg-green-800/50">
             <PartyPopper className="h-12 w-12 text-green-600" />
           </div>
-        </Header>
+        </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <CardTitle className="text-2xl font-headline mb-2">¡Todo listo para la acción!</CardTitle>
           <CardDescription>
