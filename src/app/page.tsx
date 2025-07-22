@@ -1,26 +1,38 @@
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { MoveRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import Logo from '@/components/logo';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background">
-      <div className="relative mx-auto flex max-w-3xl flex-col items-center justify-center p-8 text-center">
-        <h1 className="font-headline text-4xl font-bold tracking-tighter text-foreground md:text-6xl lg:text-7xl">
-          SpinPal Reborn
-        </h1>
-        <p className="mt-4 max-w-xl font-body text-base text-muted-foreground md:text-lg">
-          El blueprint de reconstrucción definitivo. Construido con precisión y claridad para una nueva era de interacción.
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Button asChild size="lg">
+    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md shadow-2xl border-primary/20">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4">
+            <Logo className="h-20 w-auto text-primary" />
+          </div>
+          <CardTitle className="font-headline text-3xl">Bienvenido a PlayApp</CardTitle>
+          <CardDescription>
+            Selecciona tu tipo de acceso para continuar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <Button asChild size="lg" className="h-12 text-base">
             <Link href="/login">
-              Admin Login
-              <MoveRight className="ml-2 h-5 w-5" />
+              Acceso Administrador
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
-        </div>
-      </div>
+          <Button asChild size="lg" variant="secondary" className="h-12 text-base">
+            {/* Este enlace puede apuntar a una futura página de login de cliente */}
+            <Link href="#">
+              Acceso Cliente
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

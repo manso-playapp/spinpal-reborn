@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import packageJson from '../../package.json';
 
 export const metadata: Metadata = {
-  title: 'SpinPal Reborn',
+  title: 'PlayApp',
   description: 'El blueprint de reconstrucción definitivo.',
 };
 
