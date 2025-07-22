@@ -80,7 +80,7 @@ const formSchema = z.object({
   qrCodeScale: z.number().min(0.1).max(2).optional(),
   rouletteScale: z.number().min(0.1).max(2).optional(),
   rouletteVerticalOffset: z.number().min(-500).max(500).optional(),
-  rouletteQrGap: z.number().min(0).max(800).optional(),
+  qrVerticalOffset: z.number().min(-500).max(500).optional(),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -106,7 +106,7 @@ interface Game {
   qrCodeScale?: number;
   rouletteScale?: number;
   rouletteVerticalOffset?: number;
-  rouletteQrGap?: number;
+  qrVerticalOffset?: number;
   [key: string]: any;
 }
 
@@ -158,7 +158,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       qrCodeScale: game.qrCodeScale || 1,
       rouletteScale: game.rouletteScale || 1,
       rouletteVerticalOffset: game.rouletteVerticalOffset || 0,
-      rouletteQrGap: game.rouletteQrGap || 32,
+      qrVerticalOffset: game.qrVerticalOffset || 0,
     },
   });
 
@@ -723,19 +723,19 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 </FormItem>
                             )}
                         />
-                        <FormField
+                         <FormField
                             control={form.control}
-                            name="rouletteQrGap"
+                            name="qrVerticalOffset"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Separación Ruleta-QR ({field.value?.toFixed(0)}px)</FormLabel>
+                                <FormLabel>Desplazamiento Vertical del QR/TXT ({field.value?.toFixed(0)}px)</FormLabel>
                                 <FormControl>
                                     <Slider
-                                    defaultValue={[32]}
-                                    value={[field.value ?? 32]}
+                                    defaultValue={[0]}
+                                    value={[field.value ?? 0]}
                                     onValueChange={(val) => field.onChange(val[0])}
-                                    max={800}
-                                    min={0}
+                                    max={500}
+                                    min={-500}
                                     step={1}
                                     />
                                 </FormControl>
@@ -853,27 +853,27 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 style={backgroundPreviewStyles}
                               >
                                 <div 
-                                  className="flex flex-col items-center justify-center w-full"
-                                  style={{ gap: `${watchedFormData.rouletteQrGap}px` }}
+                                  className="w-full max-w-2xl text-center flex flex-col items-center justify-center absolute inset-0"
+                                  style={{ 
+                                    transform: `translateY(${watchedFormData.rouletteVerticalOffset}px) scale(${watchedFormData.rouletteScale})` 
+                                  }}
                                 >
-                                  <div 
-                                    className="w-full max-w-2xl text-center flex flex-col items-center justify-center"
-                                    style={{ 
-                                      transform: `translateY(${watchedFormData.rouletteVerticalOffset}px) scale(${watchedFormData.rouletteScale})` 
-                                    }}
-                                  >
-                                    <div className="w-full max-w-sm sm:max-w-md">
-                                      <SpinningWheel 
-                                        segments={watchedFormData.segments} 
-                                        gameId={game.id} 
-                                        isDemoMode={true}
-                                        config={currentConfig}
-                                        onSpinEnd={() => {}}
-                                      />
-                                    </div>
+                                  <div className="w-full max-w-sm sm:max-w-md">
+                                    <SpinningWheel 
+                                      segments={watchedFormData.segments} 
+                                      gameId={game.id} 
+                                      isDemoMode={true}
+                                      config={currentConfig}
+                                      onSpinEnd={() => {}}
+                                    />
                                   </div>
+                                </div>
+                                <div 
+                                  className="absolute bottom-4 px-4 w-full"
+                                  style={{ transform: `translateY(${watchedFormData.qrVerticalOffset}px)` }}
+                                >
                                   <Card 
-                                    className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white"
+                                    className="w-full max-w-sm text-center shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white mx-auto"
                                     style={{ transform: `scale(${watchedFormData.qrCodeScale})` }}
                                    >
                                     <CardHeader className="p-4">

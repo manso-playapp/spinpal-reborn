@@ -21,7 +21,7 @@ interface GameData extends DocumentData {
   qrCodeScale: number;
   rouletteScale: number;
   rouletteVerticalOffset: number;
-  rouletteQrGap: number;
+  qrVerticalOffset: number;
   config: {
     borderImage: string;
     borderScale: number;
@@ -64,7 +64,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
         qrCodeScale: data.qrCodeScale || 1,
         rouletteScale: data.rouletteScale || 1,
         rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
-        rouletteQrGap: data.rouletteQrGap || 32,
+        qrVerticalOffset: data.qrVerticalOffset || 0,
         config: {
           borderImage: data.borderImage || '',
           borderScale: data.borderScale || 1,
@@ -119,7 +119,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
 
         {/* Roulette container */}
         <div 
-            className="w-full flex-1 flex items-center justify-center"
+            className="w-full max-w-2xl text-center flex flex-col items-center justify-center absolute inset-0"
             style={{ 
               transform: `translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})` 
             }}
@@ -137,24 +137,26 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
 
         {/* QR / Result container */}
         <div 
-          className="w-full flex justify-center items-center py-4"
-          style={{ transform: `scale(${game.qrCodeScale})` }}
+          className="absolute bottom-4 px-4 w-full flex justify-center items-center"
+          style={{ 
+            transform: `translateY(${game.qrVerticalOffset}px) scale(${game.qrCodeScale})`
+          }}
         >
             <div className="w-full max-w-md text-center">
               {spinResult ? (
                    <Card className="shadow-lg bg-black/50 backdrop-blur-md border-white/30 text-white animate-in fade-in zoom-in-95">
-                      <CardHeader>
-                          <CardTitle className="font-headline text-5xl flex items-center justify-center gap-4">
-                             {spinResult.isRealPrize ? <Gift className="text-yellow-400 h-12 w-12" /> : <ThumbsDown className="text-red-400 h-12 w-12" />}
+                      <CardHeader className="p-6">
+                          <CardTitle className="font-headline text-6xl flex items-center justify-center gap-4">
+                             {spinResult.isRealPrize ? <Gift className="text-yellow-400 h-16 w-16" /> : <ThumbsDown className="text-red-400 h-16 w-16" />}
                              {spinResult.isRealPrize ? '¡Premio!' : '¡Casi!'}
                           </CardTitle>
-                          <Separator className="bg-white/20 mt-2"/>
+                          <Separator className="bg-white/20 mt-4"/>
                       </CardHeader>
-                      <CardContent>
-                          <p className="text-3xl font-semibold">
+                      <CardContent className="p-6 pt-0">
+                          <p className="text-4xl font-semibold">
                               {spinResult.name}
                           </p>
-                          <CardDescription className="text-white/80 mt-4 text-base">
+                          <CardDescription className="text-white/80 mt-4 text-lg">
                              {spinResult.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
                           </CardDescription>
                       </CardContent>
