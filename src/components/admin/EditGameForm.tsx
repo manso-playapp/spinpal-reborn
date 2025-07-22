@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firestore';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
@@ -199,6 +199,14 @@ export default function EditGameForm({ game }: { game: Game }) {
     };
   }, [watchedFormData.segments]);
 
+  // Force iframe refresh when form data changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setPreviewKey(Date.now());
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -246,7 +254,6 @@ export default function EditGameForm({ game }: { game: Game }) {
       });
       // Refresh the iframe preview
       setPreviewKey(Date.now());
-      // router.push('/admin'); // This line was removed
     } catch (error) {
       console.error('Error updating game: ', error);
       toast({
@@ -288,6 +295,8 @@ export default function EditGameForm({ game }: { game: Game }) {
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
   } : {};
+
+  const roulettePreviewKey = JSON.stringify(watchedFormData.segments) + JSON.stringify(currentConfig);
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -604,10 +613,30 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                 <Button type="button" {...listeners} className="cursor-grab p-1 h-8 w-8" variant="ghost">
                                                     <GripVertical className="h-5 w-5 text-muted-foreground" />
                                                 </Button>
-                                                <div className="flex-1 px-2">
+                                                <div className="flex-1 px-2 grid grid-cols-5 gap-4 items-center">
                                                     <Controller control={form.control} name={`segments.${index}.name`} render={({ field: controllerField }) => (
-                                                      <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" onClick={(e) => e.stopPropagation()} />
+                                                      <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full col-span-2" onClick={(e) => e.stopPropagation()} />
                                                     )}/>
+                                                     <div className="col-span-3">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`segments.${index}.probability`}
+                                                            render={({ field: probField }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    {watchedFormData.segments[index]?.isRealPrize ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Slider value={[probField.value || 0]} onValueChange={(vals) => probField.onChange(vals[0])} max={100 - (realPrizeTotalProbability - (probField.value || 0))} step={1} />
+                                                                            <span className="text-xs font-mono w-16 text-right">{(probField.value || 0)}%</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <Input value={`${nonRealPrizeProbability}% (auto)`} disabled className="text-center bg-muted/50 h-8 text-xs border-dashed" />
+                                                                    )}
+                                                                </FormControl>
+                                                            </FormItem>
+                                                            )}
+                                                        />
+                                                     </div>
                                                 </div>
                                                 <AccordionTrigger className="p-2 hover:bg-accent rounded-md" />
                                                 <div className="flex items-center gap-1 pl-2">
@@ -634,20 +663,6 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       </div>
                                                       <Controller control={form.control} name={`segments.${index}.isRealPrize`} render={({ field: { onChange, value } }) => ( <Checkbox checked={!!value} onCheckedChange={onChange} /> )}/>
                                                   </div>
-                                                  <FormField
-                                                    control={form.control}
-                                                    name={`segments.${index}.probability`}
-                                                    render={({ field }) => (
-                                                      <FormItem>
-                                                          <FormLabel>Probabilidad ({watchedFormData.segments[index]?.isRealPrize ? (field.value || 0) : nonRealPrizeProbability}%)</FormLabel>
-                                                          {watchedFormData.segments[index]?.isRealPrize ? (
-                                                              <Slider value={[field.value || 0]} onValueChange={(vals) => field.onChange(vals[0])} max={100 - (realPrizeTotalProbability - (field.value || 0))} step={1} />
-                                                          ) : (
-                                                              <Input value={`${nonRealPrizeProbability}% (calculado)`} disabled className="text-center bg-muted" />
-                                                          )}
-                                                      </FormItem>
-                                                    )}
-                                                  />
                                                   <FormField control={form.control} name={`segments.${index}.color`} render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Color del Gajo</FormLabel>
@@ -921,6 +936,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <div className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[450px]">
                           <div className="w-full max-w-md">
                             <SpinningWheel
+                              key={roulettePreviewKey}
                               segments={watchedFormData.segments}
                               gameId={game.id}
                               isDemoMode={true}
@@ -933,17 +949,19 @@ export default function EditGameForm({ game }: { game: Game }) {
                       </TabsContent>
                       <TabsContent value="game">
                         <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
-                          <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-center">
+                          <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-top-left">
                              <iframe
                                 key={previewKey}
                                 src={`/juego/${game.id}/preview`}
-                                className="w-full h-full border-0 origin-top-left"
+                                className="w-full h-full border-0 origin-top-left absolute"
                                 scrolling="no"
                                 title="Game Preview"
                                 style={{
                                     width: '333.33%',
                                     height: '333.33%',
-                                    transform: 'scale(0.3)',
+                                    transform: 'scale(0.3) translate(-50%, -50%)',
+                                    top: '50%',
+                                    left: '50%',
                                 }}
                             />
                           </div>
@@ -959,5 +977,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
-
-    
