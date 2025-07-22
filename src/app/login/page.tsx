@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -32,6 +33,18 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
+    if (!auth) {
+        const configError = "La configuración de Firebase no está completa. Revisa el archivo .env y la página de conexiones.";
+        setError(configError);
+        toast({
+            variant: "destructive",
+            title: "Error de Configuración",
+            description: configError,
+        });
+        setLoading(false);
+        return;
+    }
+
     if (!email || !password) {
       setError('Por favor, introduce tu correo y contraseña.');
       setLoading(false);
@@ -44,7 +57,8 @@ export default function LoginPage() {
     } catch (err: any) {
       const errorCode = err.code;
       let friendlyMessage = 'Ha ocurrido un error inesperado.';
-      if (errorCode === 'auth/user-not-found' || errorCode === 'auth/wrong-password' || errorCode === 'auth/invalid-credential') {
+      // Updated to include the current error code for wrong credentials
+      if (errorCode === 'auth/invalid-credential') {
         friendlyMessage = 'Credenciales incorrectas. Por favor, inténtalo de nuevo.';
       }
       setError(friendlyMessage);
@@ -69,6 +83,15 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!auth && (
+                 <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error de Configuración</AlertTitle>
+                    <AlertDescription>
+                        Firebase no está configurado. Ve a <Link href="/conexiones" className="font-bold underline">Conexiones</Link> para solucionarlo.
+                    </AlertDescription>
+                </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Correo Electrónico</Label>
               <Input
@@ -78,7 +101,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={loading}
+                disabled={loading || !auth}
               />
             </div>
             <div className="space-y-2">
@@ -89,12 +112,12 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={loading}
+                disabled={loading || !auth}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !auth}>
               {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
           </CardFooter>
