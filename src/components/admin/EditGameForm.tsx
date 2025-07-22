@@ -163,6 +163,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -232,6 +233,14 @@ export default function EditGameForm({ game }: { game: Game }) {
     });
   }, [nonRealPrizeProbability, watchedSegments, form]);
   
+  const refreshPreview = () => {
+    if (iframeRef.current) {
+        // Appending a timestamp to the URL is a common way to force a full refresh
+        const newSrc = `${window.location.origin}/juego/${game.id}/preview?t=${new Date().getTime()}`;
+        iframeRef.current.src = newSrc;
+    }
+  };
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -262,6 +271,7 @@ export default function EditGameForm({ game }: { game: Game }) {
         ? data.exemptedEmails.split(',').map(email => email.trim().toLowerCase()).filter(email => email)
         : [];
       
+      // Creating a deep copy to avoid modifying the original form data
       const dataToSave = JSON.parse(JSON.stringify(data));
       
       const updateData: Partial<Game> = {
@@ -271,7 +281,7 @@ export default function EditGameForm({ game }: { game: Game }) {
         prizesAwarded: game.prizesAwarded || 0,
       };
       
-      // Deprecated fields removal
+      // Clean up deprecated fields from the root of the document
       delete updateData.borderImage;
       delete updateData.borderScale;
       delete updateData.centerImage;
@@ -283,7 +293,7 @@ export default function EditGameForm({ game }: { game: Game }) {
         title: '¡Juego Actualizado!',
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
-
+      
     } catch (error) {
       console.error('Error updating game: ', error);
       toast({
@@ -992,19 +1002,21 @@ export default function EditGameForm({ game }: { game: Game }) {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                       <Eye className="h-5 w-5" />
-                      Vista Previa
+                      Vista Previa de la Ruleta
                     </CardTitle>
+                     <Button type="button" variant="ghost" size="icon" onClick={refreshPreview} className="h-7 w-7">
+                        <RefreshCw className="h-4 w-4"/>
+                    </Button>
                   </CardHeader>
                   <CardContent ref={previewContainerRef} className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square overflow-hidden">
-                    <div className="w-full max-w-md" style={{ transform: 'scale(0.8)' }}>
-                      <SpinningWheel
-                          gameId={game.id}
-                          segments={watchedFormData.segments}
-                          config={watchedFormData.config}
-                          onSpinEnd={() => {}} // No-op for preview
-                          isDemoMode={true}
-                      />
-                    </div>
+                    {/* The iframe now loads a specific preview page */}
+                     <iframe
+                        ref={iframeRef}
+                        src={`/juego/${game.id}/preview`}
+                        className="w-full h-full border-0"
+                        title="Vista Previa del Juego"
+                        key={game.id} // Force re-render if game id changes
+                    ></iframe>
                   </CardContent>
                 </Card>
               </div>
@@ -1014,3 +1026,5 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
+
+    

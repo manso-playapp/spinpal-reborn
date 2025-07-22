@@ -55,19 +55,17 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
             const data = docSnap.data();
             
             const spinRequest = data.spinRequest;
-            if (spinRequest && spinRequest.customerId) {
-                // Only trigger spin if the UI is idle
-                if (uiState === 'IDLE') {
-                    setUiState('SPINNING');
-                    const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
-                    const customerSnap = await getDoc(customerRef);
-                    if (customerSnap.exists()) {
-                        setCurrentPlayer(customerSnap.data().name);
-                    }
+            // A new spin request has come in
+            if (spinRequest && spinRequest.customerId && uiState === 'IDLE') {
+                setUiState('SPINNING');
+                const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
+                const customerSnap = await getDoc(customerRef);
+                if (customerSnap.exists()) {
+                    setCurrentPlayer(customerSnap.data().name);
                 }
             }
 
-            setGame({
+            const newGameData = {
                 id: docSnap.id,
                 ...data,
                 name: data.name || 'Juego sin nombre',
@@ -85,7 +83,9 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                     centerImage: data.centerImage || '',
                     centerScale: data.centerScale || 1,
                 }
-            });
+            };
+            
+            setGame(newGameData as GameData);
         } else {
             notFound();
         }
@@ -100,7 +100,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
   }, [gameId, uiState]); // Added uiState to dependencies to re-evaluate when it changes
 
 
-  const handleSpinEnd = (result: SpinResult) => {
+  const handleSpinEnd = useCallback((result: SpinResult) => {
     setSpinResult(result);
     setUiState('SHOW_RESULT');
     setCurrentPlayer(null); // Clear player name
@@ -115,7 +115,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
       setSpinResult(null);
       setShowConfetti(false);
     }, 15000);
-  };
+  }, []);
   
   if (loading) {
     return (
@@ -244,3 +244,5 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
     </div>
   );
 }
+
+    
