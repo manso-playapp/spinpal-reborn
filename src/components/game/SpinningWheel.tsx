@@ -82,7 +82,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2);
+    // Correctly calculates the middle of the segment and adjusts for the top-pointer (-90deg)
+    const targetAngle = 360 - (winningIndex * segmentAngle + segmentAngle / 2) - 90;
     
     const fullSpins = 5 * 360;
     const newRotation = rotation + fullSpins + targetAngle;
@@ -118,9 +119,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       if (!isDemoMode && winningSegment?.isRealPrize && customerId && !isDemoSpin) {
         try {
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
-            const gameSnap = await getDoc(gameRef);
-            const clientEmail = gameSnap.data()?.clientEmail;
-
+            
             await updateDoc(gameRef, { prizesAwarded: increment(1) });
             await updateDoc(customerRef, {
                 prizeWonName: winningSegment.name,
