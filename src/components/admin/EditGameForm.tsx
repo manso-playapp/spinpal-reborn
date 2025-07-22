@@ -203,7 +203,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
     window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
   }, [watchedFormData, game.id]);
-
+  
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
     const segments = watchedSegments || [];
     const realPrizeSegments = segments.filter(s => s.isRealPrize);
@@ -668,39 +668,47 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       </div>
                                                       <Controller control={form.control} name={`segments.${index}.isRealPrize`} render={({ field: { onChange, value } }) => ( <Checkbox checked={!!value} onCheckedChange={onChange} /> )}/>
                                                   </div>
-                                                  <Controller
+                                                  <FormField
                                                     control={form.control}
                                                     name={`segments.${index}.probability`}
-                                                    render={({ field }) => (
-                                                        <FormItem>
-                                                          <FormLabel>Probabilidad</FormLabel>
-                                                            {watchedSegments[index]?.isRealPrize ? (
-                                                                <>
-                                                                <div className="flex items-center gap-4">
-                                                                    <Slider
-                                                                        value={[field.value || 0]}
-                                                                        onValueChange={(val) => field.onChange(val[0])}
-                                                                        max={100}
-                                                                        step={1}
-                                                                        className="w-full"
-                                                                    />
-                                                                    <div className="relative w-20">
-                                                                        <Input
-                                                                            type="number"
-                                                                            value={field.value || 0}
-                                                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                                                            className="text-center font-mono"
+                                                    render={({ field }) => {
+                                                        return (
+                                                            <FormItem>
+                                                                <FormLabel>Probabilidad</FormLabel>
+                                                                {watchedSegments[index]?.isRealPrize ? (
+                                                                    <>
+                                                                    <div className="flex items-center gap-4">
+                                                                        <Controller
+                                                                            name={`segments.${index}.probability`}
+                                                                            control={form.control}
+                                                                            render={({ field: sliderField }) => (
+                                                                                <Slider
+                                                                                    value={[sliderField.value || 0]}
+                                                                                    onValueChange={(val) => sliderField.onChange(val[0])}
+                                                                                    max={100}
+                                                                                    step={1}
+                                                                                    className="w-full"
+                                                                                />
+                                                                            )}
                                                                         />
-                                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                                                                        <div className="relative w-24">
+                                                                            <Input
+                                                                                type="number"
+                                                                                value={field.value || 0}
+                                                                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                                                                className="text-center font-mono"
+                                                                            />
+                                                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                                <FormDescription>Define la probabilidad de que este premio salga.</FormDescription>
-                                                                </>
-                                                            ) : (
-                                                                <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 border-dashed" />
-                                                            )}
-                                                        </FormItem>
-                                                    )}
+                                                                    <FormDescription>Define la probabilidad de que este premio salga.</FormDescription>
+                                                                    </>
+                                                                ) : (
+                                                                    <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 border-dashed" />
+                                                                )}
+                                                            </FormItem>
+                                                        );
+                                                    }}
                                                 />
                                                 </TabsContent>
                                                 <TabsContent value="text" className="pt-4 grid grid-cols-2 gap-x-6 gap-y-4">
