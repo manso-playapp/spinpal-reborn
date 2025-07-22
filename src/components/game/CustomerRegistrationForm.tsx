@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Send, PartyPopper, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Skeleton } from '../ui/skeleton';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -49,6 +50,7 @@ interface CustomerRegistrationFormProps {
 export default function CustomerRegistrationForm({ gameId, isDemoMode, successMessage }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
   const [submissionState, setSubmissionState] = useState<'idle' | 'submitting' | 'submitted' | 'error' | 'already_played'>('idle');
+  const [loadingState, setLoadingState] = useState(true);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -59,7 +61,11 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
   });
 
   useEffect(() => {
-    if (isDemoMode) return;
+    if (isDemoMode) {
+      setLoadingState(false);
+      return;
+    };
+    
     try {
         const storageKey = `spinpal-played-${gameId}`;
         if (window.localStorage.getItem(storageKey)) {
@@ -67,6 +73,8 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         }
     } catch (e) {
         console.warn("Could not read from localStorage:", e);
+    } finally {
+        setLoadingState(false);
     }
   }, [gameId, isDemoMode]);
 
@@ -128,6 +136,28 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     }
   };
   
+  if (loadingState) {
+    return (
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader>
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-1/4" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-1/4" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (submissionState === 'error') {
        return (
        <Card className="w-full max-w-md shadow-lg">
