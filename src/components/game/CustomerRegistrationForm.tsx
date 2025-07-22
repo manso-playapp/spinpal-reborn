@@ -204,10 +204,8 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         return;
     };
     setIsSubmitting(true);
-    try {
-        const gameRef = doc(db, 'games', gameId);
-        const customerRef = doc(db, 'games', gameId, 'customers', customerId);
 
+    try {
         const { segments } = gameData;
         const realPrizeSegments = segments.filter(s => s.isRealPrize);
         const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
@@ -236,40 +234,44 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             winningSegment = finalSegments[finalSegments.length - 1]; // Fallback
         }
 
-        // Use a batch to perform multiple writes atomically
-        const batch = writeBatch(db);
+        const gameRef = doc(db, 'games', gameId);
+        const customerRef = doc(db, 'games', gameId, 'customers', customerId);
 
-        // 1. Set the spin request to trigger the animation
-        batch.update(gameRef, {
+        // Build the atomic update object for the game
+        const gameUpdateData: { [key: string]: any } = {
+            plays: increment(1),
             spinRequest: {
                 timestamp: serverTimestamp(),
                 customerId: customerId,
                 winningId: winningSegment.id,
             },
-            plays: increment(1),
-            lastResult: { // Write the result immediately for the user's phone
-              name: winningSegment.name,
-              isRealPrize: !!winningSegment.isRealPrize,
-              customerId: customerId,
-              timestamp: serverTimestamp(),
+            lastResult: {
+                name: winningSegment.name,
+                isRealPrize: !!winningSegment.isRealPrize,
+                customerId: customerId,
+                timestamp: serverTimestamp(),
             }
-        });
-        
-        // 2. Mark the customer as played
-        batch.update(customerRef, { hasPlayed: true });
-        
-        // 3. If it's a real prize, update counters and prize info
+        };
+
+        // Build the atomic update for the customer
+        const customerUpdateData: { [key: string]: any } = {
+            hasPlayed: true
+        };
+
         if (winningSegment.isRealPrize) {
-            batch.update(gameRef, { prizesAwarded: increment(1) });
-            batch.update(customerRef, {
-                prizeWonName: winningSegment.name,
-                prizeWonAt: serverTimestamp()
-            });
+            gameUpdateData.prizesAwarded = increment(1);
+            customerUpdateData.prizeWonName = winningSegment.name;
+            customerUpdateData.prizeWonAt = serverTimestamp();
         }
+        
+        // Use a batch to perform multiple writes atomically
+        const batch = writeBatch(db);
+        batch.update(gameRef, gameUpdateData);
+        batch.update(customerRef, customerUpdateData);
         
         await batch.commit();
 
-        // 4. Send notification email if it's a real prize (after batch commit)
+        // Send notification email if it's a real prize (after batch commit)
         if (winningSegment.isRealPrize) {
              try {
                 await sendPrizeNotification({
@@ -279,7 +281,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 });
             } catch (emailError) {
                 console.error("Failed to send prize notification email:", emailError);
-                // Non-fatal, the user has won, but we should log this.
             }
         }
         
