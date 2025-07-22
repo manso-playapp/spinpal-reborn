@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
@@ -70,10 +69,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const handleSpinClick = useCallback(async (spinRequestData) => {
     if (isSpinningRef.current || segments.length === 0) return;
 
-    const { winningSegment, customerId, isDemoSpin, winningIndex } = spinRequestData;
+    const { winningSegment, customerId, isDemoSpin, winningId } = spinRequestData;
+
+    const winningIndex = segments.findIndex(s => s.id === winningId);
     
-    if (winningIndex === undefined || winningIndex < 0 || winningIndex >= segments.length) {
-        console.error("Error: Invalid or missing winningIndex.", spinRequestData);
+    if (winningIndex === -1) {
+        console.error("Error: Winning segment ID not found in the current segments array.", spinRequestData);
         return;
     }
 
@@ -215,7 +216,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
 
     const random = Math.random() * 100;
     let accumulatedProb = 0;
-    let winningIndex = finalSegments.length - 1;
+    let winningIndex = -1;
 
     for (let i = 0; i < finalSegments.length; i++) {
         accumulatedProb += (finalSegments[i].finalProbability || 0);
@@ -224,8 +225,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
             break;
         }
     }
+
+    if (winningIndex === -1) winningIndex = finalSegments.length - 1;
     
-    handleSpinClick({ winningSegment: finalSegments[winningIndex], winningIndex, isDemoSpin: true, customerId: 'demo' });
+    const winningSegment = finalSegments[winningIndex];
+
+    handleSpinClick({ 
+        winningSegment: winningSegment, 
+        winningId: winningSegment.id, 
+        isDemoSpin: true, 
+        customerId: 'demo' 
+    });
   };
 
   return (

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -209,7 +208,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         const gameRef = doc(db, 'games', gameId);
         const customerRef = doc(db, 'games', gameId, 'customers', customerId);
 
-        // Determine winning segment here
         const { segments } = gameData;
         const realPrizeSegments = segments.filter(s => s.isRealPrize);
         const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
@@ -224,7 +222,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const random = Math.random() * 100;
         let accumulatedProb = 0;
-        let winningIndex = finalSegments.length - 1;
+        let winningIndex = -1;
 
         for (let i = 0; i < finalSegments.length; i++) {
             accumulatedProb += (finalSegments[i].finalProbability || 0);
@@ -233,6 +231,9 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 break;
             }
         }
+        
+        if (winningIndex === -1) winningIndex = finalSegments.length - 1;
+
         const winningSegment = finalSegments[winningIndex];
 
         await updateDoc(gameRef, {
@@ -240,7 +241,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 timestamp: serverTimestamp(),
                 customerId: customerId,
                 winningSegment: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize },
-                winningIndex: winningIndex,
+                winningId: winningSegment.id, // Use the unique ID
             },
             plays: increment(1),
         });

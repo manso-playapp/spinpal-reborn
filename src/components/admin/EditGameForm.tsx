@@ -47,8 +47,10 @@ import { Separator } from '../ui/separator';
 import QRCodeDisplay from '../game/QRCodeDisplay';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
+const generateUniqueId = () => Math.random().toString(36).substr(2, 9);
+
 const segmentSchema = z.object({
-  id: z.string().optional(),
+  id: z.string().default(() => generateUniqueId()),
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
@@ -136,6 +138,7 @@ const CONDENSED_FONTS = [
 ];
 
 const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
+  id: generateUniqueId(),
   name: name,
   color: getRandomColor(),
   isRealPrize: false,
@@ -167,7 +170,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       clientEmail: game.clientEmail || '',
       managementType: game.managementType || 'client',
       exemptedEmails: (game.exemptedEmails || []).join('\n'),
-      segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
+      segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: game.backgroundImage || '',
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
@@ -215,7 +218,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     watchedSegments.forEach((segment, index) => {
       if (!segment.isRealPrize) {
         if (segment.probability !== nonRealPrizeProbability) {
-            form.setValue(`segments.${index}.probability`, nonRealPrizeProbability, { shouldDirty: false, shouldValidate: false });
+            form.setValue(`segments.${index}.probability`, nonRealPrizeProbability, { shouldDirty: true, shouldValidate: true });
         }
       }
     });
@@ -291,7 +294,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     insert(index + 1, {
       ...segmentToDuplicate,
       name: `${segmentToDuplicate.name} (Copia)`,
-      id: undefined, // ensure it gets a new ID from react-hook-form
+      id: generateUniqueId(), // Ensure it gets a new unique ID
     });
   };
   

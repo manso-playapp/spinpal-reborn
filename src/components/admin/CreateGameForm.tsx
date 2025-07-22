@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -44,6 +45,8 @@ const formSchema = z.object({
 
 type GameFormValues = z.infer<typeof formSchema>;
 
+const generateUniqueId = () => Math.random().toString(36).substr(2, 9);
+
 export default function CreateGameForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -70,10 +73,10 @@ export default function CreateGameForm() {
         createdAt: serverTimestamp(),
         // Default values for new games
         segments: [
-            { name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-            { name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-            { name: 'Premio 2', color: '#4CAF50', isRealPrize: true, probability: 5, textColor: '#FFFFFF', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-            { name: 'Sigue Intentando', color: '#F0F0F0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+            { id: generateUniqueId(), name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+            { id: generateUniqueId(), name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+            { id: generateUniqueId(), name: 'Premio 2', color: '#4CAF50', isRealPrize: true, probability: 5, textColor: '#FFFFFF', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+            { id: generateUniqueId(), name: 'Sigue Intentando', color: '#F0F0F0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
         ],
         borderImage: 'https://i.imgur.com/J62nHj9.png',
         borderScale: 1,
