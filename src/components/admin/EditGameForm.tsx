@@ -624,38 +624,10 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                 <Button type="button" {...listeners} className="cursor-grab p-1 h-8 w-8" variant="ghost">
                                                     <GripVertical className="h-5 w-5 text-muted-foreground" />
                                                 </Button>
-                                                <div className="flex-1 px-2 grid grid-cols-5 gap-4 items-center">
+                                                <div className="flex-1 px-2">
                                                     <Controller control={form.control} name={`segments.${index}.name`} render={({ field: controllerField }) => (
-                                                      <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full col-span-2" onClick={(e) => e.stopPropagation()} />
+                                                      <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" onClick={(e) => e.stopPropagation()} />
                                                     )}/>
-                                                     <div className="col-span-3">
-                                                        <FormField
-                                                            control={form.control}
-                                                            name={`segments.${index}.probability`}
-                                                            render={({ field: probField }) => {
-                                                                const currentSliderValue = probField.value || 0;
-                                                                return (
-                                                                <FormItem>
-                                                                    <FormControl>
-                                                                        {watchedSegments[index]?.isRealPrize ? (
-                                                                            <div className="flex items-center gap-2">
-                                                                                <Slider
-                                                                                    value={[currentSliderValue]}
-                                                                                    onValueChange={(vals) => probField.onChange(vals[0])}
-                                                                                    max={100}
-                                                                                    step={1}
-                                                                                />
-                                                                                <span className="text-xs font-mono w-16 text-right">{currentSliderValue.toFixed(0)}%</span>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 h-8 text-xs border-dashed" />
-                                                                        )}
-                                                                    </FormControl>
-                                                                </FormItem>
-                                                              );
-                                                            }}
-                                                        />
-                                                     </div>
                                                 </div>
                                                 <AccordionTrigger className="p-2 hover:bg-accent rounded-md" />
                                                 <div className="flex items-center gap-1 pl-2">
@@ -669,19 +641,13 @@ export default function EditGameForm({ game }: { game: Game }) {
                                             </div>
                                             <AccordionContent className="p-4 border-t">
                                               <Tabs defaultValue="basic" className="w-full">
-                                                <TabsList className="grid w-full grid-cols-3">
+                                                <TabsList className="grid w-full grid-cols-4">
                                                   <TabsTrigger value="basic"><Palette className="mr-2 h-4 w-4"/>Básico</TabsTrigger>
+                                                  <TabsTrigger value="probability"><Gift className="mr-2 h-4 w-4" />Probabilidad</TabsTrigger>
                                                   <TabsTrigger value="text"><Type className="mr-2 h-4 w-4"/>Texto</TabsTrigger>
                                                   <TabsTrigger value="icon"><PictureInPicture className="mr-2 h-4 w-4"/>Icono</TabsTrigger>
                                                 </TabsList>
                                                 <TabsContent value="basic" className="pt-4 space-y-6">
-                                                  <div className="flex items-center justify-between rounded-lg border p-3">
-                                                      <div className="space-y-0.5">
-                                                        <Label>Premio Real</Label>
-                                                        <FormDescription>Define si este premio cuenta para las estadísticas y consume probabilidad.</FormDescription>
-                                                      </div>
-                                                      <Controller control={form.control} name={`segments.${index}.isRealPrize`} render={({ field: { onChange, value } }) => ( <Checkbox checked={!!value} onCheckedChange={onChange} /> )}/>
-                                                  </div>
                                                   <FormField control={form.control} name={`segments.${index}.color`} render={({ field }) => (
                                                     <FormItem>
                                                       <FormLabel>Color del Gajo</FormLabel>
@@ -693,6 +659,49 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                       </FormControl>
                                                     </FormItem>
                                                   )}/>
+                                                </TabsContent>
+                                                <TabsContent value="probability" className="pt-4 space-y-6">
+                                                  <div className="flex items-center justify-between rounded-lg border p-3">
+                                                      <div className="space-y-0.5">
+                                                        <Label>Premio Real</Label>
+                                                        <FormDescription>Define si este premio cuenta para las estadísticas y consume probabilidad.</FormDescription>
+                                                      </div>
+                                                      <Controller control={form.control} name={`segments.${index}.isRealPrize`} render={({ field: { onChange, value } }) => ( <Checkbox checked={!!value} onCheckedChange={onChange} /> )}/>
+                                                  </div>
+                                                  <FormField
+                                                    control={form.control}
+                                                    name={`segments.${index}.probability`}
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                          <FormLabel>Probabilidad</FormLabel>
+                                                            {watchedSegments[index]?.isRealPrize ? (
+                                                                <>
+                                                                <div className="flex items-center gap-4">
+                                                                    <Slider
+                                                                        value={[field.value || 0]}
+                                                                        onValueChange={(val) => field.onChange(val[0])}
+                                                                        max={100}
+                                                                        step={1}
+                                                                        className="w-full"
+                                                                    />
+                                                                    <div className="relative w-20">
+                                                                        <Input
+                                                                            type="number"
+                                                                            value={field.value || 0}
+                                                                            onValueChange={(val) => field.onChange(Number(val))}
+                                                                            className="text-center font-mono"
+                                                                        />
+                                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
+                                                                    </div>
+                                                                </div>
+                                                                <FormDescription>Define la probabilidad de que este premio salga.</FormDescription>
+                                                                </>
+                                                            ) : (
+                                                                <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 border-dashed" />
+                                                            )}
+                                                        </FormItem>
+                                                    )}
+                                                />
                                                 </TabsContent>
                                                 <TabsContent value="text" className="pt-4 grid grid-cols-2 gap-x-6 gap-y-4">
                                                   <FormField control={form.control} name={`segments.${index}.textColor`} render={({ field }) => (
