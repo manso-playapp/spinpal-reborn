@@ -48,6 +48,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const [shouldRender, setShouldRender] = useState(false);
   const [winningSegmentId, setWinningSegmentId] = useState<string | null>(null);
   const spinRequestTimestamp = useRef<number | null>(null);
+  const currentRotationRef = useRef(0);
   
   const isSpinningRef = useRef(isSpinning);
   useEffect(() => {
@@ -89,23 +90,21 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const winningSegmentMiddleAngle = (winningIndex * segmentAngle) + (segmentAngle / 2);
 
     // Calculate the rotation needed to align the middle of the winning segment with the pointer.
-    // We subtract from POINTER_ANGLE to align correctly.
     const angleToAlign = POINTER_ANGLE - winningSegmentMiddleAngle;
 
     // Add a random number of full spins for variety.
-    const fullSpins = (6 + Math.random() * 2) * 360; 
+    const fullSpins = 5 * 360; 
   
     // The final rotation is the current rotation plus the new spin distance.
-    const finalRotation = rotation + fullSpins + angleToAlign;
+    const finalRotation = currentRotationRef.current + fullSpins + angleToAlign;
+    currentRotationRef.current = finalRotation;
     
     setRotation(finalRotation);
   
     const gameRef = doc(db, 'games', gameId);
     
     setTimeout(async () => {
-      // Announce winner visually by blinking, which now happens after the spin.
       setWinningSegmentId(winningId);
-  
       setIsSpinning(false);
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
   
@@ -122,7 +121,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   
     }, 7000); // This duration must match the CSS transition duration for a smooth stop.
   
-  }, [segments, gameId, onSpinEnd, rotation]);
+  }, [segments, gameId, onSpinEnd]);
 
   const spinHandlerRef = useRef(handleSpinClick);
   useEffect(() => {
@@ -156,7 +155,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
 
   const wheelStyle: React.CSSProperties = {
-    transition: 'transform 7s cubic-bezier(0.1, 0.5, 0.2, 1)',
+    transition: 'transform 7s cubic-bezier(0.25, 0.1, 0.25, 1)',
     transform: `rotate(${rotation}deg)`,
     transformOrigin: 'center center',
   };
@@ -308,3 +307,5 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     </div>
   );
 }
+
+    
