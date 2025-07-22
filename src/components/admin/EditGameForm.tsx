@@ -900,88 +900,94 @@ export default function EditGameForm({ game }: { game: Game }) {
               
               {/* Columna de Vista Previa */}
               <div className="lg:col-span-1 lg:sticky top-4">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Eye className="h-5 w-5"/>
-                            Vista Previa
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Tabs defaultValue="roulette" className="w-full">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Eye className="h-5 w-5"/>
+                        Vista Previa
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="roulette" className="w-full">
                         <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
-                          <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
+                            <TabsTrigger value="roulette"><Gamepad2 className="mr-2 h-4 w-4"/>Ruleta</TabsTrigger>
+                            <TabsTrigger value="game"><QrCode className="mr-2 h-4 w-4"/>Juego</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="roulette" className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[500px]">
-                           <div className="w-full max-w-md">
-                                <SpinningWheel
-                                    segments={watchedFormData.segments}
-                                    gameId={game.id}
-                                    isDemoMode={true}
-                                    showDemoButton={true}
-                                    config={currentConfig}
-                                    onSpinEnd={() => {}}
-                                />
+                        
+                        <TabsContent value="roulette">
+                            <div className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[500px]">
+                                <div className="w-full max-w-md">
+                                    <SpinningWheel
+                                        segments={watchedFormData.segments}
+                                        gameId={game.id}
+                                        isDemoMode={true}
+                                        showDemoButton={true}
+                                        config={currentConfig}
+                                        onSpinEnd={() => {}}
+                                    />
+                                </div>
                             </div>
                         </TabsContent>
-                        <TabsContent value="game" className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] h-[500px]">
-                            <div className="w-full h-full bg-background shadow-lg overflow-hidden relative transform scale-[0.8] origin-center rounded-lg">
-                              <div 
-                                className="absolute inset-0"
-                                style={backgroundPreviewStyles}
-                              >
-                                {/* Contenedor de la ruleta */}
-                                <div
-                                    className="absolute inset-0 flex justify-center items-center pointer-events-none"
-                                    style={{
-                                        transform: `translateY(${watchedFormData.rouletteVerticalOffset}px) scale(${watchedFormData.rouletteScale})`,
-                                        transformOrigin: 'center center',
-                                    }}
-                                >
-                                  <div className="w-full max-w-full">
-                                    <SpinningWheel 
-                                      segments={watchedFormData.segments} 
-                                      gameId={game.id} 
-                                      isDemoMode={true}
-                                      config={currentConfig}
-                                      onSpinEnd={() => {}}
-                                    />
-                                  </div>
-                                </div>
-                                {/* Contenedor del QR */}
-                                <div 
-                                  className="absolute bottom-4 px-4 w-full flex justify-center items-center"
-                                  style={{ 
-                                    transform: `translateY(${watchedFormData.qrVerticalOffset}px)`
-                                  }}
-                                >
+
+                        <TabsContent value="game">
+                            <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] h-[500px] sm:h-[600px] md:h-[500px]">
+                                <div className="w-full h-full bg-background shadow-lg overflow-hidden relative transform scale-[0.8] origin-center rounded-lg">
                                     <div 
-                                      className="w-full max-w-sm text-center"
-                                      style={{
-                                        transform: `scale(${watchedFormData.qrCodeScale})`,
-                                        transformOrigin: 'bottom center'
-                                      }}
+                                    className="absolute inset-0"
+                                    style={backgroundPreviewStyles}
                                     >
-                                      <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
-                                          <CardHeader className="p-2">
-                                          <CardTitle className="font-headline text-base flex items-center justify-center gap-2">
-                                              <QrCode size={16}/>
-                                              ¡Escanea!
-                                          </CardTitle>
-                                          </CardHeader>
-                                          <CardContent className="flex flex-col items-center justify-center gap-2 p-2 pt-0">
-                                              <QRCodeDisplay gameId={game.id} scale={0.4} />
-                                          </CardContent>
-                                      </Card>
+                                    {/* Contenedor de la ruleta */}
+                                    <div
+                                        className="absolute inset-0 flex justify-center items-center pointer-events-none"
+                                        style={{
+                                            transform: `translateY(${watchedFormData.rouletteVerticalOffset}px) scale(${watchedFormData.rouletteScale})`,
+                                            transformOrigin: 'center center',
+                                        }}
+                                    >
+                                    <div className="w-full max-w-full">
+                                        <SpinningWheel 
+                                        segments={watchedFormData.segments} 
+                                        gameId={game.id} 
+                                        isDemoMode={true}
+                                        config={currentConfig}
+                                        onSpinEnd={() => {}}
+                                        />
+                                    </div>
+                                    </div>
+                                    {/* Contenedor del QR */}
+                                    <div 
+                                    className="absolute bottom-4 px-4 w-full flex justify-center items-center"
+                                    style={{ 
+                                        transform: `translateY(${watchedFormData.qrVerticalOffset}px)`
+                                    }}
+                                    >
+                                        <div 
+                                        className="w-full max-w-sm text-center"
+                                        style={{
+                                            transform: `scale(${watchedFormData.qrCodeScale})`,
+                                            transformOrigin: 'bottom center'
+                                        }}
+                                        >
+                                        <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
+                                            <CardHeader className="p-2">
+                                            <CardTitle className="font-headline text-base flex items-center justify-center gap-2">
+                                                <QrCode size={16}/>
+                                                ¡Escanea!
+                                            </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="flex flex-col items-center justify-center gap-2 p-2 pt-0">
+                                                <QRCodeDisplay gameId={game.id} scale={0.4} />
+                                            </CardContent>
+                                        </Card>
+                                        </div>
+                                    </div>
                                     </div>
                                 </div>
-                              </div>
                             </div>
                         </TabsContent>
-                      </Tabs>
-                    </CardContent>
-                 </Card>
+                    </Tabs>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </form>
@@ -989,5 +995,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
-
-    
