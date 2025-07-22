@@ -6,13 +6,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
+import { Resend } from 'resend';
 
 type ServiceStatus = {
   connected: boolean;
@@ -26,6 +27,7 @@ async function checkServices(): Promise<{
   auth: ServiceStatus;
   firestore: ServiceStatus;
   gemini: ServiceStatus;
+  resend: ServiceStatus;
 }> {
   const status = {
     auth: {
@@ -43,6 +45,13 @@ async function checkServices(): Promise<{
       message: 'La clave de API de Gemini no está configurada.',
       details: 'Añade tu clave al archivo .env para habilitar las funciones de IA.',
       isConfigured: 'no' as const,
+    },
+    resend: {
+        connected: false,
+        message: 'La clave de API de Resend no está configurada.',
+        details: 'Añade tu clave al archivo .env para habilitar el envío de correos.',
+        isConfigured: 'no' as const,
+        actionUrl: 'https://resend.com/docs/introduction'
     }
   };
 
@@ -56,6 +65,32 @@ async function checkServices(): Promise<{
         details: '¡Todo listo para integrar funciones de IA en tu aplicación!',
         isConfigured: 'yes',
       };
+  }
+
+  // Chequeo de Resend API Key
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+        const resend = new Resend(resendApiKey);
+        const { data, error } = await resend.domains.list();
+        if (error) throw error;
+        
+        status.resend = {
+            connected: true,
+            message: 'La API de Resend está conectada y funcionando.',
+            details: `Se encontraron ${data.length} dominios verificados. ¡Asegúrate de que el remitente que uses sea uno de ellos!`,
+            isConfigured: 'yes',
+            actionUrl: 'https://resend.com/domains'
+        }
+    } catch (error: any) {
+         status.resend = {
+            connected: false,
+            message: 'Error al verificar la clave de API de Resend.',
+            details: 'La clave parece ser incorrecta o no tiene los permisos necesarios para leer dominios. Por favor, revisa tu clave en el panel de Resend.',
+            isConfigured: 'no',
+            actionUrl: 'https://resend.com/api-keys'
+        }
+    }
   }
 
 
@@ -185,9 +220,10 @@ export default async function ConexionesPage() {
         </div>
 
         <div className="space-y-4">
-          <ServiceStatusCard title="Gemini API" icon={<Sparkles />} status={servicesStatus.gemini} />
           <ServiceStatusCard title="Firebase Auth" icon={<UserPlus />} status={servicesStatus.auth} />
           <ServiceStatusCard title="Firebase Firestore" icon={<Database />} status={servicesStatus.firestore} />
+          <ServiceStatusCard title="Gemini API" icon={<Sparkles />} status={servicesStatus.gemini} />
+          <ServiceStatusCard title="Resend API" icon={<Mail />} status={servicesStatus.resend} />
         </div>
 
         <Separator />
@@ -294,6 +330,27 @@ service cloud.firestore {
   }
 }`}</code></pre>
                         <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Mail/>Paso 4: Verificar Dominio de Envío de Emails</CardTitle>
+                        <CardDescription>Asegura que tus correos no lleguen a la carpeta de spam.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                       <p>Para que Resend pueda enviar correos en tu nombre, debes demostrar que eres el dueño del dominio (ej: `tuempresa.com`). Sin este paso, los correos se enviarán desde `onboarding@resend.dev` y es muy probable que sean marcados como spam.</p>
+                       <Button asChild variant="outline">
+                            <Link href="https://resend.com/domains" target="_blank">
+                                Ir a Dominios en Resend <ExternalLink className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
+                            <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
+                            <li>Resend te dará unos registros (DNS records) que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, etc.).</li>
+                            <li>Una vez que Resend detecte los cambios (puede tardar un poco), tu dominio aparecerá como "Verified".</li>
+                            <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
+                        </ul>
                     </CardContent>
                 </Card>
             </div>
