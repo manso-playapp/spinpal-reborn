@@ -248,7 +248,7 @@ export default async function ConexionesPage() {
                                 Ir a las Reglas de Firestore <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
-                        <p>Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase, reemplazando el contenido existente:</p>
+                        <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase, reemplazando el contenido existente:</p>
                         <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
 
 service cloud.firestore {
@@ -256,19 +256,24 @@ service cloud.firestore {
   
     match /games/{gameId} {
       allow read: if true;
-      // Admins pueden escribir todo el documento
+      // Admins pueden escribir todo el documento (crear, editar, borrar)
       allow write: if request.auth != null; 
-      // Jugadores pueden actualizar solo el campo 'spinRequest'
+      
+      // Jugadores (sin autenticar) solo pueden actualizar los campos 'spinRequest' y 'plays'.
+      // Se usa hasAll para asegurar que la operación contenga exactamente esos dos campos.
       allow update: if request.auth == null 
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest']);
+                      && request.resource.data.diff(resource.data).affectedKeys().hasAll(['spinRequest', 'plays']);
     }
 
     match /games/{gameId}/customers/{customerId} {
       allow read: if true;
-      allow create: if true; // Cualquiera puede registrarse
-      // Admins pueden borrar
+      allow create: if true; // Cualquiera puede registrarse (crear su propio documento de cliente)
+      
+      // Admins pueden borrar clientes
       allow delete: if request.auth != null; 
-      // Jugadores pueden actualizar 'hasPlayed', Admins pueden actualizar todo
+      
+      // Jugadores solo pueden actualizar 'hasPlayed' en su propio documento (no implementado aún, pero útil para el futuro)
+      // Admins pueden actualizar cualquier campo.
       allow update: if request.auth != null || (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasPlayed']));
     }
     
@@ -287,5 +292,3 @@ service cloud.firestore {
     </div>
   );
 }
-
-  
