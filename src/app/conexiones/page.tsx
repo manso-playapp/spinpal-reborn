@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -347,9 +348,12 @@ service cloud.firestore {
                         </Button>
                         <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
                             <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
-                            <li>Resend te dará unos registros (DNS records) que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, etc.).</li>
-                            <li>Una vez que Resend detecte los cambios (puede tardar un poco), tu dominio aparecerá como "Verified".</li>
-                            <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
+                            <li>Resend te dará unos registros DNS que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, DONWEB, etc.).</li>
+                            <li className='font-bold text-card-foreground'>
+                                <strong>¡Atención DONWEB!</strong> Si Resend te pide un registro con Host/Nombre `send`, en tu panel de DONWEB debes introducir el nombre completo: `send.tudominio.com` (reemplazando `tudominio.com`).
+                            </li>
+                            <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como "Verified".</li>
+                            <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`src/ai/flows/prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
                         </ul>
                     </CardContent>
                 </Card>
