@@ -58,7 +58,6 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     },
   });
 
-  // Check localStorage on client-side mount to improve UX for repeat visitors
   useEffect(() => {
     if (isDemoMode) return;
     try {
@@ -77,14 +76,12 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     const storageKey = `spinpal-played-${gameId}`;
     
     try {
-      // The single source of truth: check if email exists in the database
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
       const q = query(customersCollectionRef, where("email", "==", data.email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
         setSubmissionState('already_played');
-        // Mark in localStorage for this browser
         try {
             window.localStorage.setItem(storageKey, 'true');
         } catch (e) {
@@ -93,7 +90,6 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         return;
       }
 
-      // If email doesn't exist, proceed with registration
       const batch = writeBatch(db);
       const gameRef = doc(db, 'games', gameId);
       
@@ -108,14 +104,12 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
       batch.update(gameRef, {
         spinRequest: {
           timestamp: serverTimestamp(),
-          nonce: Math.random(),
         },
         plays: increment(1),
       });
 
       await batch.commit();
 
-      // On successful submission, update state and localStorage
       setSubmissionState('submitted');
        try {
         window.localStorage.setItem(storageKey, 'true');
