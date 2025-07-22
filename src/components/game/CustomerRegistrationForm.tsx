@@ -212,35 +212,36 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
     try {
         const { segments } = gameData;
+        
+        // --- NUEVO ALGORITMO DE SORTEO ---
         const realPrizeSegments = segments.filter(s => s.isRealPrize);
         const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
         const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
         const remainingProbability = Math.max(0, 100 - realPrizeTotalProbability);
         let nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? remainingProbability / nonRealPrizeSegments.length : 0;
         
-        const finalSegments = segments.map(seg => ({
-          ...seg,
-          finalProbability: seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb
-        }));
-
+        const finalProbabilities = segments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
+        
         const random = Math.random() * 100;
         let accumulatedProb = 0;
-        let winningSegment: any = null;
+        let winningIndex = -1;
 
-        for (let i = 0; i < finalSegments.length; i++) {
-            accumulatedProb += (finalSegments[i].finalProbability || 0);
+        for (let i = 0; i < finalProbabilities.length; i++) {
+            accumulatedProb += finalProbabilities[i];
             if (random < accumulatedProb) {
-                winningSegment = finalSegments[i];
+                winningIndex = i;
                 break;
             }
         }
         
-        if (!winningSegment) {
-            winningSegment = finalSegments.length > 0 ? finalSegments[finalSegments.length - 1] : null;
+        if (winningIndex === -1) {
+            winningIndex = segments.length > 0 ? segments.length - 1 : -1;
         }
         
-        setDebugWinningSegment(winningSegment);
+        const winningSegment = winningIndex !== -1 ? segments[winningIndex] : null;
 
+        setDebugWinningSegment(winningSegment);
+        
         if (!winningSegment || !winningSegment.id) {
             console.error("ERROR CRITICO: El segmento ganador no se pudo determinar o no tiene ID.", { winningSegment });
             toast({
@@ -254,6 +255,8 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const gameRef = doc(db, 'games', gameId);
         const customerRef = doc(db, 'games', gameId, 'customers', customerId);
+
+        const batch = writeBatch(db);
 
         const gameUpdateData: { [key: string]: any } = {
             plays: increment(1),
@@ -269,7 +272,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 timestamp: serverTimestamp(),
             }
         };
-
         const customerUpdateData: { [key: string]: any } = {
             hasPlayed: true
         };
@@ -279,8 +281,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             customerUpdateData.prizeWonName = winningSegment.name;
             customerUpdateData.prizeWonAt = serverTimestamp();
         }
-        
-        const batch = writeBatch(db);
+
         batch.update(gameRef, gameUpdateData);
         batch.update(customerRef, customerUpdateData);
         
