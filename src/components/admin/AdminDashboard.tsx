@@ -39,6 +39,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import Papa from 'papaparse';
+import Logo from '../logo';
 
 
 interface Game {
@@ -220,45 +221,66 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/40">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-        <h1 className="font-headline text-xl font-semibold">Mis Juegos</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Button asChild size="sm" variant="outline" className="h-8 gap-1">
-            <Link href="/admin/juegos/crear">
-              <PlusCircle className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                Crear Juego
-              </span>
-            </Link>
-          </Button>
-          {user && user.email === superAdminEmail && (
-            <>
-            <Button asChild size="sm" variant="outline" className="h-8 gap-1">
-              <Link href="/admin/correos">
-                <Mail className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Correos
-                </span>
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="h-8 gap-1">
-              <Link href="/conexiones">
-                <LinkIcon className="h-3.5 w-3.5" />
-                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                  Conexiones
-                </span>
-              </Link>
-            </Button>
-            </>
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
+       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background px-6">
+        <div className="flex items-center gap-4">
+          <Link href="/admin">
+            <Logo className="h-8 w-auto text-primary" />
+          </Link>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {user && user.email && (
+            <p className="text-sm text-muted-foreground hidden md:block">
+              {user.email}
+            </p>
           )}
           <Button onClick={signOut} variant="outline" size="icon" className="h-8 w-8">
             <LogOut className="h-4 w-4" />
-            <span className="sr-only">Logout</span>
+            <span className="sr-only">Cerrar sesión</span>
           </Button>
         </div>
       </header>
-      <main className="flex-1 p-4 sm:px-6 sm:py-0">
+
+      <div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14">
+        <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-2xl font-semibold">Mis Juegos</h1>
+                    <p className="text-muted-foreground">Crea, edita y gestiona tus campañas de ruletas interactivas.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button asChild size="sm" className="h-8 gap-1">
+                        <Link href="/admin/juegos/crear">
+                        <PlusCircle className="h-3.5 w-3.5" />
+                        <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            Crear Juego
+                        </span>
+                        </Link>
+                    </Button>
+                    {user && user.email === superAdminEmail && (
+                        <>
+                        <Button asChild size="sm" variant="outline" className="h-8 gap-1">
+                        <Link href="/admin/correos">
+                            <Mail className="h-3.5 w-3.5" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            Correos
+                            </span>
+                        </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline" className="h-8 gap-1">
+                        <Link href="/conexiones">
+                            <LinkIcon className="h-3.5 w-3.5" />
+                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                            Conexiones
+                            </span>
+                        </Link>
+                        </Button>
+                        </>
+                    )}
+                </div>
+            </div>
+
           {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <Skeleton className="h-64 w-full" />
@@ -409,6 +431,7 @@ export default function AdminDashboard() {
             </div>
           )}
       </main>
+      </div>
     </div>
   );
 }
