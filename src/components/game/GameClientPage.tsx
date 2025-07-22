@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -107,7 +108,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
 
   return (
     <div 
-      className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden"
+      className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden p-4"
       style={backgroundStyles}
     >
         {game.status === 'demo' && (
@@ -116,18 +117,14 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
             </div>
         )}
 
+        {/* Roulette container */}
         <div 
-          className="flex flex-col items-center justify-center w-full"
-          style={{ gap: `${game.rouletteQrGap}px` }}
-        >
-          {/* Columna de la Ruleta */}
-          <div 
-            className="w-full max-w-2xl text-center flex flex-col items-center justify-center"
+            className="w-full flex-1 flex items-center justify-center"
             style={{ 
               transform: `translateY(${game.rouletteVerticalOffset}px) scale(${game.rouletteScale})` 
             }}
           >
-              <div className="w-full max-w-sm sm:max-w-md">
+              <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
                 <SpinningWheel 
                   segments={game.segments} 
                   gameId={game.id} 
@@ -138,47 +135,48 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
               </div>
           </div>
 
-          {/* Columna del QR o Resultado */}
-           <div 
-            className="w-full max-w-sm text-center"
-            style={{ transform: `scale(${game.qrCodeScale})` }}
-           >
-            {spinResult ? (
-                 <Card className="shadow-lg bg-black/50 backdrop-blur-md border-white/30 text-white animate-in fade-in zoom-in-95">
-                    <CardHeader>
-                        <CardTitle className="font-headline text-3xl flex items-center justify-center gap-3">
-                           {spinResult.isRealPrize ? <Gift className="text-yellow-400" /> : <ThumbsDown className="text-red-400" />}
-                           {spinResult.isRealPrize ? '¡Premio!' : '¡Casi!'}
-                        </CardTitle>
-                        <Separator className="bg-white/20 mt-2"/>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-xl font-semibold">
-                            {spinResult.name}
-                        </p>
-                        <CardDescription className="text-white/80 mt-2">
-                           {spinResult.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
-                        </CardDescription>
-                    </CardContent>
-                </Card>
-            ) : (
-                <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
-                    <CardHeader>
-                    <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
-                        <QrCode />
-                        ¡Escanea para Jugar!
-                    </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center gap-4">
-                        <QRCodeDisplay gameId={game.id} />
-                        <Separator className="bg-white/20"/>
-                        <p className="text-sm">
-                        Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
-                        </p>
-                    </CardContent>
-                </Card>
-            )}
-           </div>
+        {/* QR / Result container */}
+        <div 
+          className="w-full flex justify-center items-center py-4"
+          style={{ transform: `scale(${game.qrCodeScale})` }}
+        >
+            <div className="w-full max-w-md text-center">
+              {spinResult ? (
+                   <Card className="shadow-lg bg-black/50 backdrop-blur-md border-white/30 text-white animate-in fade-in zoom-in-95">
+                      <CardHeader>
+                          <CardTitle className="font-headline text-5xl flex items-center justify-center gap-4">
+                             {spinResult.isRealPrize ? <Gift className="text-yellow-400 h-12 w-12" /> : <ThumbsDown className="text-red-400 h-12 w-12" />}
+                             {spinResult.isRealPrize ? '¡Premio!' : '¡Casi!'}
+                          </CardTitle>
+                          <Separator className="bg-white/20 mt-2"/>
+                      </CardHeader>
+                      <CardContent>
+                          <p className="text-3xl font-semibold">
+                              {spinResult.name}
+                          </p>
+                          <CardDescription className="text-white/80 mt-4 text-base">
+                             {spinResult.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
+                          </CardDescription>
+                      </CardContent>
+                  </Card>
+              ) : (
+                  <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
+                      <CardHeader>
+                      <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
+                          <QrCode />
+                          ¡Escanea para Jugar!
+                      </CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex flex-col items-center justify-center gap-4">
+                          <QRCodeDisplay gameId={game.id} />
+                          <Separator className="bg-white/20"/>
+                          <p className="text-sm">
+                          Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
+                          </p>
+                      </CardContent>
+                  </Card>
+              )}
+            </div>
         </div>
     </div>
   );
