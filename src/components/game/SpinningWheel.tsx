@@ -69,7 +69,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
   const handleSpinClick = useCallback(async (spinRequestData) => {
     if (isSpinningRef.current || segments.length === 0) return;
 
-    const { winningSegment, customerId, isDemoSpin, winningId } = spinRequestData;
+    const { winningSegment: rawWinningSegment, customerId, isDemoSpin, winningId } = spinRequestData;
 
     const winningIndex = segments.findIndex(s => s.id === winningId);
     
@@ -77,6 +77,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         console.error("Error: Winning segment ID not found in the current segments array.", spinRequestData);
         return;
     }
+    
+    const winningSegment = segments[winningIndex];
 
     setIsSpinning(true);
     

@@ -238,12 +238,12 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         const spinRequestData = {
             timestamp: serverTimestamp(),
             customerId: customerId,
-            winningId: winningSegment.id, 
+            winningId: winningSegment.id,
             winningSegment: {
-                name: winningSegment.name,
-                isRealPrize: !!winningSegment.isRealPrize,
-            }
-        };
+              name: winningSegment.name,
+              isRealPrize: !!winningSegment.isRealPrize,
+            },
+          };
         
         await updateDoc(gameRef, {
             spinRequest: spinRequestData,
