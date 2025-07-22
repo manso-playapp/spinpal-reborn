@@ -38,6 +38,7 @@ interface Customer {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   hasPlayed: boolean;
   registeredAt: {
     seconds: number;
@@ -110,6 +111,7 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
       return {
         nombre: data.name || '',
         email: data.email || '',
+        telefono: data.phone || '',
         fecha_registro: registrationDate,
         ha_jugado: data.hasPlayed ? 'Sí' : 'No',
       };
@@ -168,7 +170,8 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Fecha de Registro</TableHead>
+                <TableHead className="hidden sm:table-cell">Teléfono</TableHead>
+                <TableHead className="hidden md:table-cell">Fecha de Registro</TableHead>
                 <TableHead className="text-center">¿Ha Jugado?</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -178,7 +181,8 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">{customer.phone || '-'}</TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {customer.registeredAt
                       ? new Date(customer.registeredAt.seconds * 1000).toLocaleString()
                       : 'N/A'}

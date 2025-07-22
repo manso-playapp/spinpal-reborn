@@ -31,17 +31,15 @@ import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, Ch
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 
-const formSchema = z.object({
+
+const baseFormSchema = z.object({
   name: z.string().min(2, {
     message: 'Tu nombre debe tener al menos 2 caracteres.',
   }),
   email: z.string().email({
     message: 'Por favor, introduce un correo electrónico válido.',
   }),
-  phone: z.string().optional(),
 });
-
-type CustomerFormValues = z.infer<typeof formSchema>;
 
 interface CustomerRegistrationFormProps {
   gameId: string;
@@ -57,6 +55,7 @@ interface SpinResult {
 interface GameData {
     isDemoMode: boolean;
     exemptedEmails: string[];
+    isPhoneRequired: boolean;
     successMessage?: string;
 }
 
@@ -67,9 +66,10 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [gameData, setGameData] = useState<GameData | null>(null);
+  const [dynamicSchema, setDynamicSchema] = useState(baseFormSchema.extend({ phone: z.string().optional() }));
 
-  const form = useForm<CustomerFormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof dynamicSchema>>({
+    resolver: zodResolver(dynamicSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -84,11 +84,24 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             const docSnap = await getDoc(gameRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                setGameData({
+                const isPhoneRequired = data.isPhoneRequired || false;
+                
+                const newGameData = {
                     isDemoMode: data.status === 'demo',
                     exemptedEmails: data.exemptedEmails || [],
+                    isPhoneRequired: isPhoneRequired,
                     successMessage: data.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+                };
+                setGameData(newGameData);
+
+                // Update schema based on game data
+                const newSchema = baseFormSchema.extend({
+                  phone: isPhoneRequired
+                    ? z.string().min(6, 'Por favor, introduce un número de teléfono válido.')
+                    : z.string().optional(),
                 });
+                setDynamicSchema(newSchema);
+
                 setUiState('form');
             } else {
                 setUiState('error');
@@ -101,6 +114,9 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
     fetchGameData();
   }, [gameId]);
 
+  useEffect(() => {
+    form.reset(undefined, { keepValues: true });
+  }, [dynamicSchema, form]);
 
   useEffect(() => {
     if (uiState !== 'success_message' || !customerId) return;
@@ -129,7 +145,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
   }, [uiState, customerId, gameId]);
 
 
-  const onSubmit = async (data: CustomerFormValues) => {
+  const onSubmit = async (data: z.infer<typeof dynamicSchema>) => {
     if (!gameData) return;
     setIsSubmitting(true);
     const submittedEmail = data.email.toLowerCase();
@@ -267,7 +283,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
           <div className="mx-auto bg-yellow-100 rounded-full p-4 w-fit dark:bg-yellow-800/50">
             <AlertCircle className="h-12 w-12 text-yellow-600" />
           </div>
-        </CardHeader>
+        </Header>
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">
                 ¡Ya has participado!
@@ -303,7 +319,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 <ThumbsDown className="h-12 w-12 text-gray-600" />
             )}
           </div>
-        </CardHeader>
+        </Header>
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">
                  {spinResult.isRealPrize ? '¡Felicidades!' : '¡Casi!'}
@@ -326,7 +342,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
           <div className="mx-auto bg-green-100 rounded-full p-4 w-fit dark:bg-green-800/50">
             <PartyPopper className="h-12 w-12 text-green-600" />
           </div>
-        </CardHeader>
+        </Header>
         <CardContent className="flex flex-col gap-4">
           <CardTitle className="text-2xl font-headline mb-2">¡Todo listo para la acción!</CardTitle>
           <CardDescription>
@@ -407,7 +423,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
               name="phone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Teléfono (Opcional)</FormLabel>
+                  <FormLabel>Teléfono {gameData.isPhoneRequired ? '' : '(Opcional)'}</FormLabel>
                   <FormControl>
                     <Input type="tel" placeholder="Tu número de teléfono" {...field} disabled={isSubmitting} />
                   </FormControl>

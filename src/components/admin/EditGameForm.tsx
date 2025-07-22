@@ -73,6 +73,7 @@ const formSchema = z.object({
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
+  isPhoneRequired: z.boolean().optional(),
   successMessage: z.string().optional(),
   borderImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   borderScale: z.number().min(0.1).max(2).optional(),
@@ -98,6 +99,7 @@ interface Game {
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   registrationTitle?: string;
   registrationSubtitle?: string;
+  isPhoneRequired?: boolean;
   successMessage?: string;
   plays?: number;
   prizesAwarded?: number;
@@ -153,6 +155,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       backgroundFit: game.backgroundFit || 'cover',
       registrationTitle: game.registrationTitle || 'Estás jugando a',
       registrationSubtitle: game.registrationSubtitle || '',
+      isPhoneRequired: game.isPhoneRequired || false,
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
       borderImage: game.borderImage || 'https://i.imgur.com/J62nHj9.png',
       borderScale: game.borderScale || 1,
@@ -811,6 +814,27 @@ export default function EditGameForm({ game }: { game: Game }) {
                             </FormItem>
                           )}
                         />
+                         <FormField
+                            control={form.control}
+                            name="isPhoneRequired"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-base">Requerir Teléfono</FormLabel>
+                                  <FormDescription>
+                                    Si se activa, el campo de teléfono será obligatorio para poder registrarse.
+                                  </FormDescription>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    disabled={loading}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
                         <FormField
                           control={form.control}
                           name="successMessage"

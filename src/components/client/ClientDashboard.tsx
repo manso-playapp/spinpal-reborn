@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -185,7 +186,7 @@ export default function ClientDashboard() {
                 <CardFooter className="flex flex-col gap-2">
                     <div className="grid grid-cols-2 gap-2 w-full">
                         <Button asChild variant="secondary">
-                            <Link href={`/client/clientes/${game.id}`}><Users className="mr-2 h-4 w-4" /> Clientes</Link>
+                            <Link href={`/client/clientes/${game.id}`}><Users className="mr-2 h-4 w-4" /> Participantes</Link>
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>

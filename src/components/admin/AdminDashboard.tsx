@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -192,6 +193,7 @@ export default function AdminDashboard() {
         return {
           nombre: data.name || '',
           email: data.email || '',
+          telefono: data.phone || '',
           fecha_registro: registrationDate,
           ha_jugado: data.hasPlayed ? 'Sí' : 'No',
         };
@@ -382,7 +384,7 @@ export default function AdminDashboard() {
                     </Button>
                     <div className="grid grid-cols-2 gap-2 w-full">
                         <Button asChild variant="secondary">
-                        <Link href={`/admin/clientes/${game.id}`}><Users className="mr-2 h-4 w-4" /> Clientes</Link>
+                        <Link href={`/admin/clientes/${game.id}`}><Users className="mr-2 h-4 w-4" /> Participantes</Link>
                         </Button>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
