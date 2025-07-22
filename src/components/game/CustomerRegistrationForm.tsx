@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, serverTimestamp, doc, writeBatch, query, where, getDocs, limit, increment } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, writeBatch, query, where, getDocs, limit, increment, addDoc, updateDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, AlertCircle, Loader2 } from 'lucide-react';
+import { Send, PartyPopper, AlertCircle, Loader2, RotateCw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 
@@ -49,8 +49,9 @@ interface CustomerRegistrationFormProps {
 
 export default function CustomerRegistrationForm({ gameId, isDemoMode, successMessage }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
-  const [submissionState, setSubmissionState] = useState<'idle' | 'submitting' | 'submitted' | 'error' | 'already_played'>('idle');
-  const [loadingState, setLoadingState] = useState(true);
+  const [uiState, setUiState] = useState<'loading' | 'form' | 'spin_button' | 'submitted' | 'already_played' | 'error'>('loading');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -59,16 +60,15 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
       email: '',
     },
   });
-
+  
   useEffect(() => {
-    // This useEffect now ONLY handles the initial loading state and demo mode.
-    // It no longer checks localStorage, ensuring the form always shows by default.
-    setLoadingState(false);
+    // We just set the initial state, no more localStorage checks here.
+    setUiState('form');
   }, []);
 
 
   const onSubmit = async (data: CustomerFormValues) => {
-    setSubmissionState('submitting');
+    setIsSubmitting(true);
     
     try {
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
@@ -76,44 +76,75 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        setSubmissionState('already_played');
+        setUiState('already_played');
         return;
       }
 
-      const batch = writeBatch(db);
-      const gameRef = doc(db, 'games', gameId);
-      
-      const newCustomerRef = doc(collection(db, 'games', gameId, 'customers'));
-      batch.set(newCustomerRef, {
+      // Step 1: Just create the customer document.
+      const newCustomerRef = await addDoc(collection(db, 'games', gameId, 'customers'), {
         name: data.name,
         email: data.email.toLowerCase(),
         registeredAt: serverTimestamp(),
-        hasPlayed: true,
+        hasPlayed: false, // Not played yet
       });
-
-      batch.update(gameRef, {
-        spinRequest: {
-          timestamp: serverTimestamp(),
-        },
-        plays: increment(1),
-      });
-
-      await batch.commit();
-
-      setSubmissionState('submitted');
+      
+      setCustomerId(newCustomerRef.id);
+      // Step 2: Show the spin button
+      setUiState('spin_button');
 
     } catch (error) {
-      console.error('Error registering customer and spinning: ', error);
-      setSubmissionState('error');
+      console.error('Error registering customer: ', error);
+      setUiState('error');
       toast({
         variant: 'destructive',
         title: 'Error en el registro',
         description: 'Hubo un problema al registrarte. Por favor, inténtalo de nuevo.',
       });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleSpin = async () => {
+    if (!customerId) {
+        setUiState('error');
+        return;
+    };
+    setIsSubmitting(true);
+    try {
+        const batch = writeBatch(db);
+        const gameRef = doc(db, 'games', gameId);
+        const customerRef = doc(db, 'games', gameId, 'customers', customerId);
+
+        // Update game to trigger spin and increment plays
+        batch.update(gameRef, {
+            spinRequest: {
+                timestamp: serverTimestamp(),
+            },
+            plays: increment(1),
+        });
+
+        // Mark customer as having played
+        batch.update(customerRef, { hasPlayed: true });
+
+        await batch.commit();
+
+        setUiState('submitted');
+
+    } catch (error) {
+        console.error('Error triggering spin: ', error);
+        setUiState('error');
+        toast({
+            variant: 'destructive',
+            title: 'Error al girar',
+            description: 'Hubo un problema al iniciar el giro. Por favor, inténtalo de nuevo.',
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   };
   
-  if (loadingState) {
+  if (uiState === 'loading') {
     return (
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader>
@@ -135,7 +166,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     );
   }
 
-  if (submissionState === 'error') {
+  if (uiState === 'error') {
        return (
        <Card className="w-full max-w-md shadow-lg">
         <CardContent className="pt-6">
@@ -151,7 +182,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     );
   }
   
-  if (submissionState === 'submitted' || submissionState === 'already_played') {
+  if (uiState === 'submitted' || uiState === 'already_played') {
     return (
        <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
@@ -161,10 +192,10 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">
-                {submissionState === 'already_played' ? '¡Ya has participado!' : '¡Giro solicitado!'}
+                {uiState === 'already_played' ? '¡Ya has participado!' : '¡Giro solicitado!'}
             </CardTitle>
             <CardDescription>
-                {submissionState === 'already_played'
+                {uiState === 'already_played'
                   ? 'Este correo electrónico ya ha sido utilizado para participar. ¡Gracias!'
                   : successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!'}
             </CardDescription>
@@ -191,7 +222,33 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     );
   }
 
-  const isSubmitting = submissionState === 'submitting';
+  if (uiState === 'spin_button') {
+    return (
+        <Card className="w-full max-w-md text-center shadow-lg">
+            <CardHeader>
+                <CardTitle className="font-headline text-2xl">¡Registro Exitoso!</CardTitle>
+                <CardDescription>
+                    ¡Todo listo! Presiona el botón para hacer girar la ruleta en la pantalla grande.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button size="lg" className="w-full h-16 text-xl" onClick={handleSpin} disabled={isSubmitting}>
+                     {isSubmitting ? (
+                        <>
+                        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                        Girando...
+                        </>
+                    ) : (
+                        <>
+                        <RotateCw className="mr-3 h-6 w-6" />
+                        ¡Girar la Ruleta!
+                        </>
+                    )}
+                </Button>
+            </CardContent>
+        </Card>
+    )
+  }
   
   return (
     <Card className="w-full max-w-md shadow-lg">
@@ -239,7 +296,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
               ) : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
-                  Registrarme y Jugar
+                  Registrarme
                 </>
               )}
             </Button>
