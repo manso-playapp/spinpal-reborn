@@ -436,5 +436,3 @@ service cloud.firestore {
     </div>
   );
 }
-
-    
