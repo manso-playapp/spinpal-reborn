@@ -236,19 +236,19 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const winningSegment = finalSegments[winningIndex];
         
-        // Create a plain object for Firestore
-        const plainWinningSegment = {
-            name: winningSegment.name,
-            isRealPrize: !!winningSegment.isRealPrize,
+        // Create a plain object for Firestore to avoid serialization issues
+        const spinRequestData = {
+            timestamp: serverTimestamp(),
+            customerId: customerId,
+            winningId: winningSegment.id, 
+            winningSegment: { // Ensure this is a plain object
+                name: winningSegment.name,
+                isRealPrize: !!winningSegment.isRealPrize,
+            }
         };
 
         await updateDoc(gameRef, {
-            spinRequest: {
-                timestamp: serverTimestamp(),
-                customerId: customerId,
-                winningSegment: plainWinningSegment,
-                winningId: winningSegment.id, 
-            },
+            spinRequest: spinRequestData,
             plays: increment(1),
         });
 
