@@ -215,10 +215,13 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                     const textRadius = WHEEL_RADIUS * (segment.distanceFromCenter || 0.7);
                     const textAngle = startAngle + segmentAngle / 2;
                     const textPathId = `text-path-${index}`;
-                    const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - (segmentAngle / 2.2), textRadius);
-                    const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + (segmentAngle / 2.2), textRadius);
-                    const textPathData = `M ${textPathStartX},${textPathStartY} A ${textRadius},${textRadius} 0 0 1 ${textPathEndX},${textPathEndY}`;
                     
+                    // Dynamic text path calculation
+                    const textArcAngle = Math.min(segmentAngle, 90) * 0.9; // Limit text arc to 90deg and add padding
+                    const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - textArcAngle / 2, textRadius);
+                    const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + textArcAngle / 2, textRadius);
+                    const textPathData = `M ${textPathStartX},${textPathStartY} A ${textRadius},${textRadius} 0 0 1 ${textPathEndX},${textPathEndY}`;
+
                     const nameParts = (segment.name || "").toUpperCase().split(',');
 
                     // Icon positioning

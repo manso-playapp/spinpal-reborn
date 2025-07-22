@@ -70,7 +70,7 @@ const formSchema = z.object({
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   managementType: z.enum(['client', 'playapp']).default('client'),
   exemptedEmails: z.string().optional(),
-  segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios para la ruleta.'),
+  segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios.').max(16, 'No puedes tener más de 16 premios.'),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
   registrationTitle: z.string().optional(),
@@ -162,6 +162,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -198,6 +199,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   const { fields, append, remove, move, insert } = useFieldArray({
     control: form.control,
     name: 'segments',
+    keyName: "fieldId",
   });
   
   const watchedSegments = form.watch('segments');
@@ -295,13 +297,27 @@ export default function EditGameForm({ game }: { game: Game }) {
   };
 
   const addSegment = () => {
-    if (newSegmentName.trim()) {
+    if (newSegmentName.trim() && fields.length < 16) {
       append(getDefaultSegment(newSegmentName.trim()));
       setNewSegmentName('');
+    } else if (fields.length >= 16) {
+        toast({
+            variant: "destructive",
+            title: "Límite de premios alcanzado",
+            description: "No puedes añadir más de 16 premios a una ruleta.",
+        });
     }
   };
 
   const duplicateSegment = (index: number) => {
+    if (fields.length >= 16) {
+       toast({
+            variant: "destructive",
+            title: "Límite de premios alcanzado",
+            description: "No puedes añadir más de 16 premios a una ruleta.",
+        });
+        return;
+    }
     const segmentToDuplicate = form.getValues(`segments.${index}`);
     insert(index + 1, {
       ...segmentToDuplicate,
@@ -606,10 +622,10 @@ export default function EditGameForm({ game }: { game: Game }) {
                                         onChange={(e) => setNewSegmentName(e.target.value)}
                                         placeholder="Nombre del nuevo premio"
                                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSegment(); } }}
-                                        disabled={loading}
+                                        disabled={loading || fields.length >= 16}
                                     />
                                 </div>
-                                <Button type="button" onClick={addSegment} disabled={!newSegmentName.trim() || loading}>
+                                <Button type="button" onClick={addSegment} disabled={!newSegmentName.trim() || loading || fields.length >= 16}>
                                     <PlusCircle className="h-4 w-4 mr-2" /> Añadir
                                 </Button>
                               </div>
@@ -979,14 +995,14 @@ export default function EditGameForm({ game }: { game: Game }) {
                       Vista Previa
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square overflow-hidden">
+                  <CardContent ref={previewContainerRef} className="p-0 bg-muted/50 flex items-center justify-center rounded-b-lg aspect-square overflow-hidden">
                     <div className="w-full max-w-md" style={{ transform: 'scale(0.8)' }}>
                       <SpinningWheel
-                        gameId={game.id}
-                        segments={watchedFormData.segments}
-                        config={watchedFormData.config}
-                        onSpinEnd={() => {}} // No-op for preview
-                        isDemoMode={true}
+                          gameId={game.id}
+                          segments={watchedFormData.segments}
+                          config={watchedFormData.config}
+                          onSpinEnd={() => {}} // No-op for preview
+                          isDemoMode={true}
                       />
                     </div>
                   </CardContent>
