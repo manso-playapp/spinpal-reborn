@@ -172,7 +172,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
         case 'IDLE':
         default:
              return (
-                <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in">
+                <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
                     <CardHeader>
                     <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
                         <QrCode />
@@ -181,7 +181,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center gap-4">
                         <QRCodeDisplay gameId={game.id} />
-                        <Separator className="bg-primary/20"/>
+                        <Separator className="bg-white/20"/>
                         <p className="text-sm">
                         Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
                         </p>
