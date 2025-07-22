@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, getDocs } from '@firebase/firestore';
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Users, Trash2 } from 'lucide-react';
+import { Users, Trash2, Download } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import Papa from 'papaparse';
 
 
 interface Customer {
@@ -43,7 +45,7 @@ interface Customer {
   } | null;
 }
 
-export default function CustomerList({ gameId }: { gameId: string }) {
+export default function CustomerList({ gameId, gameName }: { gameId: string, gameName: string }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -78,7 +80,7 @@ export default function CustomerList({ gameId }: { gameId: string }) {
       await deleteDoc(doc(db, "games", gameId, "customers", customerId));
       toast({
         title: "¡Participante Eliminado!",
-        description: `El participante "${customerName}" ha sido eliminado.`,
+        description: `El participante "${customerName}" ha sido eliminado. Ahora puede volver a jugar.`,
       });
     } catch (error) {
       console.error("Error deleting customer: ", error);
@@ -90,17 +92,61 @@ export default function CustomerList({ gameId }: { gameId: string }) {
     }
   };
 
+  const handleDownloadData = async () => {
+    if (customers.length === 0) {
+      toast({
+        title: 'No hay datos para descargar',
+        description: 'Aún no se ha registrado ningún cliente en este juego.',
+      });
+      return;
+    }
+    
+    const customersData = customers.map(customer => {
+      const data = customer;
+      const registrationDate = data.registeredAt && typeof data.registeredAt.seconds === 'number'
+        ? new Date(data.registeredAt.seconds * 1000).toLocaleString()
+        : 'N/A';
+        
+      return {
+        nombre: data.name || '',
+        email: data.email || '',
+        fecha_registro: registrationDate,
+        ha_jugado: data.hasPlayed ? 'Sí' : 'No',
+      };
+    });
+
+    const csv = Papa.unparse(customersData);
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `datos_${gameName.replace(/ /g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+      toast({
+        title: '¡Descarga Iniciada!',
+        description: `Se están descargando los datos de "${gameName}".`,
+    });
+  };
+
   return (
     <TooltipProvider>
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-            <Users />
-            Lista de Participantes
-        </CardTitle>
-        <CardDescription>
-          Aquí puedes ver todos los clientes que se han registrado para este juego.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle className="flex items-center gap-2">
+                <Users />
+                Lista de Participantes
+            </CardTitle>
+            <CardDescription>
+              Aquí puedes ver y gestionar los clientes que se han registrado para este juego.
+            </CardDescription>
+        </div>
+         <Button onClick={handleDownloadData}>
+            <Download className="mr-2 h-4 w-4" />
+            Descargar CSV
+        </Button>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -161,7 +207,7 @@ export default function CustomerList({ gameId }: { gameId: string }) {
                             <AlertDialogHeader>
                             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará permanentemente al participante <span className="font-bold">{customer.name}</span>.
+                                Esta acción no se puede deshacer. Se eliminará permanentemente al participante <span className="font-bold">{customer.name}</span>. Esto le permitirá volver a jugar.
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                              <AlertDialogFooter>
