@@ -190,6 +190,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   });
   
   const watchedFormData = form.watch();
+  const watchedSegments = form.watch('segments');
 
   // This effect will update the localStorage for the preview iframe
   useEffect(() => {
@@ -204,7 +205,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   }, [watchedFormData, game.id]);
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
-    const segments = watchedFormData.segments || [];
+    const segments = watchedSegments || [];
     const realPrizeSegments = segments.filter(s => s.isRealPrize);
     const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
 
@@ -220,7 +221,7 @@ export default function EditGameForm({ game }: { game: Game }) {
       realPrizeTotalProbability: realPrizeTotal,
       nonRealPrizeProbability: parseFloat(nonRealPrizeProb.toFixed(2))
     };
-  }, [watchedFormData.segments]);
+  }, [watchedSegments]);
   
 
   const sensors = useSensors(
@@ -636,7 +637,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                                 return (
                                                                 <FormItem>
                                                                     <FormControl>
-                                                                        {watchedFormData.segments[index]?.isRealPrize ? (
+                                                                        {watchedSegments[index]?.isRealPrize ? (
                                                                             <div className="flex items-center gap-2">
                                                                                 <Slider
                                                                                     value={[currentSliderValue]}
@@ -988,8 +989,3 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
-
-    
-
-    
-
