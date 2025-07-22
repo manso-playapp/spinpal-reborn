@@ -688,7 +688,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                                         <Input
                                                                             type="number"
                                                                             value={field.value || 0}
-                                                                            onValueChange={(val) => field.onChange(Number(val))}
+                                                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                                                                             className="text-center font-mono"
                                                                         />
                                                                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
