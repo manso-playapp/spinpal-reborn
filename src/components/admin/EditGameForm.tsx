@@ -85,6 +85,18 @@ const formSchema = z.object({
   rouletteScale: z.number().min(0.1).max(2).optional(),
   rouletteVerticalOffset: z.number().min(-500).max(500).optional(),
   qrVerticalOffset: z.number().min(-500).max(500).optional(),
+}).superRefine((data, ctx) => {
+    const realPrizeTotalProbability = data.segments
+        .filter(s => s.isRealPrize)
+        .reduce((acc, seg) => acc + (seg.probability || 0), 0);
+    
+    if (realPrizeTotalProbability > 100) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['segments'],
+            message: `La probabilidad total de los premios reales no puede superar el 100%. Actualmente es ${realPrizeTotalProbability.toFixed(2)}%.`,
+        });
+    }
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -179,6 +191,18 @@ export default function EditGameForm({ game }: { game: Game }) {
   
   const watchedFormData = form.watch();
 
+  // This effect will update the localStorage for the preview iframe
+  useEffect(() => {
+    const previewData = { ...watchedFormData, id: game.id, config: { // Also pass config
+        borderImage: watchedFormData.borderImage,
+        borderScale: watchedFormData.borderScale,
+        centerImage: watchedFormData.centerImage,
+        centerScale: watchedFormData.centerScale,
+    }};
+    localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
+    window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
+  }, [watchedFormData, game.id]);
+
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
     const realPrizeSegments = watchedFormData.segments.filter(s => s.isRealPrize);
     const nonRealPrizeSegments = watchedFormData.segments.filter(s => !s.isRealPrize);
@@ -197,21 +221,6 @@ export default function EditGameForm({ game }: { game: Game }) {
     };
   }, [watchedFormData.segments]);
   
-  // This effect will update the localStorage for the preview iframe
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      try {
-        const previewData = { ...value, id: game.id };
-        localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
-        // Use a more generic event name to signal any change
-        window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
-      } catch (error) {
-        console.error("Could not save preview data to localStorage", error);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, game.id]);
-
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -295,7 +304,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     centerScale: watchedFormData.centerScale,
   };
 
-  const roulettePreviewKey = JSON.stringify(watchedFormData);
+  const roulettePreviewKey = JSON.stringify(watchedFormData.segments) + JSON.stringify(currentConfig);
 
 
   return (
@@ -622,10 +631,8 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                             control={form.control}
                                                             name={`segments.${index}.probability`}
                                                             render={({ field: probField }) => {
-                                                              const currentSliderValue = probField.value || 0;
-                                                              const maxSliderValue = currentSliderValue + (100 - realPrizeTotalProbability);
-
-                                                              return (
+                                                                const currentSliderValue = probField.value || 0;
+                                                                return (
                                                                 <FormItem>
                                                                     <FormControl>
                                                                         {watchedFormData.segments[index]?.isRealPrize ? (
@@ -633,7 +640,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                                                 <Slider
                                                                                     value={[currentSliderValue]}
                                                                                     onValueChange={(vals) => probField.onChange(vals[0])}
-                                                                                    max={maxSliderValue}
+                                                                                    max={100}
                                                                                     step={1}
                                                                                 />
                                                                                 <span className="text-xs font-mono w-16 text-right">{currentSliderValue.toFixed(0)}%</span>
@@ -980,5 +987,7 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
+
+    
 
     
