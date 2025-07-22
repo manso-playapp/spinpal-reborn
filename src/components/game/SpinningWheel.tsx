@@ -50,7 +50,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
   const isSpinningRef = useRef(isSpinning);
   const spinRequestTimestamp = useRef<number | null>(null);
-  const currentRotationRef = useRef(0);
 
   useEffect(() => {
     isSpinningRef.current = isSpinning;
@@ -76,7 +75,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     if (winningIndex === -1) {
         console.error("Error: Winning segment ID not found in the current segments array.", { spinRequestData, segments });
-        // Clean up immediately if the data is inconsistent
         const gameRef = doc(db, 'games', gameId);
         updateDoc(gameRef, { spinRequest: deleteField() });
         return;
@@ -90,48 +88,41 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    // Calculate the start angle of the winning segment
     const winningSegmentStartAngle = winningIndex * segmentAngle;
     
-    // Create a random offset WITHIN the winning segment to make it look more natural.
-    // Use a padding (e.g., 10% of the segment width on each side) to avoid stopping on the line.
     const padding = 0.10; 
     const randomOffsetInSegment = (segmentAngle * padding) + (Math.random() * (segmentAngle * (1 - padding * 2)));
     
-    // The final angle within the 360-degree circle that we want to point to.
     const randomizedTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
 
-    // Add a random number of full spins for variety.
+    // Add a random number of full spins for variety and speed.
+    // THIS IS THE NEW LOGIC. It calculates a final absolute position.
     const fullSpins = (Math.floor(Math.random() * 3) + 5) * 360; 
   
-    // Calculate the final rotation value by adding to the current rotation.
+    // Calculate the final rotation value.
     // It aligns the target angle with the pointer angle (270deg)
-    const finalRotation = currentRotationRef.current + fullSpins + (POINTER_ANGLE - randomizedTargetAngle);
+    const finalRotation = fullSpins - randomizedTargetAngle + POINTER_ANGLE;
     
     setRotation(finalRotation);
-    currentRotationRef.current = finalRotation;
   
     const gameRef = doc(db, 'games', gameId);
     
-    // The spin animation takes 10 seconds
     setTimeout(async () => {
       setIsSpinning(false);
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
-      setWinningSegmentId(winningId); // Activate blinking after spin ends
+      setWinningSegmentId(winningId);
   
-      // Clean up the spin request from Firestore.
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
       } catch (error) {
         console.error("Error cleaning up spinRequest field:", error);
       }
 
-      // Stop blinking after a few seconds.
       setTimeout(() => {
         setWinningSegmentId(null);
       }, 4000); 
   
-    }, 10000); // This duration must match the CSS transition duration for a smooth stop.
+    }, 10000); // This duration must match the CSS transition duration.
   
   }, [segments, gameId, onSpinEnd]);
 
@@ -142,7 +133,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
 
   useEffect(() => {
-    if (isDemoMode) return; // Do not listen for spins in demo/preview mode
+    if (isDemoMode) return; 
 
     const gameRef = doc(db, 'games', gameId);
     
@@ -153,7 +144,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
         
         if (spinRequest && spinRequest.timestamp) {
             const newSpinTime = spinRequest.timestamp.toMillis();
-            // Process spin request only if it's new and we are not already spinning
             if (newSpinTime !== spinRequestTimestamp.current && !isSpinningRef.current) {
                 spinRequestTimestamp.current = newSpinTime;
                 spinHandlerRef.current(spinRequest);
@@ -219,17 +209,15 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                     const textAngle = startAngle + segmentAngle / 2;
                     const textPathId = `text-path-${segment.id || index}`;
                     
-                    // Dynamic text path calculation
-                    const textArcAngle = Math.min(segmentAngle, 90) * 0.9; // Limit text arc to 90deg and add padding
+                    const textArcAngle = Math.min(segmentAngle, 90) * 0.9; 
                     const [textPathStartX, textPathStartY] = getCoordinatesForAngle(textAngle - textArcAngle / 2, textRadius);
                     const [textPathEndX, textPathEndY] = getCoordinatesForAngle(textAngle + textArcAngle / 2, textRadius);
                     const textPathData = `M ${textPathStartX},${textPathStartY} A ${textRadius},${textRadius} 0 0 1 ${textPathEndX},${textPathEndY}`;
 
                     const nameParts = (segment.name || "").toUpperCase().split(',');
 
-                    // Icon positioning
                     const iconAngle = textAngle * Math.PI / 180;
-                    const iconRadius = textRadius * 0.6; // Position icon closer to center than text
+                    const iconRadius = textRadius * 0.6; 
                     const iconSize = 40 * (segment.iconScale || 1);
                     const iconX = WHEEL_RADIUS + iconRadius * Math.cos(iconAngle) - iconSize / 2;
                     const iconY = WHEEL_RADIUS + iconRadius * Math.sin(iconAngle) - iconSize / 2;
@@ -321,5 +309,3 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     </div>
   );
 }
-
-    
