@@ -59,21 +59,22 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 const isPhoneRequired = !!data.isPhoneRequired;
+                const segments = data.segments || [];
+
+                if (!Array.isArray(segments) || segments.length < 2 || !segments.every(s => s && typeof s.id === 'string')) {
+                    setErrorMessage('El juego no está configurado correctamente (faltan premios válidos con ID).');
+                    setUiState('ERROR');
+                    return;
+                }
 
                 const newGameData: GameData = {
                     isDemoMode: data.status === 'demo',
                     exemptedEmails: data.exemptedEmails || [],
                     isPhoneRequired: isPhoneRequired,
                     successMessage: data.successMessage || '¡Mucha suerte! Revisa la pantalla grande.',
-                    segments: Array.isArray(data.segments) && data.segments.length > 0 ? data.segments : [],
+                    segments: segments,
                 };
                 
-                if (!Array.isArray(newGameData.segments) || newGameData.segments.length < 2) {
-                    setErrorMessage('El juego no está configurado correctamente (faltan premios).');
-                    setUiState('ERROR');
-                    return;
-                }
-
                 setGameData(newGameData);
 
                 const newSchema = baseFormSchema.extend({
@@ -82,6 +83,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     : z.string().optional(),
                 });
                 setDynamicSchema(newSchema);
+
                 if (uiState === 'LOADING') {
                     setUiState('FORM');
                 }
@@ -98,7 +100,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
         return () => unsubscribe();
     }, [gameId, uiState]);
-
+    
     useEffect(() => {
         if (uiState !== 'WAITING_FOR_RESULT' || !customerId) return;
 
@@ -112,7 +114,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                         isRealPrize: data.lastResult.isRealPrize,
                     });
                     setUiState('SHOW_RESULT');
-                }, 6500);
+                }, 6500); 
                 unsubscribe();
             }
         });
@@ -165,6 +167,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
         try {
             const validSegments = gameData.segments.filter(s => s && s.id);
+
             if (validSegments.length < 2) {
                 throw new Error('El juego no tiene suficientes premios válidos configurados.');
             }
@@ -173,10 +176,11 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             const nonRealPrizeSegments = validSegments.filter(s => !s.isRealPrize);
 
             const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
-            const nonRealPrizeProb = nonRealPrizeSegments.length > 0
-                ? Math.max(0, 100 - realPrizeTotalProbability) / nonRealPrizeSegments.length
+            
+            const nonRealPrizeProb = nonRealPrizeSegments.length > 0 
+                ? Math.max(0, 100 - realPrizeTotalProbability) / nonRealPrizeSegments.length 
                 : 0;
-
+            
             const finalProbabilities = validSegments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
             
             const random = Math.random() * 100;
@@ -200,7 +204,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             if (!winningSegment || !winningSegment.id) {
                 throw new Error('No se pudo determinar un premio ganador válido.');
             }
-
+            
             const gameRef = doc(db, 'games', gameId);
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
             const batch = writeBatch(db);
@@ -210,6 +214,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 spinRequest: { timestamp: serverTimestamp(), customerId, winningId: winningSegment.id },
                 lastResult: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize, customerId, timestamp: serverTimestamp() }
             };
+            
             const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
 
             if (winningSegment.isRealPrize) {
