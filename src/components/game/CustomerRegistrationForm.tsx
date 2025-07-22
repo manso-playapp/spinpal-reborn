@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, AlertCircle, Loader2, RotateCw } from 'lucide-react';
+import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 
@@ -49,12 +49,19 @@ interface CustomerRegistrationFormProps {
   successMessage?: string;
 }
 
+type UiState = 'loading' | 'form' | 'spin_button' | 'waiting_result' | 'already_played' | 'error' | 'final_result';
+
+interface SpinResult {
+    name: string;
+    isRealPrize: boolean;
+}
 
 export default function CustomerRegistrationForm({ gameId, isDemoMode, successMessage }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
-  const [uiState, setUiState] = useState<'loading' | 'form' | 'spin_button' | 'submitted' | 'already_played' | 'error'>('loading');
+  const [uiState, setUiState] = useState<UiState>('loading');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -66,9 +73,28 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
   });
   
   useEffect(() => {
-    // We just set the initial state, no more localStorage checks here.
     setUiState('form');
   }, []);
+
+  // Listen for spin results
+  useEffect(() => {
+    if (uiState !== 'waiting_result' || !customerId) return;
+
+    const gameRef = doc(db, 'games', gameId);
+    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+        const data = docSnap.data();
+        if (data && data.lastResult && data.lastResult.customerId === customerId) {
+            setSpinResult({
+                name: data.lastResult.name,
+                isRealPrize: data.lastResult.isRealPrize,
+            });
+            setUiState('final_result');
+            unsubscribe(); // Stop listening after getting the result
+        }
+    });
+
+    return () => unsubscribe();
+  }, [uiState, customerId, gameId]);
 
 
   const onSubmit = async (data: CustomerFormValues) => {
@@ -84,17 +110,15 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         return;
       }
 
-      // Step 1: Just create the customer document.
       const newCustomerRef = await addDoc(collection(db, 'games', gameId, 'customers'), {
         name: data.name,
         email: data.email.toLowerCase(),
         phone: data.phone || '',
         registeredAt: serverTimestamp(),
-        hasPlayed: false, // Not played yet
+        hasPlayed: false,
       });
       
       setCustomerId(newCustomerRef.id);
-      // Step 2: Show the spin button
       setUiState('spin_button');
 
     } catch (error) {
@@ -120,20 +144,17 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         const gameRef = doc(db, 'games', gameId);
         const customerRef = doc(db, 'games', gameId, 'customers', customerId);
 
-        // Action 1: Update the game document to trigger the spin on screen
         await updateDoc(gameRef, {
             spinRequest: {
                 timestamp: serverTimestamp(),
-                customerId: customerId, // Pass customerId to the spin request
+                customerId: customerId,
             },
             plays: increment(1),
         });
 
-        // Action 2: Mark the customer as having played
         await updateDoc(customerRef, { hasPlayed: true });
 
-        // All successful, move to the final state
-        setUiState('submitted');
+        setUiState('waiting_result');
 
     } catch (error) {
         console.error('Error triggering spin: ', error);
@@ -186,26 +207,63 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     );
   }
   
-  if (uiState === 'submitted' || uiState === 'already_played') {
+  if (uiState === 'already_played') {
     return (
        <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
-          <div className="mx-auto bg-green-100 rounded-full p-4 w-fit dark:bg-green-800/50">
-            <PartyPopper className="h-12 w-12 text-green-600" />
+          <div className="mx-auto bg-yellow-100 rounded-full p-4 w-fit dark:bg-yellow-800/50">
+            <AlertCircle className="h-12 w-12 text-yellow-600" />
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
             <CardTitle className="text-2xl font-headline mb-2">
-                {uiState === 'already_played' ? '¡Ya has participado!' : '¡Giro solicitado!'}
+                ¡Ya has participado!
             </CardTitle>
             <CardDescription>
-                {uiState === 'already_played'
-                  ? 'Este correo electrónico ya ha sido utilizado para participar. ¡Gracias!'
-                  : successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!'}
+                Este correo electrónico ya ha sido utilizado para participar. ¡Gracias!
             </CardDescription>
         </CardContent>
       </Card>
     );
+  }
+
+  if (uiState === 'final_result' && spinResult) {
+     return (
+       <Card className="w-full max-w-md text-center shadow-lg">
+        <CardHeader>
+          <div className={`mx-auto rounded-full p-4 w-fit ${spinResult.isRealPrize ? 'bg-green-100 dark:bg-green-800/50' : 'bg-gray-100 dark:bg-gray-800/50'}`}>
+            {spinResult.isRealPrize ? (
+                 <Gift className="h-12 w-12 text-green-600" />
+            ) : (
+                <ThumbsDown className="h-12 w-12 text-gray-600" />
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+            <CardTitle className="text-2xl font-headline mb-2">
+                 {spinResult.isRealPrize ? '¡Felicidades!' : '¡Casi!'}
+            </CardTitle>
+            <p className="text-xl font-semibold text-primary">{spinResult.name}</p>
+            <CardDescription className="mt-2">
+                {spinResult.isRealPrize
+                  ? 'Hemos enviado un correo electrónico a tu dirección con los detalles para reclamar tu premio. ¡Gracias por participar!'
+                  : 'No te desanimes, ¡mucha suerte para la próxima! Gracias por participar.'}
+            </CardDescription>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (uiState === 'waiting_result') {
+    return (
+      <Card className="w-full max-w-md text-center shadow-lg">
+        <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
+           <Loader2 className="h-16 w-16 animate-spin text-primary" />
+           <p className="font-semibold text-muted-foreground">Esperando resultado...</p>
+           <p className="text-sm text-muted-foreground">Mira la pantalla grande para ver el giro.</p>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (isDemoMode) {
@@ -323,5 +381,3 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     </Card>
   );
 }
-
-    

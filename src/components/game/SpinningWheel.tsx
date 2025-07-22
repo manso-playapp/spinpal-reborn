@@ -39,12 +39,13 @@ interface SpinningWheelProps {
     centerImage?: string;
     centerScale?: number;
   };
+  onSpinEnd: (result: { name: string; isRealPrize: boolean }) => void;
 }
 
 const VIEWBOX_SIZE = 500;
 const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
 
-export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, showDemoButton = false, config = {} }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, isDemoMode = false, showDemoButton = false, config = {}, onSpinEnd }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -105,7 +106,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     return normalizedSegments.length - 1; // Fallback
   }, [normalizedSegments]);
 
-  const handleSpinClick = useCallback((customerId?: string) => {
+  const handleSpinClick = useCallback(async (customerId?: string) => {
     if (isSpinningRef.current || normalizedSegments.length === 0) {
         console.log("DIAGNÓSTICO: Se ignoró el giro. ¿Está girando ya?", isSpinningRef.current, "¿Hay segmentos?", normalizedSegments.length > 0);
         return;
@@ -126,10 +127,23 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     const newRotation = rotation + fullSpins + targetAngle;
     setRotation(newRotation);
 
+    const gameRef = doc(db, 'games', gameId);
+
+    // Update game with last result for the player's screen
+    if (customerId) {
+        await updateDoc(gameRef, {
+            lastResult: {
+                name: winningSegment.name,
+                isRealPrize: !!winningSegment.isRealPrize,
+                customerId: customerId,
+                timestamp: new Date(),
+            }
+        });
+    }
+
     setTimeout(async () => {
       console.log("DIAGNÓSTICO: El giro ha terminado.");
       setIsSpinning(false);
-      const gameRef = doc(db, 'games', gameId);
       
       console.log("DIAGNÓSTICO: Intentando limpiar spinRequest en Firestore...");
       try {
@@ -139,6 +153,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
         console.error("DIAGNÓSTICO: ¡ERROR AL LIMPIAR spinRequest!", error);
       }
       
+      onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
+
       if (!isDemoMode && winningSegment?.isRealPrize && customerId) {
         console.log(`DIAGNÓSTICO: Es un premio real para el cliente ${customerId}. Intentando actualizar contador y notificar...`);
         try {
@@ -160,7 +176,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
       }
     }, 7000); // Match transition duration
 
-  }, [normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex, rotation]);
+  }, [normalizedSegments, gameId, isDemoMode, getWinningSegmentIndex, rotation, onSpinEnd]);
 
   const spinHandlerRef = useRef(handleSpinClick);
   useEffect(() => {
@@ -345,6 +361,3 @@ export default function SpinningWheel({ segments: initialSegments, gameId, isDem
     </div>
   );
 }
-
-
-
