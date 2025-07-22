@@ -350,7 +350,11 @@ service cloud.firestore {
                             <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
                             <li>Resend te dará unos registros DNS que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, DONWEB, etc.).</li>
                             <li className='font-bold text-card-foreground'>
-                                <strong>¡Atención DONWEB!</strong> Si Resend te pide un registro con Host/Nombre `send`, en tu panel de DONWEB debes introducir el nombre completo: `send.tudominio.com` (reemplazando `tudominio.com`).
+                                <strong>¡Atención Proveedores como DONWEB!</strong> Si el panel de tu dominio no acepta un nombre de host como `send` o `resend._domainkey`, es porque espera el nombre completo. Debes construirlo tú mismo:
+                                <ul className="list-disc list-inside pl-6 mt-2 font-normal">
+                                    <li>Si Resend pide `send`, en tu panel debes poner `send.tudominio.com`.</li>
+                                    <li>Si Resend pide `resend._domainkey`, en tu panel debes poner `resend._domainkey.tudominio.com`.</li>
+                                </ul>
                             </li>
                             <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como "Verified".</li>
                             <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`src/ai/flows/prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
