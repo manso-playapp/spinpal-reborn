@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle } from 'lucide-react';
+import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle, Bug } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
@@ -69,6 +69,10 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [dynamicSchema, setDynamicSchema] = useState(baseFormSchema.extend({ phone: z.string().optional() }));
+  
+  // --- SEÑUELO DE DEPURACIÓN ---
+  const [debugWinningSegment, setDebugWinningSegment] = useState<any>(null);
+  // --- FIN SEÑUELO ---
 
   const form = useForm<z.infer<typeof dynamicSchema>>({
     resolver: zodResolver(dynamicSchema),
@@ -88,7 +92,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 const data = docSnap.data();
                 const isPhoneRequired = data.isPhoneRequired || false;
                 
-                const newGameData = {
+                const newGameData: GameData = {
                     isDemoMode: data.status === 'demo',
                     exemptedEmails: data.exemptedEmails || [],
                     isPhoneRequired: isPhoneRequired,
@@ -221,7 +225,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const random = Math.random() * 100;
         let accumulatedProb = 0;
-        let winningSegment = null;
+        let winningSegment: any = null; // Changed to any to allow debug tracking
 
         for (let i = 0; i < finalSegments.length; i++) {
             accumulatedProb += (finalSegments[i].finalProbability || 0);
@@ -232,11 +236,22 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         }
         
         if (!winningSegment) {
-            winningSegment = finalSegments[finalSegments.length - 1]; // Fallback
+            winningSegment = finalSegments.length > 0 ? finalSegments[finalSegments.length - 1] : null; // Fallback to last segment
         }
+        
+        // --- SEÑUELO DE DEPURACIÓN ---
+        setDebugWinningSegment(winningSegment);
+        // --- FIN SEÑUELO ---
 
         if (!winningSegment || !winningSegment.id) {
-            throw new Error("No se pudo determinar un segmento ganador válido.");
+            console.error("DEBUG INFO:", { winningSegment });
+            toast({
+                variant: 'destructive',
+                title: 'Error Crítico de Sorteo',
+                description: 'No se pudo determinar un premio ganador. Por favor, contacta a soporte.',
+            });
+            setIsSubmitting(false);
+            return;
         }
 
         const gameRef = doc(db, 'games', gameId);
@@ -428,7 +443,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                     ¡Todo listo! Presiona el botón para hacer girar la ruleta en la pantalla grande.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
                 <Button size="lg" className="w-full h-16 text-xl" onClick={handleSpin} disabled={isSubmitting}>
                      {isSubmitting ? (
                         <>
@@ -442,6 +457,18 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                         </>
                     )}
                 </Button>
+
+                {/* --- SEÑUELO DE DEPURACIÓN --- */}
+                {debugWinningSegment && (
+                    <div className="mt-4 p-2 border border-blue-500 bg-blue-500/10 rounded-md text-left text-xs">
+                        <p className="font-bold flex items-center gap-2"><Bug className="h-4 w-4" />Debug Info:</p>
+                        <pre className="whitespace-pre-wrap break-all">
+                            {JSON.stringify(debugWinningSegment, null, 2)}
+                        </pre>
+                    </div>
+                )}
+                 {/* --- FIN SEÑUELO --- */}
+
             </CardContent>
         </Card>
     )
