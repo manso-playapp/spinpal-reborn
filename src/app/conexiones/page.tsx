@@ -340,15 +340,20 @@ service cloud.firestore {
     }
 
     match /games/{gameId} {
+      // Cualquiera puede leer los datos del juego para mostrar la ruleta
       allow read: if true;
+      
       // Solo el super-admin puede crear o borrar juegos.
       allow create, delete: if isSuperAdmin();
-      // El super-admin puede actualizar todo.
-      // El cliente dueño del juego puede actualizarlo (excepto cambiar de dueño).
-      // El jugador no autenticado solo puede actualizar los campos de giro.
-      allow update: if isSuperAdmin() || 
-                      (isGameClient(gameId) && request.resource.data.clientEmail == resource.data.clientEmail) ||
-                      (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinRequest', 'plays', 'prizesAwarded', 'lastResult']));
+      
+      // Permisos de actualización
+      allow update: if 
+      			// El Super Admin puede actualizar todo
+            isSuperAdmin() ||
+            // El cliente dueño del juego puede actualizarlo (excepto cambiar de dueño)
+            (isGameClient(gameId) && request.resource.data.clientEmail == resource.data.clientEmail) ||
+            // Un jugador (no autenticado) solo puede actualizar los campos para el giro.
+            (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plays', 'prizesAwarded', 'spinRequest', 'lastResult']));
     }
 
     match /games/{gameId}/customers/{customerId} {

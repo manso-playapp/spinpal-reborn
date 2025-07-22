@@ -201,6 +201,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
   const handleSpin = async () => {
     if (!customerId || !gameData) {
         setUiState('error');
+        toast({ title: "Error", description: "Faltan datos del cliente o del juego."});
         return;
     };
     setIsSubmitting(true);
@@ -232,6 +233,10 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
         
         if (!winningSegment) {
             winningSegment = finalSegments[finalSegments.length - 1]; // Fallback
+        }
+
+        if (!winningSegment || !winningSegment.id) {
+            throw new Error("No se pudo determinar un segmento ganador válido.");
         }
 
         const gameRef = doc(db, 'games', gameId);
