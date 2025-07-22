@@ -144,9 +144,7 @@ export default function EditGameForm({ game }: { game: Game }) {
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
-  const [previewKey, setPreviewKey] = useState(Date.now());
-
-
+  
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -198,20 +196,21 @@ export default function EditGameForm({ game }: { game: Game }) {
       nonRealPrizeProbability: parseFloat(nonRealPrizeProbability.toFixed(2))
     };
   }, [watchedFormData.segments]);
-
+  
   // This effect will update the localStorage for the preview iframe
   useEffect(() => {
     const subscription = form.watch((value) => {
       try {
         const previewData = { ...value, id: game.id };
         localStorage.setItem(`game-preview-${game.id}`, JSON.stringify(previewData));
+        // Use a more generic event name to signal any change
         window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
       } catch (error) {
         console.error("Could not save preview data to localStorage", error);
       }
     });
     return () => subscription.unsubscribe();
-  }, [form.watch, game.id]);
+  }, [form, game.id]);
 
 
   const sensors = useSensors(
@@ -259,7 +258,8 @@ export default function EditGameForm({ game }: { game: Game }) {
         description: `Los cambios en "${data.name}" han sido guardados.`,
       });
       // Refresh the iframe preview just in case
-      setPreviewKey(Date.now());
+      window.dispatchEvent(new CustomEvent('previewUpdate', { detail: { gameId: game.id } }));
+
     } catch (error) {
       console.error('Error updating game: ', error);
       toast({
@@ -295,7 +295,8 @@ export default function EditGameForm({ game }: { game: Game }) {
     centerScale: watchedFormData.centerScale,
   };
 
-  const roulettePreviewKey = JSON.stringify(watchedFormData.segments) + JSON.stringify(currentConfig);
+  const roulettePreviewKey = JSON.stringify(watchedFormData);
+
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -620,25 +621,30 @@ export default function EditGameForm({ game }: { game: Game }) {
                                                         <FormField
                                                             control={form.control}
                                                             name={`segments.${index}.probability`}
-                                                            render={({ field: probField }) => (
-                                                            <FormItem>
-                                                                <FormControl>
-                                                                    {watchedFormData.segments[index]?.isRealPrize ? (
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Slider
-                                                                                value={[probField.value || 0]}
-                                                                                onValueChange={(vals) => probField.onChange(vals[0])}
-                                                                                max={100 - (realPrizeTotalProbability - (probField.value || 0))}
-                                                                                step={1}
-                                                                            />
-                                                                            <span className="text-xs font-mono w-16 text-right">{(probField.value || 0).toFixed(0)}%</span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 h-8 text-xs border-dashed" />
-                                                                    )}
-                                                                </FormControl>
-                                                            </FormItem>
-                                                            )}
+                                                            render={({ field: probField }) => {
+                                                              const currentSliderValue = probField.value || 0;
+                                                              const maxSliderValue = currentSliderValue + (100 - realPrizeTotalProbability);
+
+                                                              return (
+                                                                <FormItem>
+                                                                    <FormControl>
+                                                                        {watchedFormData.segments[index]?.isRealPrize ? (
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Slider
+                                                                                    value={[currentSliderValue]}
+                                                                                    onValueChange={(vals) => probField.onChange(vals[0])}
+                                                                                    max={maxSliderValue}
+                                                                                    step={1}
+                                                                                />
+                                                                                <span className="text-xs font-mono w-16 text-right">{currentSliderValue.toFixed(0)}%</span>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <Input value={`${nonRealPrizeProbability.toFixed(2)}% (auto)`} disabled className="text-center bg-muted/50 h-8 text-xs border-dashed" />
+                                                                        )}
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                              );
+                                                            }}
                                                         />
                                                      </div>
                                                 </div>
@@ -955,7 +961,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <div className="mt-4 p-2 flex justify-center items-center bg-muted/50 rounded-lg overflow-hidden aspect-[9/16] w-full">
                           <div className="w-full h-full bg-background shadow-lg overflow-hidden relative rounded-lg transform origin-top-left">
                              <iframe
-                                key={previewKey}
+                                key={roulettePreviewKey}
                                 src={`/juego/${game.id}/preview`}
                                 className="w-full h-full border-0"
                                 scrolling="no"
