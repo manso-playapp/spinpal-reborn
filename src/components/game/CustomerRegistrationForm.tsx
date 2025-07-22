@@ -70,10 +70,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
   const [gameData, setGameData] = useState<GameData | null>(null);
   const [dynamicSchema, setDynamicSchema] = useState(baseFormSchema.extend({ phone: z.string().optional() }));
   
-  // --- SEÑUELO DE DEPURACIÓN ---
-  const [debugWinningSegment, setDebugWinningSegment] = useState<any>(null);
-  // --- FIN SEÑUELO ---
-
   const form = useForm<z.infer<typeof dynamicSchema>>({
     resolver: zodResolver(dynamicSchema),
     defaultValues: {
@@ -213,7 +209,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
     try {
         const { segments } = gameData;
         
-        // --- NUEVO ALGORITMO DE SORTEO ---
         const realPrizeSegments = segments.filter(s => s.isRealPrize);
         const nonRealPrizeSegments = segments.filter(s => !s.isRealPrize);
         const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
@@ -234,14 +229,12 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             }
         }
         
-        if (winningIndex === -1) {
-            winningIndex = segments.length > 0 ? segments.length - 1 : -1;
+        if (winningIndex === -1 && segments.length > 0) {
+            winningIndex = segments.length - 1;
         }
-        
+
         const winningSegment = winningIndex !== -1 ? segments[winningIndex] : null;
 
-        setDebugWinningSegment(winningSegment);
-        
         if (!winningSegment || !winningSegment.id) {
             console.error("ERROR CRITICO: El segmento ganador no se pudo determinar o no tiene ID.", { winningSegment });
             toast({
@@ -272,6 +265,7 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 timestamp: serverTimestamp(),
             }
         };
+
         const customerUpdateData: { [key: string]: any } = {
             hasPlayed: true
         };
@@ -280,15 +274,8 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
             gameUpdateData.prizesAwarded = increment(1);
             customerUpdateData.prizeWonName = winningSegment.name;
             customerUpdateData.prizeWonAt = serverTimestamp();
-        }
-
-        batch.update(gameRef, gameUpdateData);
-        batch.update(customerRef, customerUpdateData);
-        
-        await batch.commit();
-
-        if (winningSegment.isRealPrize) {
-             try {
+            
+            try {
                 await sendPrizeNotification({
                     gameId: gameId,
                     customerId: customerId,
@@ -298,6 +285,11 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 console.error("Failed to send prize notification email:", emailError);
             }
         }
+
+        batch.update(gameRef, gameUpdateData);
+        batch.update(customerRef, customerUpdateData);
+        
+        await batch.commit();
         
         setUiState('success_message');
 
@@ -452,18 +444,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                         </>
                     )}
                 </Button>
-
-                {/* --- SEÑUELO DE DEPURACIÓN --- */}
-                {debugWinningSegment && (
-                    <div className="mt-4 p-2 border border-blue-500 bg-blue-500/10 rounded-md text-left text-xs">
-                        <p className="font-bold flex items-center gap-2"><Bug className="h-4 w-4" />Debug Info:</p>
-                        <pre className="whitespace-pre-wrap break-all">
-                            {JSON.stringify(debugWinningSegment, null, 2)}
-                        </pre>
-                    </div>
-                )}
-                 {/* --- FIN SEÑUELO --- */}
-
             </CardContent>
         </Card>
     )
