@@ -96,7 +96,6 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
                 };
                 setGameData(newGameData);
 
-                // Update schema based on game data
                 const newSchema = baseFormSchema.extend({
                   phone: isPhoneRequired
                     ? z.string().min(6, 'Por favor, introduce un número de teléfono válido.')
@@ -222,26 +221,21 @@ export default function CustomerRegistrationForm({ gameId }: CustomerRegistratio
 
         const random = Math.random() * 100;
         let accumulatedProb = 0;
-        let winningIndex = -1;
+        let winningSegment = finalSegments[finalSegments.length - 1]; // Fallback
 
         for (let i = 0; i < finalSegments.length; i++) {
             accumulatedProb += (finalSegments[i].finalProbability || 0);
             if (random < accumulatedProb) {
-                winningIndex = i;
+                winningSegment = finalSegments[i];
                 break;
             }
         }
         
-        if (winningIndex === -1) winningIndex = finalSegments.length - 1;
-
-        const winningSegment = finalSegments[winningIndex];
-        
-        // Create a plain object for Firestore to avoid serialization issues
         const spinRequestData = {
             timestamp: serverTimestamp(),
             customerId: customerId,
             winningId: winningSegment.id, 
-            winningSegment: { // Ensure this is a plain object
+            winningSegment: {
                 name: winningSegment.name,
                 isRealPrize: !!winningSegment.isRealPrize,
             }

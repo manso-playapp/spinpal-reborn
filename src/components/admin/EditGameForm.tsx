@@ -65,7 +65,6 @@ const segmentSchema = z.object({
   iconScale: z.number().min(0.1).max(2).default(1),
 });
 
-
 const formSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   status: z.enum(['activo', 'demo']),
@@ -80,14 +79,16 @@ const formSchema = z.object({
   registrationSubtitle: z.string().optional(),
   isPhoneRequired: z.boolean().optional(),
   successMessage: z.string().optional(),
-  borderImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
-  borderScale: z.number().min(0.1).max(2).optional(),
-  centerImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
-  centerScale: z.number().min(0.1).max(2).optional(),
   qrCodeScale: z.number().min(0.1).max(2).optional(),
   rouletteScale: z.number().min(0.1).max(2).optional(),
   rouletteVerticalOffset: z.number().min(-500).max(500).optional(),
   qrVerticalOffset: z.number().min(-500).max(500).optional(),
+  config: z.object({
+    borderImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
+    borderScale: z.number().min(0.1).max(2).optional(),
+    centerImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
+    centerScale: z.number().min(0.1).max(2).optional(),
+  }),
 }).superRefine((data, ctx) => {
     const realPrizeTotalProbability = data.segments
         .filter(s => s.isRealPrize)
@@ -101,6 +102,7 @@ const formSchema = z.object({
         });
     }
 });
+
 
 type GameFormValues = z.infer<typeof formSchema>;
 
@@ -121,14 +123,16 @@ interface Game {
   successMessage?: string;
   plays?: number;
   prizesAwarded?: number;
-  borderImage?: string;
-  borderScale?: number;
-  centerImage?: string;
-  centerScale?: number;
   qrCodeScale?: number;
   rouletteScale?: number;
   rouletteVerticalOffset?: number;
   qrVerticalOffset?: number;
+  config?: {
+    borderImage?: string;
+    borderScale?: number;
+    centerImage?: string;
+    centerScale?: number;
+  },
   [key: string]: any;
 }
 
@@ -177,14 +181,16 @@ export default function EditGameForm({ game }: { game: Game }) {
       registrationSubtitle: game.registrationSubtitle || '',
       isPhoneRequired: game.isPhoneRequired || false,
       successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
-      borderImage: game.borderImage || 'https://i.imgur.com/J62nHj9.png',
-      borderScale: game.borderScale || 1,
-      centerImage: game.centerImage || 'https://i.imgur.com/N3PAzB2.png',
-      centerScale: game.centerScale || 1,
       qrCodeScale: game.qrCodeScale || 1,
       rouletteScale: game.rouletteScale || 1,
       rouletteVerticalOffset: game.rouletteVerticalOffset || 0,
       qrVerticalOffset: game.qrVerticalOffset || 0,
+      config: {
+        borderImage: game.config?.borderImage || game.borderImage || 'https://i.imgur.com/J62nHj9.png',
+        borderScale: game.config?.borderScale || game.borderScale || 1,
+        centerImage: game.config?.centerImage || game.centerImage || 'https://i.imgur.com/N3PAzB2.png',
+        centerScale: game.config?.centerScale || game.centerScale || 1,
+      }
     },
   });
 
@@ -262,6 +268,12 @@ export default function EditGameForm({ game }: { game: Game }) {
         plays: game.plays || 0,
         prizesAwarded: game.prizesAwarded || 0,
       };
+      
+      // Deprecated fields removal
+      delete updateData.borderImage;
+      delete updateData.borderScale;
+      delete updateData.centerImage;
+      delete updateData.centerScale;
 
       await updateDoc(gameRef, updateData);
 
@@ -294,18 +306,11 @@ export default function EditGameForm({ game }: { game: Game }) {
     insert(index + 1, {
       ...segmentToDuplicate,
       name: `${segmentToDuplicate.name} (Copia)`,
-      id: generateUniqueId(), // Ensure it gets a new unique ID
+      id: generateUniqueId(),
     });
   };
   
-  const currentConfig = {
-    borderImage: watchedFormData.borderImage,
-    borderScale: watchedFormData.borderScale,
-    centerImage: watchedFormData.centerImage,
-    centerScale: watchedFormData.centerScale,
-  };
-
-  const previewData = { ...watchedFormData, id: game.id, config: currentConfig };
+  const previewData = { ...watchedFormData, id: game.id };
 
 
   return (
@@ -428,7 +433,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                 <FormLabel className="flex items-center gap-2"><Users /> Correos Exentos de Verificación</FormLabel>
                                 <FormControl>
                                   <Textarea
-                                    placeholder="un-email@ejemplo.com&#10;otro-email@ejemplo.com"
+                                    placeholder="un-email@ejemplo.com\notro-email@ejemplo.com"
                                     className="min-h-[100px] font-mono text-sm"
                                     {...field}
                                     disabled={loading}
@@ -524,7 +529,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     <h4 className="font-semibold">Imagen del Borde</h4>
                                     <FormField
                                     control={form.control}
-                                    name="borderImage"
+                                    name="config.borderImage"
                                     render={({ field }) => (
                                         <FormItem>
                                         <FormLabel>URL</FormLabel>
@@ -537,7 +542,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     />
                                     <FormField
                                     control={form.control}
-                                    name="borderScale"
+                                    name="config.borderScale"
                                     render={({ field }) => (
                                         <FormItem>
                                         <FormLabel>Escala ({field.value?.toFixed(2)})</FormLabel>
@@ -559,7 +564,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                      <h4 className="font-semibold">Imagen del Centro/Puntero</h4>
                                      <FormField
                                     control={form.control}
-                                    name="centerImage"
+                                    name="config.centerImage"
                                     render={({ field }) => (
                                         <FormItem>
                                         <FormLabel>URL</FormLabel>
@@ -572,7 +577,7 @@ export default function EditGameForm({ game }: { game: Game }) {
                                     />
                                     <FormField
                                     control={form.control}
-                                    name="centerScale"
+                                    name="config.centerScale"
                                     render={({ field }) => (
                                         <FormItem>
                                         <FormLabel>Escala ({field.value?.toFixed(2)})</FormLabel>
@@ -987,12 +992,12 @@ export default function EditGameForm({ game }: { game: Game }) {
                         <div className="mt-4 p-4 flex justify-center items-center bg-muted/50 rounded-lg min-h-[450px]">
                           <div className="w-full max-w-md">
                             <SpinningWheel
-                              key={JSON.stringify(watchedSegments) + JSON.stringify(currentConfig)}
+                              key={JSON.stringify(watchedSegments) + JSON.stringify(watchedFormData.config)}
                               segments={watchedSegments}
                               gameId={game.id}
                               isDemoMode={true}
                               showDemoButton={true}
-                              config={currentConfig}
+                              config={watchedFormData.config}
                               onSpinEnd={() => {}}
                             />
                           </div>
@@ -1015,3 +1020,4 @@ export default function EditGameForm({ game }: { game: Game }) {
     </main>
   );
 }
+

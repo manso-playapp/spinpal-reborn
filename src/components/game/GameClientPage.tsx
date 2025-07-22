@@ -48,14 +48,12 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
 
   useEffect(() => {
-    // If it's a preview and we have fresh initialData, use it.
     if (isPreview && initialData) {
         setGame(initialData);
         setLoading(false);
         return;
     }
 
-    // Otherwise, fetch from Firestore. This runs for the public page or as a fallback for the preview.
     const getGameData = async () => {
       setLoading(true);
       const gameRef = doc(db, 'games', gameId);
@@ -80,8 +78,7 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
         rouletteScale: data.rouletteScale || 1,
         rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
         qrVerticalOffset: data.qrVerticalOffset || 0,
-        // The config object should now be passed directly in initialData for previews
-        config: data.config ? data.config : {
+        config: data.config || { // Fallback for old data structure
           borderImage: data.borderImage || '',
           borderScale: data.borderScale || 1,
           centerImage: data.centerImage || '',
@@ -91,14 +88,14 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
       setLoading(false);
     };
 
-    if (!game || (isPreview && !initialData)) {
+    if (!initialData) {
       getGameData();
     }
   }, [gameId, isPreview, initialData]);
 
 
   const handleSpinEnd = (result: SpinResult) => {
-    if (isPreview) return; // Don't show results in preview mode after spin
+    if (isPreview) return; 
     setSpinResult(result);
     setTimeout(() => {
       setSpinResult(null);
@@ -135,7 +132,6 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
             </div>
         )}
 
-        {/* Roulette container - This container handles scale and vertical offset */}
         <div
             className="absolute inset-0 flex justify-center items-center pointer-events-none"
             style={{
@@ -143,7 +139,6 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
                 transformOrigin: 'center center',
             }}
         >
-          {/* This inner container handles the content's max-width */}
           <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
             <SpinningWheel 
               segments={game.segments} 
@@ -156,7 +151,6 @@ export default function GameClientPage({ gameId, isPreview = false, initialData 
           </div>
         </div>
 
-        {/* QR / Result container */}
         <div 
           className="absolute bottom-4 px-4 w-full flex justify-center items-center"
           style={{ 
