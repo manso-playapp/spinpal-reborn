@@ -39,10 +39,11 @@ export default function GamePage({ params }: { params: { id:string } }) {
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
+  const gameId = params.id;
 
   useEffect(() => {
     const getGameData = async () => {
-      const gameRef = doc(db, 'games', params.id);
+      const gameRef = doc(db, 'games', gameId);
       const gameSnap = await getDoc(gameRef);
 
       if (!gameSnap.exists()) {
@@ -75,7 +76,7 @@ export default function GamePage({ params }: { params: { id:string } }) {
       setLoading(false);
     };
     getGameData();
-  }, [params.id]);
+  }, [gameId]);
 
 
   const handleSpinEnd = (result: SpinResult) => {
