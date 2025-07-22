@@ -44,6 +44,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [winningSegmentId, setWinningSegmentId] = useState<string | null>(null);
   const spinRequestTimestamp = useRef<number | null>(null);
   
   const isSpinningRef = useRef(isSpinning);
@@ -78,12 +79,13 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const winningSegment = segments[winningIndex];
 
     setIsSpinning(true);
+    setWinningSegmentId(winningId);
     
     const segmentCount = segments.length;
     const segmentAngle = 360 / segmentCount;
     
-    const randomOffsetInSegment = (Math.random() * 0.8 + 0.1) * segmentAngle;
-    const targetAngle = 360 - (winningIndex * segmentAngle + randomOffsetInSegment);
+    // Point directly to the middle of the winning segment
+    const targetAngle = 360 - (winningIndex * segmentAngle + (segmentAngle / 2));
     
     // Add randomness to the number of spins for a more natural feel
     const fullSpins = (6 + Math.random() * 2) * 360; 
@@ -96,6 +98,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     setTimeout(async () => {
       setIsSpinning(false);
+      setWinningSegmentId(null);
       
       try {
         await updateDoc(gameRef, { spinRequest: deleteField() });
@@ -163,6 +166,17 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
       <div className="relative w-full max-w-md aspect-square">
+        <style>
+            {`
+            @keyframes blink-winner {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.3; }
+            }
+            .blinking-winner {
+                animation: blink-winner 0.5s 3;
+            }
+            `}
+        </style>
         
         {/* Layer 1: Spinning Wheel SVG (Bottom) */}
         <div className="absolute inset-0 z-0">
@@ -197,7 +211,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                     const iconRotation = textAngle + 90;
 
                     return (
-                      <g key={segment.id || index}>
+                      <g key={segment.id || index} className={winningSegmentId === segment.id ? 'blinking-winner' : ''}>
                         <defs>
                           <path id={textPathId} d={textPathData} />
                         </defs>
