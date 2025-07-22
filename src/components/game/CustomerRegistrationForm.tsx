@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, RotateCw, AlertCircle, Loader2 } from 'lucide-react';
+import { Send, PartyPopper, AlertCircle, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const formSchema = z.object({
@@ -48,9 +48,7 @@ interface CustomerRegistrationFormProps {
 
 export default function CustomerRegistrationForm({ gameId, isDemoMode, successMessage }: CustomerRegistrationFormProps) {
   const { toast } = useToast();
-  const [hasPlayed, setHasPlayed] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorOccurred, setErrorOccurred] = useState(false);
+  const [submissionState, setSubmissionState] = useState<'idle' | 'submitting' | 'submitted' | 'error' | 'already_played'>('idle');
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -60,20 +58,42 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     },
   });
 
+  // Check localStorage on client-side mount to improve UX for repeat visitors
+  useEffect(() => {
+    if (isDemoMode) return;
+    try {
+        const storageKey = `spinpal-played-${gameId}`;
+        if (window.localStorage.getItem(storageKey)) {
+            setSubmissionState('submitted');
+        }
+    } catch (e) {
+        console.warn("Could not read from localStorage:", e);
+    }
+  }, [gameId, isDemoMode]);
+
+
   const onSubmit = async (data: CustomerFormValues) => {
-    setIsSubmitting(true);
-    setErrorOccurred(false);
+    setSubmissionState('submitting');
+    const storageKey = `spinpal-played-${gameId}`;
     
     try {
+      // The single source of truth: check if email exists in the database
       const customersCollectionRef = collection(db, 'games', gameId, 'customers');
       const q = query(customersCollectionRef, where("email", "==", data.email.toLowerCase()), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        setHasPlayed(true);
+        setSubmissionState('already_played');
+        // Mark in localStorage for this browser
+        try {
+            window.localStorage.setItem(storageKey, 'true');
+        } catch (e) {
+            console.warn("Could not write to localStorage:", e);
+        }
         return;
       }
 
+      // If email doesn't exist, proceed with registration
       const batch = writeBatch(db);
       const gameRef = doc(db, 'games', gameId);
       
@@ -94,22 +114,27 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
       });
 
       await batch.commit();
-      setHasPlayed(true);
+
+      // On successful submission, update state and localStorage
+      setSubmissionState('submitted');
+       try {
+        window.localStorage.setItem(storageKey, 'true');
+      } catch (e) {
+        console.warn("Could not write to localStorage:", e);
+      }
 
     } catch (error) {
       console.error('Error registering customer and spinning: ', error);
-      setErrorOccurred(true);
+      setSubmissionState('error');
       toast({
         variant: 'destructive',
         title: 'Error en el registro',
-        description: 'Hubo un problema al registrarte. Por favor, recarga e inténtalo de nuevo.',
+        description: 'Hubo un problema al registrarte. Por favor, inténtalo de nuevo.',
       });
-    } finally {
-        setIsSubmitting(false);
     }
   };
   
-  if (errorOccurred) {
+  if (submissionState === 'error') {
        return (
        <Card className="w-full max-w-md shadow-lg">
         <CardContent className="pt-6">
@@ -125,7 +150,7 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
     );
   }
   
-  if (hasPlayed) {
+  if (submissionState === 'submitted' || submissionState === 'already_played') {
     return (
        <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
@@ -134,7 +159,9 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-            <CardTitle className="text-2xl font-headline mb-2">¡Giro solicitado!</CardTitle>
+            <CardTitle className="text-2xl font-headline mb-2">
+                {submissionState === 'already_played' ? '¡Ya has participado!' : '¡Giro solicitado!'}
+            </CardTitle>
             <CardDescription>
                 {successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!'}
             </CardDescription>
@@ -154,14 +181,15 @@ export default function CustomerRegistrationForm({ gameId, isDemoMode, successMe
         <CardContent className="flex flex-col gap-4">
           <CardTitle className="text-2xl font-headline mb-2">¡Todo listo para la acción!</CardTitle>
           <CardDescription>
-            Estás en modo Demo. ¡Presiona el botón para hacer una prueba de giro!
+            Estás en modo Demo. ¡Presiona el botón en la pantalla de juego para hacer una prueba de giro!
           </CardDescription>
         </CardContent>
       </Card>
     );
   }
 
-  // Formulario de Registro para modo Activo
+  const isSubmitting = submissionState === 'submitting';
+  
   return (
     <Card className="w-full max-w-md shadow-lg">
       <CardHeader>
