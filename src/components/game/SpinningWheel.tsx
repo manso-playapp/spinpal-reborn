@@ -99,12 +99,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     const angleToAlign = POINTER_ANGLE - randomizedTargetAngle;
     
     // Add a random number of full spins for variety.
+    // We base the new spin on the current rotation to ensure it always spins forward.
     const fullSpins = (Math.floor(Math.random() * 2) + 4) * 360; 
   
-    // Unlike previous versions, we don't add to the current rotation.
-    // We calculate the final position from a "zero" state + a random number of full spins.
-    // This prevents any accumulated floating point errors from previous spins.
-    const finalRotation = fullSpins + angleToAlign;
+    const finalRotation = currentRotationRef.current - (currentRotationRef.current % 360) + fullSpins + angleToAlign;
     
     currentRotationRef.current = finalRotation;
     setRotation(finalRotation);
