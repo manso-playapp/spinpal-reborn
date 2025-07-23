@@ -39,19 +39,14 @@ interface SpinResult {
     isRealPrize: boolean;
 }
 
-type UiState = 'LOADING' | 'FORM' | 'READY_TO_SPIN' | 'WAITING_FOR_RESULT' | 'SHOW_RESULT' | 'ALREADY_PLAYED' | 'ERROR';
+type UiState = 'LOADING' | 'FORM' | 'SUBMITTING' | 'SUCCESS' | 'ALREADY_PLAYED' | 'ERROR';
 
 export default function CustomerRegistrationForm({ gameId }: { gameId: string }) {
     const { toast } = useToast();
     const [uiState, setUiState] = useState<UiState>('LOADING');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [customerId, setCustomerId] = useState<string | null>(null);
-    const [playerName, setPlayerName] = useState<string | null>(null);
-    const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [errorMessage, setErrorMessage] = useState('Ha ocurrido un error inesperado.');
     
-    // The schema is now dynamic and will be updated once game data is loaded
     const [dynamicSchema, setDynamicSchema] = useState(
         baseFormSchema.extend({ 
             phone: z.string().optional(),
@@ -64,7 +59,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
         defaultValues: { name: '', email: '', phone: '', confirmFollow: false },
     });
 
-    // Effect to listen for game data and update configuration
     useEffect(() => {
         const gameRef = doc(db, 'games', gameId);
         const unsubscribe = onSnapshot(gameRef, (docSnap) => {
@@ -91,7 +85,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 
                 setGameData(newGameData);
 
-                // Update the form validation schema based on game settings
                 let schema = baseFormSchema.extend({
                   phone: isPhoneRequired
                     ? z.string().min(6, 'Por favor, introduce un número de teléfono válido.')
@@ -112,7 +105,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 
                 setDynamicSchema(schema);
 
-                // Only move to FORM state if we were previously loading
                 if (uiState === 'LOADING') {
                     setUiState('FORM');
                 }
@@ -128,103 +120,45 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
         });
 
         return () => unsubscribe();
-    }, [gameId, uiState]); // Rerunning this effect if gameId changes is correct
+    }, [gameId, uiState]);
 
-     // Effect to listen for spin results
-    useEffect(() => {
-        if (uiState !== 'WAITING_FOR_RESULT' || !customerId) return;
 
-        const gameRef = doc(db, 'games', gameId);
-        const unsubscribe = onSnapshot(gameRef, (docSnap) => {
-            const data = docSnap.data();
-            // Check if the result is for the current customer
-            if (data?.lastResult?.customerId === customerId) {
-                // Short delay to allow the wheel animation to feel more natural
-                setTimeout(() => {
-                    setSpinResult({
-                        name: data.lastResult.name,
-                        isRealPrize: data.lastResult.isRealPrize,
-                    });
-                    setUiState('SHOW_RESULT');
-                }, 10000); // This should be slightly less than the wheel animation time
-                unsubscribe(); // Stop listening once we have the result
-            }
-        });
-
-        return () => unsubscribe();
-    }, [uiState, customerId, gameId]);
-    
-    // Handles form submission for customer registration
-    const onSubmit = async (data: z.infer<typeof dynamicSchema>) => {
+    const onSubmit = async (formData: z.infer<typeof dynamicSchema>) => {
         if (!gameData) return;
-        setIsSubmitting(true);
-        const submittedEmail = data.email.toLowerCase().trim();
+        setUiState('SUBMITTING');
+        const submittedEmail = formData.email.toLowerCase().trim();
 
-        // Check if the user has already played, unless they are exempt
         if (!gameData.isDemoMode && !gameData.exemptedEmails.includes(submittedEmail)) {
             const q = query(collection(db, 'games', gameId, 'customers'), where("email", "==", submittedEmail), limit(1));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
                 setUiState('ALREADY_PLAYED');
-                setIsSubmitting(false);
                 return;
             }
         }
 
         try {
             const newCustomerRef = await addDoc(collection(db, 'games', gameId, 'customers'), {
-                name: data.name,
+                name: formData.name,
                 email: submittedEmail,
-                phone: data.phone || '',
+                phone: formData.phone || '',
                 registeredAt: serverTimestamp(),
                 hasPlayed: false,
             });
-            setCustomerId(newCustomerRef.id);
-            setPlayerName(data.name);
-            setUiState('READY_TO_SPIN');
-        } catch (error) {
-            console.error('Error registering customer:', error);
-            setErrorMessage('No se pudo completar el registro.');
-            setUiState('ERROR');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
-    // Triggers the spin logic
-    const handleSpin = async () => {
-        if (!customerId || !gameData) {
-            setErrorMessage('Faltan datos críticos para iniciar el giro.');
-            setUiState('ERROR');
-            return;
-        }
-
-        setIsSubmitting(true);
-        setUiState('WAITING_FOR_RESULT'); // Change state immediately when clicked
-
-        try {
-            // Filter for valid segments with IDs to prevent errors
+            // This is the core logic to trigger the spin
             const validSegments = gameData.segments.filter(s => s && typeof s.id === 'string');
+            if (validSegments.length < 2) throw new Error('El juego no tiene suficientes premios válidos configurados.');
 
-            if (validSegments.length < 2) {
-                throw new Error('El juego no tiene suficientes premios válidos configurados.');
-            }
-
-            // Calculate probabilities
             const realPrizeSegments = validSegments.filter(s => s.isRealPrize);
             const nonRealPrizeSegments = validSegments.filter(s => !s.isRealPrize);
             const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
-            const nonRealPrizeProb = nonRealPrizeSegments.length > 0 
-                ? Math.max(0, 100 - realPrizeTotalProbability) / nonRealPrizeSegments.length 
-                : 0;
-            
+            const nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? Math.max(0, 100 - realPrizeTotalProbability) / nonRealPrizeSegments.length : 0;
             const finalProbabilities = validSegments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
             
-            // Determine winner
             const random = Math.random() * 100;
             let accumulatedProb = 0;
             let winningIndex = -1;
-
             for (let i = 0; i < finalProbabilities.length; i++) {
                 accumulatedProb += finalProbabilities[i];
                 if (random < accumulatedProb) {
@@ -232,54 +166,42 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     break;
                 }
             }
-            
-            // Fallback to the last segment if something goes wrong (e.g., floating point issues)
-            if (winningIndex === -1) {
-                winningIndex = validSegments.length - 1; 
-            }
+            if (winningIndex === -1) winningIndex = validSegments.length - 1;
             
             const winningSegment = validSegments[winningIndex];
+            if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
 
-            if (!winningSegment || typeof winningSegment.id !== 'string') {
-                throw new Error('No se pudo determinar un premio ganador válido.');
-            }
-            
-            // Perform atomic write to Firestore
             const gameRef = doc(db, 'games', gameId);
-            const customerRef = doc(db, 'games', gameId, 'customers', customerId);
+            const customerRef = doc(db, 'games', gameId, newCustomerRef.id);
             const batch = writeBatch(db);
 
             const gameUpdateData: { [key: string]: any } = {
                 plays: increment(1),
-                spinRequest: { timestamp: serverTimestamp(), customerId, winningId: winningSegment.id },
-                lastResult: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize, customerId, timestamp: serverTimestamp() }
+                spinRequest: { timestamp: serverTimestamp(), customerId: newCustomerRef.id, winningId: winningSegment.id },
+                lastResult: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize, customerId: newCustomerRef.id, timestamp: serverTimestamp() }
             };
-            
             const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
 
             if (winningSegment.isRealPrize) {
                 gameUpdateData.prizesAwarded = increment(1);
                 customerUpdateData.prizeWonName = winningSegment.name;
                 customerUpdateData.prizeWonAt = serverTimestamp();
-                // Send email notification without waiting for it
-                sendPrizeNotification({ gameId, customerId, prizeName: winningSegment.name });
+                sendPrizeNotification({ gameId, customerId: newCustomerRef.id, prizeName: winningSegment.name });
             }
 
             batch.update(gameRef, gameUpdateData);
             batch.update(customerRef, customerUpdateData);
             
             await batch.commit();
-            // The result listener will now take over
-            
+            setUiState('SUCCESS');
+
         } catch (error: any) {
-            console.error('Error triggering spin:', error);
-            setErrorMessage(error.message || 'Hubo un problema al iniciar el giro.');
+            console.error('Error registering customer and spinning:', error);
+            setErrorMessage(error.message || 'No se pudo completar el registro.');
             setUiState('ERROR');
-            setIsSubmitting(false); // Make sure to re-enable button on error
         }
     };
     
-    // Renders the component's UI based on the current state
     const renderContent = () => {
         switch (uiState) {
             case 'LOADING':
@@ -301,7 +223,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                             <CardHeader><PartyPopper className="h-12 w-12 text-green-600 mx-auto" /></CardHeader>
                             <CardContent>
                                 <CardTitle>¡Modo Demo Activo!</CardTitle>
-                                <CardDescription>El giro se debe iniciar desde la pantalla grande para hacer una prueba.</CardDescription>
+                                <CardDescription>El registro de prueba iniciará el giro en la pantalla grande automáticamente.</CardDescription>
                             </CardContent>
                         </Card>
                     );
@@ -348,8 +270,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                             )}
                                         />
                                     )}
-                                    <Button type="submit" className="w-full" disabled={isSubmitting || !gameData}>
-                                        {isSubmitting ? <Loader2 className="animate-spin" /> : 'Registrarme'}
+                                    <Button type="submit" className="w-full" disabled={!gameData}>
+                                        ¡Jugar ahora!
                                     </Button>
                                 </form>
                             </Form>
@@ -357,51 +279,31 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     </Card>
                 );
 
-            case 'READY_TO_SPIN':
-                return (
-                    <Card className="w-full max-w-md text-center shadow-lg">
-                        <CardHeader>
-                             <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-                            <CardTitle>¡Registro Exitoso!</CardTitle>
-                            <CardDescription>{gameData?.successMessage}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Button size="lg" className="w-full h-16 text-xl" onClick={handleSpin} disabled={isSubmitting || !gameData}>
-                                {isSubmitting ? <Loader2 className="animate-spin" /> : <><RotateCw className="mr-3 h-6 w-6" />¡Girar la Ruleta!</>}
-                            </Button>
-                        </CardContent>
-                    </Card>
-                );
-
-            case 'WAITING_FOR_RESULT':
+            case 'SUBMITTING':
                 return (
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                            <p className="text-xl font-semibold">¡Mucha suerte...!</p>
-                            <p className="font-bold text-2xl text-primary">{playerName || ''}</p>
-                        </CardContent>
-                    </Card>
-                );
-            
-            case 'SHOW_RESULT':
-                return (
-                    <Card className="w-full max-w-md text-center shadow-lg">
-                        <CardHeader>
-                            {spinResult?.isRealPrize ? <Gift className="h-12 w-12 text-green-600 mx-auto" /> : <ThumbsDown className="h-12 w-12 text-gray-600 mx-auto" />}
-                        </CardHeader>
-                        <CardContent>
-                            <CardTitle>{spinResult?.isRealPrize ? '¡Felicidades!' : '¡Casi!'}</CardTitle>
-                            <p className="text-xl font-semibold text-primary my-2">{spinResult?.name}</p>
-                            <CardDescription>
-                                {spinResult?.isRealPrize
-                                    ? 'Hemos enviado un correo a tu dirección con los detalles. ¡Gracias por participar!'
-                                    : 'No te desanimes, ¡suerte para la próxima!'}
-                            </CardDescription>
+                            <p className="text-xl font-semibold">Registrando y girando...</p>
+                            <p className="text-muted-foreground">¡Mucha suerte!</p>
                         </CardContent>
                     </Card>
                 );
 
+            case 'SUCCESS':
+                return (
+                    <Card className="w-full max-w-md text-center shadow-lg">
+                        <CardHeader>
+                             <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+                            <CardTitle>¡Éxito!</CardTitle>
+                            <CardDescription>{gameData?.successMessage}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <p className="text-sm text-muted-foreground">Puedes cerrar esta ventana.</p>
+                        </CardContent>
+                    </Card>
+                );
+            
             case 'ALREADY_PLAYED':
                 return (
                     <Card className="w-full max-w-md text-center shadow-lg">
@@ -433,5 +335,3 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
     return renderContent();
 }
-
-    

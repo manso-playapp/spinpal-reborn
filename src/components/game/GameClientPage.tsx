@@ -6,12 +6,11 @@ import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, DocumentData, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { QrCode, Gift, ThumbsDown, Loader2, RotateCw } from 'lucide-react';
+import { QrCode, Gift, ThumbsDown, Loader2 } from 'lucide-react';
 import SpinningWheel from '@/components/game/SpinningWheel';
 import QRCodeDisplay from '@/components/game/QRCodeDisplay';
 import { Separator } from '@/components/ui/separator';
 import Confetti from './Confetti';
-import { Button } from '../ui/button';
 
 interface GameData extends DocumentData {
   id: string;
@@ -39,7 +38,6 @@ interface SpinResult {
 
 type UiState = 'IDLE' | 'SPINNING' | 'SHOW_RESULT';
 
-// The page now only needs the gameId and handles all data fetching internally.
 export default function GameClientPage({ gameId }: { gameId: string }) {
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,17 +45,14 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [spinRequestData, setSpinRequestData] = useState<{winningId: string} | null>(null);
 
   useEffect(() => {
-    // Set up a real-time listener to keep the game data in sync.
     const gameRef = doc(db, 'games', gameId);
     const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
             
             const spinRequest = data.spinRequest;
-            // A new spin request has come in
             if (spinRequest && spinRequest.customerId && uiState === 'IDLE') {
                 setUiState('SPINNING');
                 const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
@@ -79,7 +74,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                 rouletteScale: data.rouletteScale || 1,
                 rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
                 qrVerticalOffset: data.qrVerticalOffset || 0,
-                config: data.config || { // Fallback for old data structure
+                config: data.config || {
                     borderImage: data.borderImage || '',
                     borderScale: data.borderScale || 1,
                     centerImage: data.centerImage || '',
@@ -97,41 +92,25 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
         setLoading(false);
     });
 
-    // Cleanup listener on component unmount
     return () => unsubscribe();
-  }, [gameId, uiState]); // Added uiState to dependencies to re-evaluate when it changes
+  }, [gameId, uiState]);
 
 
   const handleSpinEnd = useCallback((result: SpinResult) => {
     setSpinResult(result);
     setUiState('SHOW_RESULT');
-    setCurrentPlayer(null); // Clear player name
-    setSpinRequestData(null); // Clear demo spin request
+    setCurrentPlayer(null);
 
     if (result.isRealPrize) {
         setShowConfetti(true);
     }
     
-    // Hide the result and show QR code again after 15 seconds
     setTimeout(() => {
       setUiState('IDLE');
       setSpinResult(null);
       setShowConfetti(false);
     }, 15000);
   }, []);
-
-  const handleDemoSpin = () => {
-    if (!game || game.status !== 'demo' || uiState !== 'IDLE') return;
-
-    const randomIndex = Math.floor(Math.random() * game.segments.length);
-    const winningSegment = game.segments[randomIndex];
-
-    if (winningSegment && winningSegment.id) {
-        setSpinRequestData({ winningId: winningSegment.id });
-        setUiState('SPINNING');
-        setCurrentPlayer('Prueba DEMO');
-    }
-  };
   
   if (loading) {
     return (
@@ -142,7 +121,6 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
   }
 
   if (!game) {
-    // This case should ideally not be reached if notFound() works correctly.
     return null;
   }
   
@@ -217,18 +195,10 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                 <div className="bg-yellow-400 text-black px-4 py-1 text-sm font-bold shadow-lg rounded-full">
                     MODO DEMO
                 </div>
-                {uiState === 'IDLE' && (
-                    <Button onClick={handleDemoSpin} variant="secondary" className="shadow-lg animate-in fade-in">
-                        <RotateCw className="mr-2 h-4 w-4" />
-                        Giro de Prueba
-                    </Button>
-                )}
             </div>
         )}
         {showConfetti && <Confetti />}
 
-
-        {/* Roulette container - This container handles scale and vertical offset */}
         <div
             className="absolute inset-0 flex justify-center items-center pointer-events-none"
             style={{
@@ -236,7 +206,6 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
                 transformOrigin: 'center center',
             }}
         >
-          {/* This inner container handles the content's max-width */}
           <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
             <SpinningWheel 
               segments={game.segments} 
@@ -244,12 +213,10 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
               isDemoMode={game.status === 'demo'}
               config={game.config}
               onSpinEnd={handleSpinEnd}
-              demoSpinRequest={spinRequestData}
             />
           </div>
         </div>
 
-        {/* QR / Result container */}
         <div 
           className="absolute bottom-4 px-4 w-full flex justify-center items-center"
           style={{ 
@@ -269,5 +236,3 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
     </div>
   );
 }
-
-    

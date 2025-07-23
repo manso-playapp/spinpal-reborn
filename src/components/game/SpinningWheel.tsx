@@ -41,7 +41,6 @@ interface SpinningWheelProps {
     strokeWidth?: number;
     strokeColor?: string;
   };
-  demoSpinRequest?: { winningId: string } | null;
 }
 
 const VIEWBOX_SIZE = 500;
@@ -53,7 +52,7 @@ const capitalize = (s: string) => {
     return s.charAt(0).toUpperCase() + s.slice(1).replace(/-(\w)/g, (_, c) => c.toUpperCase());
 };
 
-export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {}, demoSpinRequest = null }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -145,10 +144,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     spinHandlerRef.current = spinTheWheel;
   }, [spinTheWheel]);
   
-  // Listener for Firestore-based spins
   useEffect(() => {
-    if (isDemoMode) return; 
-
     const gameRef = doc(db, 'games', gameId);
     
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
@@ -166,14 +162,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
       }
     });
     return () => unsubscribe();
-  }, [gameId, isDemoMode]);
-
-  // Listener for Demo spins via prop
-  useEffect(() => {
-    if (isDemoMode && demoSpinRequest && !isSpinningRef.current) {
-        spinHandlerRef.current(demoSpinRequest);
-    }
-  }, [demoSpinRequest, isDemoMode]);
+  }, [gameId]);
 
 
   const wheelStyle: React.CSSProperties = {
