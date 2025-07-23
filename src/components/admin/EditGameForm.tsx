@@ -56,6 +56,7 @@ const segmentSchema = z.object({
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
   fontFamily: z.string().default('PT Sans'),
   fontSize: z.number().min(4).max(40).default(16),
+  isCurved: z.boolean().default(true),
   lineHeight: z.number().min(0.5).max(3).default(1),
   letterSpacing: z.number().min(-5).max(10).default(0.5),
   letterSpacingLineTwo: z.number().min(-5).max(10).optional(),
@@ -155,6 +156,7 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   textColor: '#FFFFFF',
   fontFamily: 'DM Sans',
   fontSize: 16,
+  isCurved: true,
   lineHeight: 1,
   letterSpacing: 0.5,
   letterSpacingLineTwo: 0.5 * 1.1,
@@ -869,6 +871,21 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                         <Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={0} max={1} step={0.01} />
                                                       </FormItem>
                                                   )}/>
+                                                   <FormField
+                                                      control={form.control}
+                                                      name={`segments.${index}.isCurved`}
+                                                      render={({ field }) => (
+                                                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                                              <div className="space-y-0.5">
+                                                                  <FormLabel>Texto Curvo</FormLabel>
+                                                                  <FormDescription>Activa para que el texto siga la curvatura de la ruleta.</FormDescription>
+                                                              </div>
+                                                              <FormControl>
+                                                                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                              </FormControl>
+                                                          </FormItem>
+                                                      )}
+                                                  />
                                                 </TabsContent>
                                                 <TabsContent value="icon" className="pt-4 space-y-4">
                                                    <FormField control={form.control} name={`segments.${index}.iconUrl`} render={({ field }) => (

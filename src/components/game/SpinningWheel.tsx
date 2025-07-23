@@ -16,6 +16,7 @@ interface Segment {
   textColor?: string;
   fontFamily?: string;
   fontSize?: number;
+  isCurved?: boolean;
   lineHeight?: number;
   letterSpacing?: number;
   letterSpacingLineTwo?: number;
@@ -223,6 +224,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                     const iconY = WHEEL_RADIUS + iconRadius * Math.sin(iconAngle) - iconSize / 2;
                     const iconRotation = textAngle + 90;
 
+                    const [straightTextX, straightTextY] = getCoordinatesForAngle(textAngle, textRadius * 0.9);
+
                     return (
                       <g key={segment.id || index} className={winningSegmentId === segment.id ? 'blinking-winner' : ''}>
                         <defs>
@@ -249,21 +252,40 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                             lineHeight: segment.lineHeight || 1,
                             letterSpacing: segment.letterSpacing || 0.5,
                           }}
+                          transform={!segment.isCurved ? `rotate(${textAngle + 90} ${straightTextX} ${straightTextY})` : ''}
+                          x={!segment.isCurved ? straightTextX : undefined}
+                          y={!segment.isCurved ? straightTextY : undefined}
+                          textAnchor="middle"
                         >
-                          <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
-                            {nameParts.map((part, i) => (
-                              <tspan
-                                key={i}
-                                x="0"
-                                dy={i === 0 ? '-0.3em' : `${(segment.lineHeight || 1)}em`}
-                                style={ i > 0 ? { 
-                                    letterSpacing: segment.letterSpacingLineTwo ?? ((segment.letterSpacing || 0.5) * 1.1) 
-                                } : {}}
-                              >
-                                {part.trim()}
-                              </tspan>
-                            ))}
-                          </textPath>
+                          {segment.isCurved ? (
+                            <textPath href={`#${textPathId}`} startOffset="50%" textAnchor="middle">
+                              {nameParts.map((part, i) => (
+                                <tspan
+                                  key={i}
+                                  x="0"
+                                  dy={i === 0 ? '-0.3em' : `${(segment.lineHeight || 1)}em`}
+                                  style={ i > 0 ? { 
+                                      letterSpacing: segment.letterSpacingLineTwo ?? ((segment.letterSpacing || 0.5) * 1.1) 
+                                  } : {}}
+                                >
+                                  {part.trim()}
+                                </tspan>
+                              ))}
+                            </textPath>
+                          ) : (
+                             nameParts.map((part, i) => (
+                                <tspan
+                                  key={i}
+                                  x={straightTextX}
+                                  dy={i === 0 ? '0em' : `${(segment.lineHeight || 1)}em`}
+                                   style={ i > 0 ? { 
+                                      letterSpacing: segment.letterSpacingLineTwo ?? ((segment.letterSpacing || 0.5) * 1.1) 
+                                  } : {}}
+                                >
+                                  {part.trim()}
+                                </tspan>
+                              ))
+                          )}
                         </text>
                       </g>
                     );
