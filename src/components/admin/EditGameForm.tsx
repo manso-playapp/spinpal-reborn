@@ -145,7 +145,7 @@ interface Game {
 
 const getRandomColor = () => `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
 const CONDENSED_FONTS = [
-  'DM Sans', 'Roboto Condensed', 'Oswald', 'Montserrat', 'Lato', 'Bebas Neue', 'Anton'
+  'DM Sans', 'Roboto Condensed', 'Oswald', 'Bebas Neue', 'Anton', 'PT Sans Narrow', 'Barlow Condensed'
 ];
 
 const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
@@ -498,6 +498,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     <Input
                                         placeholder="https://www.instagram.com/tu_usuario"
                                         {...field}
+                                        value={field.value ?? ''}
                                         disabled={loading}
                                     />
                                     </FormControl>
@@ -519,6 +520,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     placeholder="un-email@ejemplo.com, otro@ejemplo.com"
                                     className="min-h-[100px] font-mono text-sm"
                                     {...field}
+                                    value={field.value ?? ''}
                                     disabled={loading}
                                   />
                                 </FormControl>
