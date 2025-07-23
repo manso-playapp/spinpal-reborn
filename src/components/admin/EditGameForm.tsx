@@ -7,7 +7,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
@@ -162,13 +162,14 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
 });
 
 
-export default function EditGameForm({ game }: { game: Game }) {
+export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [game, setGame] = useState(initialGame);
   
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -200,6 +201,30 @@ export default function EditGameForm({ game }: { game: Game }) {
       }
     },
   });
+
+  useEffect(() => {
+    const gameRef = doc(db, 'games', initialGame.id);
+    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data() as Game;
+            setGame(data);
+            const formValues = {
+              ...data,
+              exemptedEmails: (data.exemptedEmails || []).join(', '),
+              segments: data.segments && data.segments.length > 0 ? data.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
+              config: data.config || {
+                borderImage: data.borderImage || 'https://i.imgur.com/J62nHj9.png',
+                borderScale: data.borderScale || 1,
+                centerImage: data.centerImage || 'https://i.imgur.com/N3PAzB2.png',
+                centerScale: data.centerScale || 1,
+              }
+            };
+            form.reset(formValues);
+        }
+    });
+
+    return () => unsubscribe();
+  }, [initialGame.id, form]);
   
   const watchedFormData = form.watch();
 
@@ -273,8 +298,6 @@ export default function EditGameForm({ game }: { game: Game }) {
       const updateData: Partial<Game> = {
         ...dataToSave,
         exemptedEmails: emailList,
-        plays: game.plays || 0,
-        prizesAwarded: game.prizesAwarded || 0,
       };
       
       delete updateData.borderImage;
