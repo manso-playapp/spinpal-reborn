@@ -44,6 +44,7 @@ import { Slider } from '../ui/slider';
 import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import SpinningWheel from '@/components/game/SpinningWheel';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 
@@ -422,6 +423,20 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       });
   };
 
+  const getGameUrl = (gameId: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/juego/${gameId}`;
+    }
+    return `/juego/${gameId}`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+        title: "¡Enlace Copiado!",
+        description: "El enlace público del juego ha sido copiado a tu portapapeles.",
+    });
+  };
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -1215,7 +1230,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
               </div>
               
               {/* Columna de Vista Previa */}
-              <div className="lg:col-span-1 lg:sticky top-4">
+              <div className="lg:col-span-1 lg:sticky top-4 space-y-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
@@ -1235,6 +1250,38 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                     </div>
                   </CardContent>
                 </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Enlace Público del Juego</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <TooltipProvider>
+                         <div className="flex items-center space-x-2">
+                            <Input value={getGameUrl(initialGame.id)} readOnly className="h-9 text-xs"/>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => copyToClipboard(getGameUrl(initialGame.id))}>
+                                        <CopyIcon className="h-4 w-4" />
+                                        <span className="sr-only">Copiar</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Copiar enlace</p></TooltipContent>
+                            </Tooltip>
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button asChild variant="outline" size="icon" className="h-9 w-9 flex-shrink-0">
+                                        <Link href={getGameUrl(initialGame.id)} target="_blank">
+                                            <ExternalLink className="h-4 w-4" />
+                                            <span className="sr-only">Abrir</span>
+                                        </Link>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Abrir en nueva pestaña</p></TooltipContent>
+                            </Tooltip>
+                        </div>
+                        </TooltipProvider>
+                    </CardContent>
+                 </Card>
               </div>
             </div>
           </form>
