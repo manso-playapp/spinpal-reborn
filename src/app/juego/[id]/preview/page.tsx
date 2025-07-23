@@ -1,22 +1,61 @@
 
 
 // This is a special layout-less page for the iframe preview
-// It now directly renders the GameClientPage which handles its own data fetching.
-// This component is a Server Component that passes the gameId to the client component.
-import GameClientPage from '@/components/game/GameClientPage';
+import GameClientPage from '@/app/game/GameClientPage';
+import { db } from '@/lib/firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default function GamePreviewPage({ params }: { params: { id: string } }) {
-    const { id } = params;
+// Definimos una interfaz para el objeto del juego serializado
+// Esto asegura que solo pasamos datos compatibles entre el servidor y el cliente.
+interface SerializableGame {
+  id: string;
+  name: string;
+  status: string;
+  segments: any[];
+  backgroundImage: string;
+  backgroundFit: string;
+  qrCodeScale: number;
+  rouletteScale: number;
+  rouletteVerticalOffset: number;
+  qrVerticalOffset: number;
+  config: {
+    borderImage: string;
+    borderScale: number;
+    centerImage: string;
+    centerScale: number;
+  };
+  // Incluimos cualquier otro campo que pueda venir de Firestore
+  [key: string]: any;
+}
 
-    if (!id) {
-        // This is an important check to prevent rendering with an undefined ID,
-        // which could cause errors in GameClientPage.
-        notFound();
-    }
-    // We pass a key with a timestamp to force a re-render of the component
-    // when the iframe is refreshed. This helps in clearing old state.
-    return <GameClientPage key={Date.now()} gameId={id} />;
+
+async function getGameData(id: string): Promise<SerializableGame | null> {
+  if (!id) return null;
+  const gameRef = doc(db, 'games', id);
+  const gameSnap = await getDoc(gameRef);
+
+  if (!gameSnap.exists()) {
+    return null;
+  }
+
+  const data = gameSnap.data();
+  // Nos aseguramos de que los datos sean serializables (convertibles a JSON)
+  // eliminando tipos de datos complejos como Timestamps de Firebase.
+  const serializableData = JSON.parse(JSON.stringify({ id: gameSnap.id, ...data }));
+  
+  return serializableData;
+}
+
+
+export default async function GamePreviewPage({ params }: { params: { id: string } }) {
+  const gameData = await getGameData(params.id);
+
+  if (!gameData) {
+    notFound();
+  }
+    
+  return <GameClientPage key={Date.now()} initialGame={gameData} />;
 }
