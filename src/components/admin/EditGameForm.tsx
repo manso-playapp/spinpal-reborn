@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink, Clipboard, ClipboardPaste } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -109,6 +109,8 @@ const formSchema = z.object({
 
 
 type GameFormValues = z.infer<typeof formSchema>;
+type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability'>;
+
 
 interface Game {
   id: string;
@@ -174,6 +176,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
+  const [copiedStyle, setCopiedStyle] = useState<SegmentStyle | null>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   
   const form = useForm<GameFormValues>({
@@ -376,6 +379,42 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     });
   };
 
+  const copyStyle = (index: number) => {
+    const { id, name, color, isRealPrize, probability, ...style } = form.getValues(`segments.${index}`);
+    setCopiedStyle(style);
+    toast({
+        title: "Estilo Copiado",
+        description: "El estilo del premio ha sido copiado al portapapeles.",
+    });
+  };
+
+  const pasteStyle = (index: number) => {
+      if (!copiedStyle) {
+          toast({
+              variant: "destructive",
+              title: "No hay estilo que pegar",
+              description: "Primero copia el estilo de otro premio.",
+          });
+          return;
+      }
+      form.setValue(`segments.${index}.textColor`, copiedStyle.textColor, { shouldDirty: true });
+      form.setValue(`segments.${index}.fontFamily`, copiedStyle.fontFamily, { shouldDirty: true });
+      form.setValue(`segments.${index}.fontSize`, copiedStyle.fontSize, { shouldDirty: true });
+      form.setValue(`segments.${index}.isCurved`, copiedStyle.isCurved, { shouldDirty: true });
+      form.setValue(`segments.${index}.lineHeight`, copiedStyle.lineHeight, { shouldDirty: true });
+      form.setValue(`segments.${index}.letterSpacing`, copiedStyle.letterSpacing, { shouldDirty: true });
+      form.setValue(`segments.${index}.letterSpacingLineTwo`, copiedStyle.letterSpacingLineTwo, { shouldDirty: true });
+      form.setValue(`segments.${index}.distanceFromCenter`, copiedStyle.distanceFromCenter, { shouldDirty: true });
+      form.setValue(`segments.${index}.iconUrl`, copiedStyle.iconUrl, { shouldDirty: true });
+      form.setValue(`segments.${index}.iconName`, copiedStyle.iconName, { shouldDirty: true });
+      form.setValue(`segments.${index}.iconScale`, copiedStyle.iconScale, { shouldDirty: true });
+      toast({
+          title: "Estilo Pegado",
+          description: "Se ha aplicado el estilo copiado a este premio.",
+      });
+  };
+
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
        <div className="flex items-center gap-4 mb-4">
@@ -445,7 +484,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Email del Cliente (para notificaciones y acceso)</FormLabel>
                                 <FormControl>
-                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} disabled={loading} />
+                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} />
                                 </FormControl>
                                  <FormDescription>
                                   Dirección donde el dueño del juego recibirá un aviso cuando un premio sea ganado.
@@ -742,8 +781,14 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                 </div>
                                                 <AccordionTrigger className="p-2 hover:bg-accent rounded-md" />
                                                 <div className="flex items-center gap-1 pl-2">
+                                                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); copyStyle(index); }}>
+                                                        <Clipboard className="h-4 w-4 text-blue-500" />
+                                                    </Button>
+                                                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); pasteStyle(index); }} disabled={!copiedStyle}>
+                                                        <ClipboardPaste className="h-4 w-4 text-green-500" />
+                                                    </Button>
                                                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); duplicateSegment(index); }}>
-                                                        <CopyIcon className="h-4 w-4 text-blue-500" />
+                                                        <CopyIcon className="h-4 w-4 text-muted-foreground" />
                                                     </Button>
                                                     <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); remove(index); }}>
                                                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -1156,3 +1201,4 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     </main>
   );
 }
+
