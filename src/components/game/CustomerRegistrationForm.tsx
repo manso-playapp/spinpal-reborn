@@ -172,7 +172,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
 
             const gameRef = doc(db, 'games', gameId);
-            const customerRef = doc(db, 'games', gameId, newCustomerRef.id);
+            const customerRef = doc(db, 'games', gameId, 'customers', newCustomerRef.id);
             const batch = writeBatch(db);
 
             const gameUpdateData: { [key: string]: any } = {
