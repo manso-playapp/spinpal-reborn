@@ -19,6 +19,7 @@ import { Skeleton } from '../ui/skeleton';
 import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
 import { Checkbox } from '../ui/checkbox';
 import Link from 'next/link';
+import { Separator } from '../ui/separator';
 
 const baseFormSchema = z.object({
   name: z.string().min(2, { message: 'Tu nombre debe tener al menos 2 caracteres.' }),
@@ -46,6 +47,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     const [uiState, setUiState] = useState<UiState>('LOADING');
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [errorMessage, setErrorMessage] = useState('Ha ocurrido un error inesperado.');
+    const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
     
     const [dynamicSchema, setDynamicSchema] = useState(
         baseFormSchema.extend({ 
@@ -171,6 +173,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             const winningSegment = validSegments[winningIndex];
             if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
 
+            setSpinResult({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
+
             const gameRef = doc(db, 'games', gameId);
             const customerRef = doc(db, 'games', gameId, 'customers', newCustomerRef.id);
             const batch = writeBatch(db);
@@ -293,13 +297,24 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             case 'SUCCESS':
                 return (
                     <Card className="w-full max-w-md text-center shadow-lg">
-                        <CardHeader>
-                             <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-                            <CardTitle>¡Éxito!</CardTitle>
-                            <CardDescription>{gameData?.successMessage}</CardDescription>
+                        <CardHeader className="p-6">
+                            <CardTitle className="font-headline text-3xl md:text-4xl flex items-center justify-center gap-4 text-primary">
+                                {spinResult?.isRealPrize ? <Gift className="h-10 w-10" /> : <ThumbsDown className="text-red-400 h-10 w-10" />}
+                                {spinResult?.isRealPrize ? '¡Felicidades!' : '¡Casi!'}
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                             <p className="text-sm text-muted-foreground">Puedes cerrar esta ventana.</p>
+                        <Separator />
+                        <CardContent className="p-6">
+                            <p className="text-xl font-semibold mb-2">
+                                {spinResult?.name}
+                            </p>
+                            <CardDescription className="text-card-foreground/80 mt-2 text-sm">
+                                {spinResult?.isRealPrize 
+                                    ? 'Hemos enviado un email a tu correo con las instrucciones para reclamar tu premio. ¡Gracias por participar!' 
+                                    : 'Más suerte la próxima vez. ¡Gracias por participar!'
+                                }
+                            </CardDescription>
+                             <p className="text-xs text-muted-foreground mt-6">Puedes cerrar esta ventana.</p>
                         </CardContent>
                     </Card>
                 );
