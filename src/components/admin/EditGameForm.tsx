@@ -169,35 +169,34 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const [game, setGame] = useState(initialGame);
   
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: game.name || '',
-      status: game.status || 'demo',
-      clientName: game.clientName || '',
-      clientEmail: game.clientEmail || '',
-      managementType: game.managementType || 'client',
-      exemptedEmails: (game.exemptedEmails || []).join(', '),
-      segments: game.segments && game.segments.length > 0 ? game.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
-      backgroundImage: game.backgroundImage || '',
-      backgroundFit: game.backgroundFit || 'cover',
-      mobileBackgroundImage: game.mobileBackgroundImage || '',
-      mobileBackgroundFit: game.mobileBackgroundFit || 'cover',
-      registrationTitle: game.registrationTitle || ``,
-      registrationSubtitle: game.registrationSubtitle || '',
-      isPhoneRequired: game.isPhoneRequired || false,
-      successMessage: game.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
-      qrCodeScale: game.qrCodeScale || 1,
-      rouletteScale: game.rouletteScale || 1,
-      rouletteVerticalOffset: game.rouletteVerticalOffset || 0,
-      qrVerticalOffset: game.qrVerticalOffset || 0,
+      name: initialGame.name || '',
+      status: initialGame.status || 'demo',
+      clientName: initialGame.clientName || '',
+      clientEmail: initialGame.clientEmail || '',
+      managementType: initialGame.managementType || 'client',
+      exemptedEmails: (initialGame.exemptedEmails || []).join(', '),
+      segments: initialGame.segments && initialGame.segments.length > 0 ? initialGame.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
+      backgroundImage: initialGame.backgroundImage || '',
+      backgroundFit: initialGame.backgroundFit || 'cover',
+      mobileBackgroundImage: initialGame.mobileBackgroundImage || '',
+      mobileBackgroundFit: initialGame.mobileBackgroundFit || 'cover',
+      registrationTitle: initialGame.registrationTitle || ``,
+      registrationSubtitle: initialGame.registrationSubtitle || '',
+      isPhoneRequired: initialGame.isPhoneRequired || false,
+      successMessage: initialGame.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+      qrCodeScale: initialGame.qrCodeScale || 1,
+      rouletteScale: initialGame.rouletteScale || 1,
+      rouletteVerticalOffset: initialGame.rouletteVerticalOffset || 0,
+      qrVerticalOffset: initialGame.qrVerticalOffset || 0,
       config: {
-        borderImage: game.config?.borderImage || game.borderImage || 'https://i.imgur.com/J62nHj9.png',
-        borderScale: game.config?.borderScale || game.borderScale || 1,
-        centerImage: game.config?.centerImage || game.centerImage || 'https://i.imgur.com/N3PAzB2.png',
-        centerScale: game.config?.centerScale || game.centerScale || 1,
+        borderImage: initialGame.config?.borderImage || initialGame.borderImage || 'https://i.imgur.com/J62nHj9.png',
+        borderScale: initialGame.config?.borderScale || initialGame.borderScale || 1,
+        centerImage: initialGame.config?.centerImage || initialGame.centerImage || 'https://i.imgur.com/N3PAzB2.png',
+        centerScale: initialGame.config?.centerScale || initialGame.centerScale || 1,
       }
     },
   });
@@ -207,7 +206,6 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data() as Game;
-            setGame(data);
             const formValues = {
               ...data,
               exemptedEmails: (data.exemptedEmails || []).join(', '),
@@ -287,7 +285,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const onSubmit = async (data: GameFormValues) => {
     setLoading(true);
     try {
-      const gameRef = doc(db, 'games', game.id);
+      const gameRef = doc(db, 'games', initialGame.id);
       
       const emailList = data.exemptedEmails
         ? data.exemptedEmails.split(',').map(email => email.trim().toLowerCase()).filter(email => email)
@@ -1061,7 +1059,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                      <div className="w-full max-w-md">
                         <SpinningWheel 
                             segments={watchedFormData.segments}
-                            gameId={game.id}
+                            gameId={initialGame.id}
                             onSpinEnd={() => {}}
                             isDemoMode={true}
                             config={watchedFormData.config}
