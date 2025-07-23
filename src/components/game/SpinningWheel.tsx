@@ -38,6 +38,8 @@ interface SpinningWheelProps {
     borderScale?: number;
     centerImage?: string;
     centerScale?: number;
+    strokeWidth?: number;
+    strokeColor?: string;
   };
 }
 
@@ -68,6 +70,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const centerImage = config?.centerImage || "";
   const borderScale = config?.borderScale || 1;
   const centerScale = config?.centerScale || 1;
+  const strokeWidth = config?.strokeWidth ?? 1;
+  const strokeColor = config?.strokeColor || '#000000';
 
   useEffect(() => {
     setShouldRender(true);
@@ -237,7 +241,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                         <defs>
                           <path id={textPathId} d={textPathData} />
                         </defs>
-                        <path d={pathData} fill={segment.color || '#ffffff'} stroke="#000" strokeWidth="0.5" />
+                        <path d={pathData} fill={segment.color || '#ffffff'} stroke={strokeColor} strokeWidth={strokeWidth} />
                         
                         {segment.iconUrl ? (
                           <image

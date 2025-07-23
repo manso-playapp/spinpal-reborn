@@ -54,7 +54,7 @@ const segmentSchema = z.object({
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
-  fontFamily: z.string().default('PT Sans'),
+  fontFamily: z.string().default('DM Sans'),
   fontSize: z.number().min(4).max(40).default(16),
   isCurved: z.boolean().default(true),
   lineHeight: z.number().min(0.5).max(3).default(1),
@@ -92,6 +92,8 @@ const formSchema = z.object({
     borderScale: z.number().min(0.1).max(2).optional(),
     centerImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
     centerScale: z.number().min(0.1).max(2).optional(),
+    strokeWidth: z.number().min(0).max(8).optional(),
+    strokeColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').optional(),
   }),
 }).superRefine((data, ctx) => {
     const realPrizeTotalProbability = data.segments
@@ -141,6 +143,8 @@ interface Game {
     borderScale?: number;
     centerImage?: string;
     centerScale?: number;
+    strokeWidth?: number;
+    strokeColor?: string;
   },
   [key: string]: any;
 }
@@ -207,6 +211,8 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
         borderScale: initialGame.config?.borderScale || initialGame.borderScale || 1,
         centerImage: initialGame.config?.centerImage || initialGame.centerImage || 'https://i.imgur.com/N3PAzB2.png',
         centerScale: initialGame.config?.centerScale || initialGame.centerScale || 1,
+        strokeWidth: initialGame.config?.strokeWidth ?? 1,
+        strokeColor: initialGame.config?.strokeColor || '#000000',
       }
     },
   });
@@ -237,11 +243,13 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
               rouletteScale: data.rouletteScale || 1,
               rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
               qrVerticalOffset: data.qrVerticalOffset || 0,
-              config: data.config || {
-                borderImage: data.borderImage || 'https://i.imgur.com/J62nHj9.png',
-                borderScale: data.borderScale || 1,
-                centerImage: data.centerImage || 'https://i.imgur.com/N3PAzB2.png',
-                centerScale: data.centerScale || 1,
+              config: {
+                borderImage: data.config?.borderImage || data.borderImage || 'https://i.imgur.com/J62nHj9.png',
+                borderScale: data.config?.borderScale || data.borderScale || 1,
+                centerImage: data.config?.centerImage || data.centerImage || 'https://i.imgur.com/N3PAzB2.png',
+                centerScale: data.config?.centerScale || data.centerScale || 1,
+                strokeWidth: data.config?.strokeWidth ?? 1,
+                strokeColor: data.config?.strokeColor || '#000000',
               }
             };
             form.reset(formValues);
@@ -441,8 +449,8 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                 <Tabs defaultValue="prizes" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="data"><Settings className="mr-2 h-4 w-4" />Datos Generales</TabsTrigger>
-                    <TabsTrigger value="prizes"><Gift className="mr-2 h-4 w-4" />Premios</TabsTrigger>
-                    <TabsTrigger value="gameConfig"><Gamepad2 className="mr-2 h-4 w-4" />Juego</TabsTrigger>
+                    <TabsTrigger value="prizes"><Gamepad2 className="mr-2 h-4 w-4" />Ruleta</TabsTrigger>
+                    <TabsTrigger value="gameConfig"><Settings className="mr-2 h-4 w-4"/>Pantallas</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="data">
@@ -468,7 +476,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Nombre del Cliente</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Nombre de la empresa o persona" {...field} disabled={loading} />
+                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading} />
                                 </FormControl>
                                 <FormDescription>
                                   El nombre que identifica al propietario de este juego.
@@ -484,7 +492,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Email del Cliente (para notificaciones y acceso)</FormLabel>
                                 <FormControl>
-                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} />
+                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} value={field.value || ''} />
                                 </FormControl>
                                  <FormDescription>
                                   Dirección donde el dueño del juego recibirá un aviso cuando un premio sea ganado.
@@ -595,48 +603,6 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               </FormItem>
                             )}
                           />
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Imagen de Fondo (TV)</h3>
-                            <FormField
-                              control={form.control}
-                              name="backgroundImage"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>URL de la Imagen</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="https://ejemplo.com/imagen.jpg" {...field} />
-                                  </FormControl>
-                                  <FormDescription>
-                                    Pega la URL de la imagen que quieres usar de fondo. Déjalo en blanco para no usar ninguna.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="backgroundFit"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Ajuste de la Imagen</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona cómo se ajustará la imagen" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="cover">Cubrir (Cover)</SelectItem>
-                                      <SelectItem value="contain">Contener (Contain)</SelectItem>
-                                      <SelectItem value="fill">Rellenar (Fill)</SelectItem>
-                                      <SelectItem value="none">Ninguno (None)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                        </div>
                       </CardContent>
                     </Card>
                   </TabsContent>
@@ -644,11 +610,11 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                   <TabsContent value="prizes">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Premios de la Ruleta</CardTitle>
+                        <CardTitle>Diseño de la Ruleta</CardTitle>
                         <CardDescription>Define los segmentos, sus imágenes y sus probabilidades.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
                                 <div className="space-y-4">
                                     <h4 className="font-semibold">Imagen del Borde</h4>
                                     <FormField
@@ -718,6 +684,39 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                         </FormItem>
                                     )}
                                     />
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="font-semibold">Líneas Divisorias</h4>
+                                    <FormField
+                                    control={form.control}
+                                    name="config.strokeWidth"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Grosor de Línea ({field.value?.toFixed(1)}px)</FormLabel>
+                                        <FormControl>
+                                            <Slider
+                                            value={[field.value ?? 1]}
+                                            onValueChange={(val) => field.onChange(val[0])}
+                                            max={8}
+                                            min={0}
+                                            step={0.5}
+                                            />
+                                        </FormControl>
+                                        </FormItem>
+                                    )}
+                                    />
+                                </div>
+                                <div className="space-y-4">
+                                  <h4 className="font-semibold opacity-0">.</h4>
+                                   <FormField control={form.control} name={`config.strokeColor`} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Color de Línea</FormLabel>
+                                            <div className="flex items-center gap-2 border rounded-md p-1 w-32">
+                                                <Input type="color" {...field} value={field.value || '#000000'} className="h-6 w-6 p-0 border-none cursor-pointer" />
+                                                <Input type="text" {...field} value={field.value || '#000000'} className="h-6 w-full font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0" />
+                                            </div>
+                                        </FormItem>
+                                    )}/>
                                 </div>
                           </div>
                           
@@ -874,8 +873,8 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                       <FormItem>
                                                         <FormLabel>Color del Texto</FormLabel>
                                                         <div className="flex items-center gap-2 border rounded-md p-1 w-32">
-                                                            <Input type="color" {...field} className="h-6 w-6 p-0 border-none cursor-pointer" />
-                                                            <Input type="text" {...field} className="h-6 w-full font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0" />
+                                                            <Input type="color" {...field} value={field.value || '#000000'} className="h-6 w-6 p-0 border-none cursor-pointer" />
+                                                            <Input type="text" {...field} value={field.value || '#000000'} className="h-6 w-full font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0" />
                                                         </div>
                                                       </FormItem>
                                                   )}/>
@@ -941,7 +940,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                       <FormItem>
                                                         <FormLabel>Nombre del Icono (Lucide)</FormLabel>
                                                         <FormControl>
-                                                            <Input placeholder="Ej: Gift, Trophy, Star" {...field} />
+                                                            <Input placeholder="Ej: Gift, Trophy, Star" {...field} value={field.value || ''}/>
                                                         </FormControl>
                                                         <FormDescription>
                                                             Busca un icono en la <a href="https://lucide.dev/icons/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">biblioteca de Lucide</a> y pega su nombre aquí.
@@ -958,7 +957,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                       <FormItem>
                                                         <FormLabel>O usa una URL de imagen personalizada</FormLabel>
                                                          <FormControl>
-                                                            <Input placeholder="https://..." {...field} />
+                                                            <Input placeholder="https://..." {...field} value={field.value || ''}/>
                                                          </FormControl>
                                                         <FormDescription>Si rellenas este campo, se usará esta imagen en lugar del icono de Lucide.</FormDescription>
                                                       </FormItem>
@@ -988,10 +987,53 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                   <TabsContent value="gameConfig">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Configuración de Pantalla de Juego</CardTitle>
+                        <CardTitle>Configuración de Pantallas de Juego</CardTitle>
                         <CardDescription>Ajusta los mensajes y elementos que ven los jugadores.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-8">
+                         <div className="space-y-4">
+                            <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Pantalla de TV/Display</h3>
+                             <FormField
+                              control={form.control}
+                              name="backgroundImage"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>URL de Imagen de Fondo (TV)</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="https://ejemplo.com/imagen.jpg" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Pega la URL de la imagen que quieres usar de fondo. Déjalo en blanco para no usar ninguna.
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="backgroundFit"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Ajuste de la Imagen</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecciona cómo se ajustará la imagen" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="cover">Cubrir (Cover)</SelectItem>
+                                      <SelectItem value="contain">Contener (Contain)</SelectItem>
+                                      <SelectItem value="fill">Rellenar (Fill)</SelectItem>
+                                      <SelectItem value="none">Ninguno (None)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                        </div>
+                        <Separator />
                         <FormField
                             control={form.control}
                             name="rouletteScale"
@@ -1049,7 +1091,6 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 </FormItem>
                             )}
                         />
-                        <Separator />
                         <FormField
                             control={form.control}
                             name="qrCodeScale"
@@ -1080,7 +1121,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>URL de Imagen de Fondo (Móvil)</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="https://ejemplo.com/fondo-movil.jpg" {...field} />
+                                    <Input placeholder="https://ejemplo.com/fondo-movil.jpg" {...field} value={field.value || ''} />
                                   </FormControl>
                                   <FormDescription>
                                     Fondo para la pantalla de registro en el móvil. Si se deja en blanco, usará el color de fondo por defecto.
@@ -1095,7 +1136,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Ajuste de la Imagen (Móvil)</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value || 'cover'} disabled={loading}>
                                     <FormControl>
                                       <SelectTrigger>
                                         <SelectValue placeholder="Selecciona cómo se ajustará la imagen" />
@@ -1119,7 +1160,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>Subtítulo en Pantalla de Registro</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="Ej: Completa tus datos para ganar" />
+                                    <Input {...field} placeholder="Ej: Completa tus datos para ganar" value={field.value || ''}/>
                                   </FormControl>
                                   <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
                                   <FormMessage />
@@ -1154,7 +1195,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>Mensaje de Éxito</FormLabel>
                                   <FormControl>
-                                    <Textarea {...field} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio."/>
+                                    <Textarea {...field} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio." value={field.value || ''} />
                                   </FormControl>
                                   <FormDescription>El mensaje que ve el jugador en su móvil después de solicitar el giro.</FormDescription>
                                   <FormMessage />
@@ -1201,4 +1242,3 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     </main>
   );
 }
-
