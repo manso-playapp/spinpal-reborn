@@ -218,14 +218,16 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
                     const nameParts = (segment.name || "").toUpperCase().split(',');
 
-                    const iconAngle = textAngle * Math.PI / 180;
-                    const iconRadius = textRadius * 0.6; 
+                    // Position icon relative to text
+                    const iconDistanceFactor = 0.6; // How far the icon is from the text (0.6 = 60% of text radius)
+                    const iconRadius = textRadius * iconDistanceFactor;
                     const iconSize = 40 * (segment.iconScale || 1);
-                    const iconX = WHEEL_RADIUS + iconRadius * Math.cos(iconAngle) - iconSize / 2;
-                    const iconY = WHEEL_RADIUS + iconRadius * Math.sin(iconAngle) - iconSize / 2;
+                    const iconAngleRad = textAngle * Math.PI / 180;
+                    const iconX = WHEEL_RADIUS + iconRadius * Math.cos(iconAngleRad) - iconSize / 2;
+                    const iconY = WHEEL_RADIUS + iconRadius * Math.sin(iconAngleRad) - iconSize / 2;
                     const iconRotation = textAngle + 90;
 
-                    const [straightTextX, straightTextY] = getCoordinatesForAngle(textAngle, textRadius * 0.9);
+                    const [straightTextX, straightTextY] = getCoordinatesForAngle(textAngle, textRadius);
 
                     const iconName = segment.iconName ? capitalize(segment.iconName) as IconName : null;
                     const IconComponent = iconName && LucideIcons[iconName] ? LucideIcons[iconName] : null;
