@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -71,6 +71,7 @@ const formSchema = z.object({
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   managementType: z.enum(['client', 'playapp']).default('client'),
   exemptedEmails: z.string().optional(),
+  instagramProfile: z.string().url({ message: 'Debe ser una URL de Instagram válida.' }).or(z.literal('')).optional(),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios.').max(16, 'No puedes tener más de 16 premios.'),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
@@ -115,6 +116,7 @@ interface Game {
   clientEmail?: string;
   managementType?: 'client' | 'playapp';
   exemptedEmails?: string[];
+  instagramProfile?: string;
   segments?: z.infer<typeof segmentSchema>[];
   backgroundImage?: string;
   backgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
@@ -179,6 +181,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       clientEmail: initialGame.clientEmail || '',
       managementType: initialGame.managementType || 'client',
       exemptedEmails: (initialGame.exemptedEmails || []).join(', '),
+      instagramProfile: initialGame.instagramProfile || '',
       segments: initialGame.segments && initialGame.segments.length > 0 ? initialGame.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       backgroundImage: initialGame.backgroundImage || '',
       backgroundFit: initialGame.backgroundFit || 'cover',
@@ -463,6 +466,26 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormMessage />
                                 </FormItem>
                             )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="instagramProfile"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="flex items-center gap-2"><Instagram className="h-4 w-4"/> URL de Perfil de Instagram (Opcional)</FormLabel>
+                                    <FormControl>
+                                    <Input
+                                        placeholder="https://www.instagram.com/tu_usuario"
+                                        {...field}
+                                        disabled={loading}
+                                    />
+                                    </FormControl>
+                                    <FormDescription>
+                                    Si completas esto, se le pedirá al jugador que confirme que sigue esta cuenta para poder jugar.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
                             />
                            <FormField
                             control={form.control}
@@ -1074,3 +1097,5 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     </main>
   );
 }
+
+    

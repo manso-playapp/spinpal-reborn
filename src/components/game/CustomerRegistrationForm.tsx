@@ -13,10 +13,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle, Bug } from 'lucide-react';
+import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle, Bug, Instagram } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
+import { Checkbox } from '../ui/checkbox';
+import Link from 'next/link';
 
 const baseFormSchema = z.object({
   name: z.string().min(2, { message: 'Tu nombre debe tener al menos 2 caracteres.' }),
@@ -29,6 +31,7 @@ interface GameData {
     isPhoneRequired: boolean;
     successMessage: string;
     segments: any[];
+    instagramProfile?: string;
 }
 
 interface SpinResult {
@@ -50,12 +53,15 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     
     // The schema is now dynamic and will be updated once game data is loaded
     const [dynamicSchema, setDynamicSchema] = useState(
-        baseFormSchema.extend({ phone: z.string().optional() })
+        baseFormSchema.extend({ 
+            phone: z.string().optional(),
+            confirmFollow: z.boolean().optional(),
+        })
     );
 
     const form = useForm<z.infer<typeof dynamicSchema>>({
         resolver: zodResolver(dynamicSchema),
-        defaultValues: { name: '', email: '', phone: '' },
+        defaultValues: { name: '', email: '', phone: '', confirmFollow: false },
     });
 
     // Effect to listen for game data and update configuration
@@ -66,6 +72,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 const data = docSnap.data();
                 const isPhoneRequired = !!data.isPhoneRequired;
                 const segments = data.segments || [];
+                const instagramProfile = data.instagramProfile || '';
 
                 if (!Array.isArray(segments) || segments.length < 2 || !segments.every(s => s && typeof s.id === 'string')) {
                     setErrorMessage('El juego no está configurado correctamente (faltan premios válidos con ID).');
@@ -79,17 +86,31 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     isPhoneRequired: isPhoneRequired,
                     successMessage: data.successMessage || '¡Mucha suerte! Revisa la pantalla grande.',
                     segments: segments,
+                    instagramProfile: instagramProfile,
                 };
                 
                 setGameData(newGameData);
 
                 // Update the form validation schema based on game settings
-                const newSchema = baseFormSchema.extend({
+                let schema = baseFormSchema.extend({
                   phone: isPhoneRequired
                     ? z.string().min(6, 'Por favor, introduce un número de teléfono válido.')
                     : z.string().optional(),
                 });
-                setDynamicSchema(newSchema);
+                
+                if (instagramProfile) {
+                    schema = schema.extend({
+                        confirmFollow: z.literal(true, {
+                            errorMap: () => ({ message: "Debes confirmar que sigues la cuenta para participar." })
+                        })
+                    })
+                } else {
+                     schema = schema.extend({
+                        confirmFollow: z.boolean().optional()
+                    })
+                }
+                
+                setDynamicSchema(schema);
 
                 // Only move to FORM state if we were previously loading
                 if (uiState === 'LOADING') {
@@ -305,6 +326,28 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                             <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input type="tel" placeholder="Tu teléfono" {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                     )}
+                                    {gameData?.instagramProfile && (
+                                        <FormField
+                                            control={form.control}
+                                            name="confirmFollow"
+                                            render={({ field }) => (
+                                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                                    <FormControl>
+                                                        <Checkbox
+                                                        checked={field.value}
+                                                        onCheckedChange={field.onChange}
+                                                        />
+                                                    </FormControl>
+                                                    <div className="space-y-1 leading-none">
+                                                        <FormLabel>
+                                                             Confirmo que sigo a <Link href={gameData.instagramProfile!} target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-1">@{gameData.instagramProfile!.split('/').pop()}<Instagram className="h-4 w-4"/></Link> en Instagram.
+                                                        </FormLabel>
+                                                        <FormMessage />
+                                                    </div>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    )}
                                     <Button type="submit" className="w-full" disabled={isSubmitting || !gameData}>
                                         {isSubmitting ? <Loader2 className="animate-spin" /> : 'Registrarme'}
                                     </Button>
@@ -390,3 +433,5 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
     return renderContent();
 }
+
+    
