@@ -38,13 +38,14 @@ interface SpinResult {
 
 type UiState = 'IDLE' | 'SPINNING' | 'SHOW_RESULT';
 
-export default function GameClientPage({ gameId }: { gameId: string }) {
-  const [game, setGame] = useState<GameData | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function GameClientPage({ initialGame }: { initialGame: GameData }) {
+  const [game, setGame] = useState<GameData>(initialGame);
   const [uiState, setUiState] = useState<UiState>('IDLE');
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  
+  const gameId = initialGame.id;
 
   useEffect(() => {
     const gameRef = doc(db, 'games', gameId);
@@ -83,13 +84,9 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
             };
             
             setGame(newGameData as GameData);
-        } else {
-            notFound();
         }
-        setLoading(false);
     }, (error) => {
         console.error("Error fetching game data in real-time:", error);
-        setLoading(false);
     });
 
     return () => unsubscribe();
@@ -111,18 +108,6 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
       setShowConfetti(false);
     }, 15000);
   }, []);
-  
-  if (loading) {
-    return (
-        <div className="flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        </div>
-    );
-  }
-
-  if (!game) {
-    return null;
-  }
   
   const backgroundStyles: React.CSSProperties = game.backgroundImage ? {
     backgroundImage: `url(${game.backgroundImage})`,
