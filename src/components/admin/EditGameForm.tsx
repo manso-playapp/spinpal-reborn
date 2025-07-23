@@ -707,6 +707,21 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                 <Button type="button" {...listeners} className="cursor-grab p-1 h-8 w-8" variant="ghost">
                                                     <GripVertical className="h-5 w-5 text-muted-foreground" />
                                                 </Button>
+
+                                                <Controller
+                                                    control={form.control}
+                                                    name={`segments.${index}.color`}
+                                                    render={({ field: colorField }) => (
+                                                        <Input 
+                                                            type="color" 
+                                                            value={colorField.value || '#ffffff'}
+                                                            onChange={colorField.onChange}
+                                                            className="h-6 w-6 p-0 border-none cursor-pointer bg-transparent"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    )}
+                                                />
+
                                                 <div className="flex-1 px-2">
                                                     <Controller control={form.control} name={`segments.${index}.name`} render={({ field: controllerField }) => (
                                                       <Input {...controllerField} className="border-none focus-visible:ring-0 bg-transparent w-full" onClick={(e) => e.stopPropagation()} />
@@ -723,26 +738,12 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                 </div>
                                             </div>
                                             <AccordionContent className="p-4 border-t">
-                                              <Tabs defaultValue="basic" className="w-full">
-                                                <TabsList className="grid w-full grid-cols-4">
-                                                  <TabsTrigger value="basic"><Palette className="mr-2 h-4 w-4"/>Básico</TabsTrigger>
+                                              <Tabs defaultValue="probability" className="w-full">
+                                                <TabsList className="grid w-full grid-cols-3">
                                                   <TabsTrigger value="probability"><Gift className="mr-2 h-4 w-4" />Probabilidad</TabsTrigger>
                                                   <TabsTrigger value="text"><Type className="mr-2 h-4 w-4"/>Texto</TabsTrigger>
                                                   <TabsTrigger value="icon"><PictureInPicture className="mr-2 h-4 w-4"/>Icono</TabsTrigger>
                                                 </TabsList>
-                                                <TabsContent value="basic" className="pt-4 space-y-6">
-                                                  <FormField control={form.control} name={`segments.${index}.color`} render={({ field }) => (
-                                                    <FormItem>
-                                                      <FormLabel>Color del Gajo</FormLabel>
-                                                      <FormControl>
-                                                          <div className="flex items-center gap-2 border rounded-md p-1 w-32">
-                                                            <Input type="color" value={field.value || '#ffffff'} onChange={field.onChange} className="h-6 w-6 p-0 border-none cursor-pointer" />
-                                                            <Input type="text" value={field.value || ''} onChange={field.onChange} className="h-6 w-full font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0" />
-                                                          </div>
-                                                      </FormControl>
-                                                    </FormItem>
-                                                  )}/>
-                                                </TabsContent>
                                                 <TabsContent value="probability" className="pt-4 space-y-6">
                                                   <FormField
                                                       control={form.control}
@@ -1114,5 +1115,3 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     </main>
   );
 }
-
-    
