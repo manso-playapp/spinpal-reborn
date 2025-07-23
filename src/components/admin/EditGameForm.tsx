@@ -639,7 +639,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                         <FormItem>
                                         <FormLabel>URL</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="https://placehold.co/500x500.png" {...field} />
+                                            <Input placeholder="https://placehold.co/500x500.png" {...field} value={field.value ?? ''} />
                                         </FormControl>
                                         <FormMessage />
                                         </FormItem>
@@ -674,7 +674,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                         <FormItem>
                                         <FormLabel>URL</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="https://placehold.co/500x500.png" {...field} />
+                                            <Input placeholder="https://placehold.co/500x500.png" {...field} value={field.value ?? ''} />
                                         </FormControl>
                                         <FormMessage />
                                         </FormItem>

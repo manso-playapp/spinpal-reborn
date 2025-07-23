@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, DocumentData, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, DocumentData, getDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { QrCode, Gift, ThumbsDown, Loader2 } from 'lucide-react';
@@ -11,6 +11,7 @@ import SpinningWheel from '@/components/game/SpinningWheel';
 import QRCodeDisplay from '@/components/game/QRCodeDisplay';
 import { Separator } from '@/components/ui/separator';
 import Confetti from '@/components/game/Confetti';
+import { Button } from '@/components/ui/button';
 
 interface GameData extends DocumentData {
   id: string;
@@ -108,6 +109,36 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
       setShowConfetti(false);
     }, 15000);
   }, []);
+
+  const handleDemoSpin = async () => {
+    if (game.status !== 'demo' || uiState !== 'IDLE') return;
+  
+    const winningIndex = Math.floor(Math.random() * game.segments.length);
+    const winningSegment = game.segments[winningIndex];
+  
+    if (!winningSegment || typeof winningSegment.id !== 'string') {
+      console.error('Invalid segment for demo spin.');
+      return;
+    }
+  
+    setUiState('SPINNING');
+    setCurrentPlayer('Tester');
+  
+    try {
+      const gameRef = doc(db, 'games', gameId);
+      await updateDoc(gameRef, {
+        spinRequest: {
+          timestamp: new Date(), 
+          customerId: 'demo-user',
+          winningId: winningSegment.id,
+        },
+      });
+    } catch (error) {
+      console.error('Error triggering demo spin:', error);
+      setUiState('IDLE');
+      setCurrentPlayer(null);
+    }
+  };
   
   const backgroundStyles: React.CSSProperties = game.backgroundImage ? {
     backgroundImage: `url(${game.backgroundImage})`,
@@ -180,6 +211,10 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 <div className="bg-yellow-400 text-black px-4 py-1 text-sm font-bold shadow-lg rounded-full">
                     MODO DEMO
                 </div>
+                 <Button onClick={handleDemoSpin} disabled={uiState !== 'IDLE'} size="sm" variant="secondary" className="shadow-lg">
+                    {uiState !== 'IDLE' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Giro de Prueba
+                </Button>
             </div>
         )}
         {showConfetti && <Confetti />}

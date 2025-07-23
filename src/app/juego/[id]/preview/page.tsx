@@ -1,7 +1,7 @@
 
 
 // This is a special layout-less page for the iframe preview
-import GameClientPage from '@/app/game/GameClientPage';
+import GameClientPage from '@/components/game/GameClientPage';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
