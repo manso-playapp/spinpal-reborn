@@ -5,6 +5,9 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, updateDoc, deleteField } from 'firebase/firestore';
 import Image from 'next/image';
+import * as LucideIcons from 'lucide-react';
+
+type IconName = keyof typeof LucideIcons;
 
 interface Segment {
   id?: string;
@@ -12,7 +15,6 @@ interface Segment {
   color?: string;
   isRealPrize?: boolean;
   probability?: number;
-  // New text and icon fields
   textColor?: string;
   fontFamily?: string;
   fontSize?: number;
@@ -22,9 +24,9 @@ interface Segment {
   letterSpacingLineTwo?: number;
   distanceFromCenter?: number;
   iconUrl?: string;
+  iconName?: string;
   iconScale?: number;
 }
-
 
 interface SpinningWheelProps {
   segments: Segment[];
@@ -41,8 +43,12 @@ interface SpinningWheelProps {
 
 const VIEWBOX_SIZE = 500;
 const WHEEL_RADIUS = VIEWBOX_SIZE / 2;
-// The pointer is at the top, which is 270 degrees in a standard cartesian plane (0 at 3 o'clock).
 const POINTER_ANGLE = 270;
+
+const capitalize = (s: string) => {
+    if (typeof s !== 'string' || !s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1).replace(/-(\w)/g, (_, c) => c.toUpperCase());
+};
 
 export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
@@ -53,7 +59,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const isSpinningRef = useRef(isSpinning);
   const currentRotationRef = useRef(0);
   const spinRequestTimestamp = useRef<number | null>(null);
-
 
   useEffect(() => {
     isSpinningRef.current = isSpinning;
@@ -68,7 +73,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     setShouldRender(true);
   }, []);
 
-  // Memoize segments to prevent re-renders unless the initial prop changes
   const segments = useMemo(() => initialSegments, [initialSegments]);
 
   const spinTheWheel = useCallback((spinRequestData) => {
@@ -99,7 +103,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     const randomizedTargetAngle = winningSegmentStartAngle + randomOffsetInSegment;
     
-    const fullSpins = (Math.floor(Math.random() * 3) + 5) * 360; // 5 to 7 fast spins
+    const fullSpins = (Math.floor(Math.random() * 3) + 5) * 360;
     
     const finalRotation = fullSpins + currentRotationRef.current + (POINTER_ANGLE - randomizedTargetAngle);
     
@@ -123,7 +127,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
         setWinningSegmentId(null);
       }, 4000); 
   
-    }, 10000); // This duration must match the CSS transition duration.
+    }, 10000);
   
   }, [segments, gameId, onSpinEnd]);
 
@@ -131,7 +135,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   useEffect(() => {
     spinHandlerRef.current = spinTheWheel;
   }, [spinTheWheel]);
-
 
   useEffect(() => {
     if (isDemoMode) return; 
@@ -154,7 +157,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     });
     return () => unsubscribe();
   }, [gameId, isDemoMode]);
-
 
   const wheelStyle: React.CSSProperties = {
     transition: isSpinning ? 'transform 10s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none',
@@ -191,7 +193,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
             `}
         </style>
         
-        {/* Layer 1: Spinning Wheel SVG (Bottom) */}
         <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 z-0" style={wheelStyle}>
               <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
@@ -226,6 +227,9 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
                     const [straightTextX, straightTextY] = getCoordinatesForAngle(textAngle, textRadius * 0.9);
 
+                    const iconName = segment.iconName ? capitalize(segment.iconName) as IconName : null;
+                    const IconComponent = iconName && LucideIcons[iconName] ? LucideIcons[iconName] : null;
+
                     return (
                       <g key={segment.id || index} className={winningSegmentId === segment.id ? 'blinking-winner' : ''}>
                         <defs>
@@ -233,7 +237,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                         </defs>
                         <path d={pathData} fill={segment.color || '#ffffff'} stroke="#000" strokeWidth="0.5" />
                         
-                        {segment.iconUrl && (
+                        {segment.iconUrl ? (
                           <image
                             href={segment.iconUrl}
                             x={iconX}
@@ -242,6 +246,20 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                             width={iconSize}
                             transform={`rotate(${iconRotation} ${iconX + iconSize/2} ${iconY + iconSize/2})`}
                           />
+                        ) : IconComponent && (
+                            <foreignObject
+                                x={iconX}
+                                y={iconY}
+                                width={iconSize}
+                                height={iconSize}
+                                transform={`rotate(${iconRotation} ${iconX + iconSize/2} ${iconY + iconSize/2})`}
+                            >
+                               <IconComponent
+                                    color={segment.textColor || '#FFFFFF'}
+                                    strokeWidth={2}
+                                    style={{ width: '100%', height: '100%' }}
+                                />
+                            </foreignObject>
                         )}
 
                         <text 
@@ -295,7 +313,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
             </div>
         </div>
         
-        {/* Layer 2: Border Image (Middle) */}
         {borderImage && (
             <div 
             className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
@@ -313,7 +330,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
             </div>
         )}
         
-        {/* Layer 3: Center/Pointer Image (Top) */}
         {centerImage && (
             <div 
             className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center"

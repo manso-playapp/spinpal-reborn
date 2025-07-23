@@ -33,7 +33,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -62,6 +62,7 @@ const segmentSchema = z.object({
   letterSpacingLineTwo: z.number().min(-5).max(10).optional(),
   distanceFromCenter: z.number().min(0).max(1).default(0.7),
   iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
+  iconName: z.string().optional(),
   iconScale: z.number().min(0.1).max(2).default(1),
 });
 
@@ -162,6 +163,7 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   letterSpacingLineTwo: 0.5 * 1.1,
   distanceFromCenter: 0.7,
   iconUrl: '',
+  iconName: '',
   iconScale: 1,
 });
 
@@ -888,17 +890,30 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                   />
                                                 </TabsContent>
                                                 <TabsContent value="icon" className="pt-4 space-y-4">
-                                                   <FormField control={form.control} name={`segments.${index}.iconUrl`} render={({ field }) => (
+                                                   <FormField control={form.control} name={`segments.${index}.iconName`} render={({ field }) => (
                                                       <FormItem>
-                                                        <FormLabel>URL del Icono</FormLabel>
-                                                        <Input placeholder="https://..." {...field} />
-                                                        <FormDescription>URL de una imagen PNG transparente.</FormDescription>
+                                                        <FormLabel>Nombre del Icono (Lucide)</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="Ej: Gift, Trophy, Star" {...field} />
+                                                        </FormControl>
+                                                        <FormDescription>
+                                                            Busca un icono en la <a href="https://lucide.dev/icons/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">biblioteca de Lucide</a> y pega su nombre aquí.
+                                                        </FormDescription>
                                                       </FormItem>
                                                    )}/>
                                                    <FormField control={form.control} name={`segments.${index}.iconScale`} render={({ field }) => (
                                                       <FormItem>
                                                         <FormLabel>Escala del Icono ({field.value?.toFixed(2)})</FormLabel>
                                                         <Slider value={[field.value ?? 1]} onValueChange={(v) => field.onChange(v[0])} min={0.1} max={2} step={0.05} />
+                                                      </FormItem>
+                                                   )}/>
+                                                    <FormField control={form.control} name={`segments.${index}.iconUrl`} render={({ field }) => (
+                                                      <FormItem>
+                                                        <FormLabel>O usa una URL de imagen personalizada</FormLabel>
+                                                         <FormControl>
+                                                            <Input placeholder="https://..." {...field} />
+                                                         </FormControl>
+                                                        <FormDescription>Si rellenas este campo, se usará esta imagen en lugar del icono de Lucide.</FormDescription>
                                                       </FormItem>
                                                    )}/>
                                                 </TabsContent>
