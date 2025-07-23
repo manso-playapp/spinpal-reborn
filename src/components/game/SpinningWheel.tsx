@@ -41,6 +41,7 @@ interface SpinningWheelProps {
     strokeWidth?: number;
     strokeColor?: string;
   };
+  demoSpinRequest?: { winningId: string } | null;
 }
 
 const VIEWBOX_SIZE = 500;
@@ -52,7 +53,7 @@ const capitalize = (s: string) => {
     return s.charAt(0).toUpperCase() + s.slice(1).replace(/-(\w)/g, (_, c) => c.toUpperCase());
 };
 
-export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {} }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {}, demoSpinRequest = null }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -87,8 +88,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     if (winningIndex === -1) {
         console.error("Error: Winning segment ID not found in the current segments array.", { spinRequestData, segments });
-        const gameRef = doc(db, 'games', gameId);
-        updateDoc(gameRef, { spinRequest: deleteField() });
+        if (!isDemoMode) {
+            const gameRef = doc(db, 'games', gameId);
+            updateDoc(gameRef, { spinRequest: deleteField() });
+        }
         return;
     }
     
@@ -114,17 +117,19 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     currentRotationRef.current = finalRotation;
     setRotation(finalRotation);
   
-    const gameRef = doc(db, 'games', gameId);
     
     setTimeout(async () => {
       setIsSpinning(false);
       onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
       setWinningSegmentId(winningId);
   
-      try {
-        await updateDoc(gameRef, { spinRequest: deleteField() });
-      } catch (error) {
-        console.error("Error cleaning up spinRequest field:", error);
+      if (!isDemoMode) {
+          try {
+            const gameRef = doc(db, 'games', gameId);
+            await updateDoc(gameRef, { spinRequest: deleteField() });
+          } catch (error) {
+            console.error("Error cleaning up spinRequest field:", error);
+          }
       }
 
       setTimeout(() => {
@@ -133,13 +138,14 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   
     }, 10000);
   
-  }, [segments, gameId, onSpinEnd]);
+  }, [segments, gameId, onSpinEnd, isDemoMode]);
 
   const spinHandlerRef = useRef(spinTheWheel);
   useEffect(() => {
     spinHandlerRef.current = spinTheWheel;
   }, [spinTheWheel]);
-
+  
+  // Listener for Firestore-based spins
   useEffect(() => {
     if (isDemoMode) return; 
 
@@ -161,6 +167,14 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     });
     return () => unsubscribe();
   }, [gameId, isDemoMode]);
+
+  // Listener for Demo spins via prop
+  useEffect(() => {
+    if (isDemoMode && demoSpinRequest && !isSpinningRef.current) {
+        spinHandlerRef.current(demoSpinRequest);
+    }
+  }, [demoSpinRequest, isDemoMode]);
+
 
   const wheelStyle: React.CSSProperties = {
     transition: isSpinning ? 'transform 10s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none',

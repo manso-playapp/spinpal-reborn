@@ -11,6 +11,7 @@ import SpinningWheel from '@/components/game/SpinningWheel';
 import QRCodeDisplay from '@/components/game/QRCodeDisplay';
 import { Separator } from '@/components/ui/separator';
 import Confetti from './Confetti';
+import { Button } from '../ui/button';
 
 interface GameData extends DocumentData {
   id: string;
@@ -46,6 +47,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [spinRequestData, setSpinRequestData] = useState<{winningId: string} | null>(null);
 
   useEffect(() => {
     // Set up a real-time listener to keep the game data in sync.
@@ -104,6 +106,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
     setSpinResult(result);
     setUiState('SHOW_RESULT');
     setCurrentPlayer(null); // Clear player name
+    setSpinRequestData(null); // Clear demo spin request
 
     if (result.isRealPrize) {
         setShowConfetti(true);
@@ -116,6 +119,19 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
       setShowConfetti(false);
     }, 15000);
   }, []);
+
+  const handleDemoSpin = () => {
+    if (!game || game.status !== 'demo' || uiState !== 'IDLE') return;
+
+    const randomIndex = Math.floor(Math.random() * game.segments.length);
+    const winningSegment = game.segments[randomIndex];
+
+    if (winningSegment && winningSegment.id) {
+        setSpinRequestData({ winningId: winningSegment.id });
+        setUiState('SPINNING');
+        setCurrentPlayer('Prueba DEMO');
+    }
+  };
   
   if (loading) {
     return (
@@ -197,8 +213,16 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
       style={backgroundStyles}
     >
         {game.status === 'demo' && (
-            <div className="absolute top-0 left-0 bg-yellow-400 text-black px-8 py-1 text-sm font-bold shadow-lg transform -rotate-45 -translate-x-8 translate-y-4 z-30">
-                DEMO
+             <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 items-end">
+                <div className="bg-yellow-400 text-black px-4 py-1 text-sm font-bold shadow-lg rounded-full">
+                    MODO DEMO
+                </div>
+                {uiState === 'IDLE' && (
+                    <Button onClick={handleDemoSpin} variant="secondary" className="shadow-lg animate-in fade-in">
+                        <RotateCw className="mr-2 h-4 w-4" />
+                        Giro de Prueba
+                    </Button>
+                )}
             </div>
         )}
         {showConfetti && <Confetti />}
@@ -220,6 +244,7 @@ export default function GameClientPage({ gameId }: { gameId: string }) {
               isDemoMode={game.status === 'demo'}
               config={game.config}
               onSpinEnd={handleSpinEnd}
+              demoSpinRequest={spinRequestData}
             />
           </div>
         </div>
