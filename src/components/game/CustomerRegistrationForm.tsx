@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle, Bug, Instagram } from 'lucide-react';
+import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle, Bug, Instagram, PlayCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
@@ -40,7 +40,8 @@ interface SpinResult {
     isRealPrize: boolean;
 }
 
-type UiState = 'LOADING' | 'FORM' | 'SUBMITTING' | 'SUCCESS' | 'ALREADY_PLAYED' | 'ERROR';
+// 1. REGISTRO (FORM) -> 2. GIRO (READY) -> 3. SUERTE (SPINNING) -> 4. CIERRE (SUCCESS)
+type UiState = 'LOADING' | 'FORM' | 'SUBMITTING' | 'ALREADY_PLAYED' | 'ERROR' | 'READY' | 'SPINNING' | 'SUCCESS';
 
 export default function CustomerRegistrationForm({ gameId }: { gameId: string }) {
     const { toast } = useToast();
@@ -48,6 +49,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     const [gameData, setGameData] = useState<GameData | null>(null);
     const [errorMessage, setErrorMessage] = useState('Ha ocurrido un error inesperado.');
     const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
+    const [customerId, setCustomerId] = useState<string | null>(null);
     
     const [dynamicSchema, setDynamicSchema] = useState(
         baseFormSchema.extend({ 
@@ -125,7 +127,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     }, [gameId, uiState]);
 
 
-    const onSubmit = async (formData: z.infer<typeof dynamicSchema>) => {
+    // PASO 1: REGISTRO
+    const handleRegistration = async (formData: z.infer<typeof dynamicSchema>) => {
         if (!gameData) return;
         setUiState('SUBMITTING');
         const submittedEmail = formData.email.toLowerCase().trim();
@@ -147,11 +150,26 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 registeredAt: serverTimestamp(),
                 hasPlayed: false,
             });
+            
+            setCustomerId(newCustomerRef.id);
+            setUiState('READY'); // -> Pasa a la pantalla de GIRO (Paso 2)
 
-            // This is the core logic to trigger the spin
+        } catch (error: any) {
+            console.error('Error during registration:', error);
+            setErrorMessage(error.message || 'No se pudo completar el registro.');
+            setUiState('ERROR');
+        }
+    };
+    
+    // PASO 2 & 3: Iniciar GIRO y mostrar pantalla de SUERTE
+    const handleSpin = async () => {
+        if (!gameData || !customerId) return;
+        setUiState('SPINNING'); // -> Pasa a la pantalla de SUERTE (Paso 3)
+
+        try {
+            // Lógica para determinar el premio
             const validSegments = gameData.segments.filter(s => s && typeof s.id === 'string');
             if (validSegments.length < 2) throw new Error('El juego no tiene suficientes premios válidos configurados.');
-
             const realPrizeSegments = validSegments.filter(s => s.isRealPrize);
             const nonRealPrizeSegments = validSegments.filter(s => !s.isRealPrize);
             const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
@@ -173,16 +191,18 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             const winningSegment = validSegments[winningIndex];
             if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
 
-            setSpinResult({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
+            const result = { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize };
+            setSpinResult(result);
 
+            // Actualizar Firestore para disparar la animación en la TV
             const gameRef = doc(db, 'games', gameId);
-            const customerRef = doc(db, 'games', gameId, 'customers', newCustomerRef.id);
+            const customerRef = doc(db, 'games', gameId, 'customers', customerId);
             const batch = writeBatch(db);
 
             const gameUpdateData: { [key: string]: any } = {
                 plays: increment(1),
-                spinRequest: { timestamp: serverTimestamp(), customerId: newCustomerRef.id, winningId: winningSegment.id },
-                lastResult: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize, customerId: newCustomerRef.id, timestamp: serverTimestamp() }
+                spinRequest: { timestamp: serverTimestamp(), customerId: customerId, winningId: winningSegment.id },
+                lastResult: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize, customerId: customerId, timestamp: serverTimestamp() }
             };
             const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
 
@@ -190,18 +210,22 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 gameUpdateData.prizesAwarded = increment(1);
                 customerUpdateData.prizeWonName = winningSegment.name;
                 customerUpdateData.prizeWonAt = serverTimestamp();
-                sendPrizeNotification({ gameId, customerId: newCustomerRef.id, prizeName: winningSegment.name });
+                sendPrizeNotification({ gameId, customerId: customerId, prizeName: winningSegment.name });
             }
 
             batch.update(gameRef, gameUpdateData);
             batch.update(customerRef, customerUpdateData);
             
             await batch.commit();
-            setUiState('SUCCESS');
+
+            // Esperar un tiempo prudencial para la animación antes de mostrar el resultado
+            setTimeout(() => {
+                setUiState('SUCCESS'); // -> Pasa a la pantalla de CIERRE (Paso 4)
+            }, 8000); // 8 segundos para la animación
 
         } catch (error: any) {
-            console.error('Error registering customer and spinning:', error);
-            setErrorMessage(error.message || 'No se pudo completar el registro.');
+            console.error('Error during spin logic:', error);
+            setErrorMessage(error.message || 'No se pudo iniciar el giro.');
             setUiState('ERROR');
         }
     };
@@ -220,7 +244,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     </Card>
                 );
 
-            case 'FORM':
+            case 'FORM': // PASO 1: REGISTRO
                 if (gameData?.isDemoMode) {
                     return (
                         <Card className="w-full max-w-md text-center shadow-lg">
@@ -240,7 +264,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                         </CardHeader>
                         <CardContent>
                             <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                <form onSubmit={form.handleSubmit(handleRegistration)} className="space-y-6">
                                     <FormField control={form.control} name="name" render={({ field }) => (
                                         <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Tu nombre" {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
@@ -275,26 +299,52 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                         />
                                     )}
                                     <Button type="submit" className="w-full" disabled={!gameData}>
-                                        ¡Jugar ahora!
+                                        ¡Registrarme!
                                     </Button>
                                 </form>
                             </Form>
                         </CardContent>
                     </Card>
                 );
-
+            
             case 'SUBMITTING':
                 return (
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                            <p className="text-xl font-semibold">Registrando y girando...</p>
-                            <p className="text-muted-foreground">¡Mucha suerte!</p>
+                            <p className="text-xl font-semibold">Validando tus datos...</p>
                         </CardContent>
                     </Card>
                 );
 
-            case 'SUCCESS':
+            case 'READY': // PASO 2: GIRO
+                 return (
+                    <Card className="w-full max-w-md text-center shadow-lg">
+                        <CardHeader>
+                            <CardTitle>¡Todo Listo!</CardTitle>
+                            <CardDescription>Estás a un paso de la gloria. ¡Mucha suerte!</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <Button onClick={handleSpin} className="w-full h-16 text-lg" size="lg">
+                                <PlayCircle className="mr-2 h-6 w-6"/>
+                                Girar la Ruleta
+                           </Button>
+                        </CardContent>
+                    </Card>
+                );
+
+            case 'SPINNING': // PASO 3: SUERTE
+                return (
+                    <Card className="w-full max-w-md text-center shadow-lg">
+                        <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
+                            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                            <p className="text-xl font-semibold">Girando... ¡Mucha suerte!</p>
+                            <p className="text-muted-foreground">Revisa la pantalla grande para ver la animación.</p>
+                        </CardContent>
+                    </Card>
+                );
+
+            case 'SUCCESS': // PASO 4: CIERRE
                 return (
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardHeader className="p-6">
@@ -350,3 +400,5 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
     return renderContent();
 }
+
+    
