@@ -559,7 +559,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>URL de la Imagen</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="https://ejemplo.com/imagen.jpg" {...field} disabled={loading} />
+                                    <Input placeholder="https://ejemplo.com/imagen.jpg" {...field} />
                                   </FormControl>
                                   <FormDescription>
                                     Pega la URL de la imagen que quieres usar de fondo. Déjalo en blanco para no usar ninguna.
@@ -712,13 +712,20 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                     control={form.control}
                                                     name={`segments.${index}.color`}
                                                     render={({ field: colorField }) => (
-                                                        <Input 
-                                                            type="color" 
-                                                            value={colorField.value || '#ffffff'}
-                                                            onChange={colorField.onChange}
-                                                            className="h-6 w-6 p-0 border-none cursor-pointer bg-transparent"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        />
+                                                        <div className="flex items-center gap-2 border rounded-md p-1" onClick={(e) => e.stopPropagation()}>
+                                                          <Input 
+                                                              type="color" 
+                                                              value={colorField.value || '#ffffff'}
+                                                              onChange={colorField.onChange}
+                                                              className="h-6 w-6 p-0 border-none cursor-pointer bg-transparent"
+                                                          />
+                                                          <Input
+                                                              type="text"
+                                                              value={colorField.value}
+                                                              onChange={colorField.onChange}
+                                                              className="h-6 w-20 font-mono text-xs p-1 border-none bg-transparent focus-visible:ring-0"
+                                                          />
+                                                        </div>
                                                     )}
                                                 />
 
@@ -994,7 +1001,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>URL de Imagen de Fondo (Móvil)</FormLabel>
                                   <FormControl>
-                                    <Input placeholder="https://ejemplo.com/fondo-movil.jpg" {...field} disabled={loading} />
+                                    <Input placeholder="https://ejemplo.com/fondo-movil.jpg" {...field} />
                                   </FormControl>
                                   <FormDescription>
                                     Fondo para la pantalla de registro en el móvil. Si se deja en blanco, usará el color de fondo por defecto.
@@ -1033,7 +1040,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>Subtítulo en Pantalla de Registro</FormLabel>
                                   <FormControl>
-                                    <Input {...field} disabled={loading} placeholder="Ej: Completa tus datos para ganar" />
+                                    <Input {...field} placeholder="Ej: Completa tus datos para ganar" />
                                   </FormControl>
                                   <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
                                   <FormMessage />
@@ -1068,7 +1075,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>Mensaje de Éxito</FormLabel>
                                   <FormControl>
-                                    <Textarea {...field} disabled={loading} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio."/>
+                                    <Textarea {...field} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio."/>
                                   </FormControl>
                                   <FormDescription>El mensaje que ve el jugador en su móvil después de solicitar el giro.</FormDescription>
                                   <FormMessage />
