@@ -4,7 +4,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, DocumentData, getDoc, updateDoc, deleteField } from 'firebase/firestore';
-import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { QrCode, Gift, ThumbsDown, Loader2 } from 'lucide-react';
 import SpinningWheel from '@/components/game/SpinningWheel';
