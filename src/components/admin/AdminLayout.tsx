@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import Logo from '../logo';
-import { LogOut, Gamepad, Mail, Link2, MessageSquareWarning, Sun, Moon } from 'lucide-react';
+import { LogOut, Gamepad, Mail, Link2, MessageSquareWarning, Sun, Moon, History } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 
@@ -97,6 +97,19 @@ Gracias,
                     <Link href="/conexiones">
                       <Link2 />
                       <span>Conexiones</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin/changelog')}
+                    tooltip={{ children: 'Historial de Cambios' }}
+                  >
+                    <Link href="/admin/changelog">
+                      <History />
+                      <span>Historial</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

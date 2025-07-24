@@ -2,24 +2,24 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
-import packageJson from '../../package.json';
 import { ThemeProvider } from '@/components/theme-provider';
+import { format } from 'date-fns';
 
 export const metadata: Metadata = {
   title: 'PlayApp',
   description: 'El blueprint de reconstrucción definitivo.',
 };
 
-// Genera un ID de compilación corto basado en el timestamp actual
-const buildId = new Date().getTime().toString(36).slice(-6);
+// Genera un ID de compilación numérico basado en la fecha y hora YYMMDDHHMM
+const buildId = format(new Date(), 'yyMMddHHmm');
+
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const appVersion = packageJson.version;
-  const displayVersion = `v${appVersion}-${buildId}`;
+  const displayVersion = `Build: ${buildId}`;
 
   return (
     <html lang="en" suppressHydrationWarning>
