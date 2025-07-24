@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -313,7 +313,7 @@ export default async function ConexionesPage() {
                 
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldCheck/>Paso 3: Configurar Reglas de Seguridad</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ShieldCheck/>Paso 3: Configurar Reglas de Seguridad de Firestore</CardTitle>
                         <CardDescription>Protege tu base de datos contra accesos no autorizados.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -383,6 +383,42 @@ service cloud.firestore {
     // Colección de prueba para verificar la conexión
     match /health_check/{doc} {
       allow read, write: if true;
+    }
+  }
+}`}</code></pre>
+                        <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
+                    </CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ImageIcon/>Paso 3.5: Configurar Reglas de Storage</CardTitle>
+                        <CardDescription>Protege la subida de archivos para que solo tú puedas subir imágenes.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                       <p>Estas reglas son cruciales para asegurar que solo los usuarios administradores puedan subir o borrar imágenes, mientras que cualquier persona puede verlas (necesario para el juego).</p>
+                       <Button asChild variant="outline">
+                            <Link href={`https://console.firebase.google.com/project/${projectId}/storage/rules`} target="_blank">
+                                Ir a las Reglas de Storage <ExternalLink className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase Storage:</p>
+                        <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Permite la lectura pública de cualquier archivo.
+    // Esto es necesario para que las imágenes se puedan mostrar en el juego y el editor.
+    match /{allPaths=**} {
+      allow read;
+    }
+
+    // Solo permite la escritura (subida, actualización, eliminación)
+    // a los usuarios que estén autenticados en la aplicación (tu cuenta de admin).
+    // Esto previene que usuarios anónimos suban archivos.
+    match /{allPaths=**} {
+      allow write: if request.auth != null;
     }
   }
 }`}</code></pre>
