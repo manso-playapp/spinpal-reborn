@@ -12,6 +12,7 @@ type IconName = keyof typeof LucideIcons;
 interface Segment {
   id?: string;
   name: string;
+  formalName?: string;
   color?: string;
   isRealPrize?: boolean;
   probability?: number;
@@ -119,7 +120,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     
     setTimeout(async () => {
       setIsSpinning(false);
-      onSpinEnd({ name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize });
+      const prizeNameToDisplay = winningSegment.formalName || winningSegment.name;
+      onSpinEnd({ name: prizeNameToDisplay, isRealPrize: !!winningSegment.isRealPrize });
       setWinningSegmentId(winningId);
   
       if (!isDemoMode) {
