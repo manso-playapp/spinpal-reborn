@@ -20,43 +20,52 @@ interface ImageUploadProps {
 
 export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
   const { watch, setValue } = useFormContext();
-  const { user } = useAuth(); // Usamos el hook de autenticación
+  const { user } = useAuth();
   const imageUrl = watch(fieldName);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = (file: File) => {
     if (!storage || !auth) {
       toast({
         variant: 'destructive',
         title: 'Error de Configuración',
-        description: 'Firebase Storage o Auth no están configurados. Revisa tus variables de entorno.',
+        description: 'Firebase Storage o Auth no están configurados.',
       });
       return;
     }
     
     if (!user) {
-        toast({
-            variant: 'destructive',
-            title: 'No autenticado',
-            description: 'Debes iniciar sesión para subir imágenes.',
-        });
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'No autenticado',
+        description: 'Debes iniciar sesión para subir imágenes.',
+      });
+      return;
     }
 
     if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Archivo no válido",
+        description: "Por favor, selecciona un archivo de imagen.",
+      });
+      return;
+    }
+
+    if (!gameId) {
         toast({
             variant: "destructive",
-            title: "Archivo no válido",
-            description: "Por favor, selecciona un archivo de imagen.",
+            title: "Error Interno",
+            description: "No se ha podido identificar el juego para la subida. Por favor, recarga la página.",
         });
         return;
     }
 
     setUploadStatus('Iniciando subida...');
-    setUploadProgress(0); // Reinicia el progreso
+    setUploadProgress(0);
     
     const storageRef = ref(storage, `games/${gameId}/${fieldName}-${Date.now()}-${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
@@ -66,26 +75,19 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
       (snapshot) => {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setUploadProgress(progress);
-        switch (snapshot.state) {
-            case 'paused':
-                setUploadStatus('Subida pausada.');
-                break;
-            case 'running':
-                setUploadStatus(`Subiendo... ${Math.round(progress)}%`);
-                break;
-        }
+        setUploadStatus(`Subiendo... ${Math.round(progress)}%`);
       },
       (error) => {
         setUploadProgress(null);
-        let errorMessage = `Hubo un problema al subir la imagen: ${error.message}`;
+        let errorMessage = `Hubo un problema al subir la imagen.`;
         if(error.code === 'storage/unauthorized') {
-            errorMessage = 'Error de permisos. Asegúrate de que las reglas de Storage están bien configuradas y has iniciado sesión.';
+            errorMessage = 'Error de permisos. Asegúrate de que las reglas de Storage están bien configuradas.';
         }
         setUploadStatus(`Error: ${errorMessage}`);
         toast({
           variant: 'destructive',
           title: 'Error al subir',
-          description: errorMessage,
+          description: `${errorMessage} (Código: ${error.code})`,
         });
       },
       () => {
