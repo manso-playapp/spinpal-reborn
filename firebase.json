@@ -10,7 +10,7 @@
       {
         "source": "**",
         "function": {
-          "functionId": "ssrVERCEL_ID",
+          "functionId": "ssrgrupomanso",
           "region": "us-central1",
           "pinTag": true
         }
