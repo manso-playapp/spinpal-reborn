@@ -328,59 +328,37 @@ export default async function ConexionesPage() {
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Función para verificar si el usuario es el Super Administrador
+
     function isSuperAdmin() {
       return request.auth != null && request.auth.token.email == 'grupomanso@gmail.com';
     }
-    
-    // Función para verificar si el usuario es el cliente dueño del juego
+
     function isGameClient(gameId) {
       return request.auth != null && request.auth.token.email == get(/databases/$(database)/documents/games/$(gameId)).data.clientEmail;
     }
 
     match /games/{gameId} {
-      // Cualquiera puede leer los datos del juego para mostrar la ruleta
       allow read: if true;
-      
-      // Solo el super-admin puede crear o borrar juegos.
       allow create, delete: if isSuperAdmin();
-      
-      // Permisos de actualización
-      allow update: if 
-      			// El Super Admin puede actualizar todo
+      allow update: if
             isSuperAdmin() ||
-            // El cliente dueño del juego puede actualizarlo (excepto cambiar de dueño)
             (isGameClient(gameId) && request.resource.data.clientEmail == resource.data.clientEmail) ||
-            // Un jugador (no autenticado) solo puede actualizar los campos para el giro.
             (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['plays', 'prizesAwarded', 'spinRequest', 'lastResult']));
     }
 
     match /games/{gameId}/customers/{customerId} {
-      // Un cliente puede leer la lista de sus participantes, y el super admin también.
-      // El público general puede leer un documento si es necesario (ej: para verificar si ya jugó).
       allow read: if isSuperAdmin() || isGameClient(gameId) || request.auth == null;
-      
-      // Cualquiera puede registrarse (crear su propio documento de cliente).
-      allow create: if true; 
-      
-      // El super-admin o el cliente dueño del juego pueden borrar participantes.
+      allow create: if true;
       allow delete: if isSuperAdmin() || isGameClient(gameId);
-      
-      // Admins/clientes pueden actualizar cualquier campo.
-      // Jugadores (sin autenticar) solo pueden actualizar el campo 'hasPlayed' o el premio ganado.
       allow update: if isSuperAdmin() || isGameClient(gameId) ||
                     (request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasPlayed', 'prizeWonName', 'prizeWonAt']));
     }
-    
+
     match /outbound_emails/{emailId} {
-      // El servidor escribe aquí después de una lógica interna segura. Cualquiera puede crear un log.
       allow create: if true;
-      // Solo el Super Admin puede leer o borrar los registros.
       allow read, delete: if isSuperAdmin();
     }
 
-    // Colección de prueba para verificar la conexión
     match /health_check/{doc} {
       allow read, write: if true;
     }
