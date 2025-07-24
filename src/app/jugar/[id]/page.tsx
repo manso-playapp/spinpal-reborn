@@ -3,6 +3,7 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import CustomerRegistrationForm from '@/components/game/CustomerRegistrationForm';
+import Logo from '@/components/logo';
 
 async function getGameData(id: string) {
   const gameRef = doc(db, 'games', id);
@@ -36,9 +37,9 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
   } : {};
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4 relative" style={backgroundStyles}>
+    <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 relative" style={backgroundStyles}>
        {game.mobileBackgroundImage && <div className="absolute inset-0 bg-black/30 z-0"></div>}
-       <div className="w-full max-w-md z-10">
+       <div className="w-full max-w-md z-10 flex flex-col justify-center items-center flex-grow">
          <div className="text-center text-white mb-6">
             <h1 className="font-headline text-3xl font-bold">
               {game.name}
@@ -48,6 +49,12 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
             )}
           </div>
         <CustomerRegistrationForm gameId={game.id} />
+      </div>
+       <div className="w-full z-10 py-2">
+          <a href="https://mansoestudiocreativo.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-white/80 hover:text-white transition-colors text-xs">
+              <span className="font-semibold">Desarrollado por</span>
+              <Logo className="h-4 w-auto text-white" />
+          </a>
       </div>
     </div>
   );

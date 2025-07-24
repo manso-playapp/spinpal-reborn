@@ -11,6 +11,7 @@ import QRCodeDisplay from '@/components/game/QRCodeDisplay';
 import { Separator } from '@/components/ui/separator';
 import Confetti from '@/components/game/Confetti';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/logo';
 
 interface GameData extends DocumentData {
   id: string;
@@ -251,6 +252,12 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
             >
               {renderBottomCard()}
             </div>
+        </div>
+        <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
+            <a href="https://mansoestudiocreativo.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/80 hover:text-white transition-colors text-xs">
+                <span className="font-semibold">Desarrollado por</span>
+                <Logo className="h-4 w-auto text-white" />
+            </a>
         </div>
     </div>
   );
