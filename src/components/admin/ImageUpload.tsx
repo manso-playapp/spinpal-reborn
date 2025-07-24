@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { storage } from '@/lib/firebase/config';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -22,7 +22,7 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
   const imageUrl = watch(fieldName);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const { toast } = useToast();
-  const fileInputRef = useState<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleUpload = (file: File) => {
     if (!storage) {
