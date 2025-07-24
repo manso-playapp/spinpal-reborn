@@ -21,6 +21,7 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
   const { watch, setValue } = useFormContext();
   const imageUrl = watch(fieldName);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -43,6 +44,7 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
         return;
     }
 
+    setUploadStatus('Iniciando subida...');
     const storageRef = ref(storage, `games/${gameId}/${fieldName}-${Date.now()}-${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
@@ -51,9 +53,18 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
       (snapshot) => {
         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setUploadProgress(progress);
+        switch (snapshot.state) {
+            case 'paused':
+                setUploadStatus('Subida pausada.');
+                break;
+            case 'running':
+                setUploadStatus(`Subiendo... ${Math.round(progress)}%`);
+                break;
+        }
       },
       (error) => {
         setUploadProgress(null);
+        setUploadStatus(`Error: ${error.message}`);
         toast({
           variant: 'destructive',
           title: 'Error al subir',
@@ -61,13 +72,16 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
         });
       },
       () => {
+        setUploadStatus('Procesando...');
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
           setValue(fieldName, downloadURL, { shouldDirty: true, shouldValidate: true });
           setUploadProgress(null);
+          setUploadStatus('¡Completado!');
           toast({
             title: '¡Imagen Subida!',
             description: 'La URL de la imagen se ha actualizado.',
           });
+          setTimeout(() => setUploadStatus(null), 3000);
         });
       }
     );
@@ -112,12 +126,12 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
         />
       </div>
       {uploadProgress !== null && (
-        <div className="flex items-center gap-2">
+        <div className="space-y-1">
             <Progress value={uploadProgress} className="w-full h-2" />
-            <span className="text-xs font-mono">{Math.round(uploadProgress)}%</span>
+            {uploadStatus && <p className="text-xs text-muted-foreground">{uploadStatus}</p>}
         </div>
       )}
-      {imageUrl && (
+      {imageUrl && !uploadStatus &&(
         <div className="relative group w-48 h-48 border rounded-md p-2 bg-muted/50 flex items-center justify-center">
             <NextImage
                 src={imageUrl}
@@ -138,7 +152,7 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
             </Button>
         </div>
       )}
-       {!imageUrl && (
+       {!imageUrl && !uploadStatus &&(
         <div className="w-48 h-48 border border-dashed rounded-md p-2 bg-muted/20 flex flex-col items-center justify-center text-muted-foreground text-sm">
             <ImageIcon className="h-8 w-8 mb-2" />
             <span>Sin imagen</span>
