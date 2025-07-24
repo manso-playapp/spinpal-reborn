@@ -52,6 +52,7 @@ const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 const segmentSchema = z.object({
   id: z.string().default(() => generateUniqueId()),
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
+  formalName: z.string().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
@@ -113,7 +114,7 @@ const formSchema = z.object({
 
 
 type GameFormValues = z.infer<typeof formSchema>;
-type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability'>;
+type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName'>;
 
 
 interface Game {
@@ -153,12 +154,13 @@ interface Game {
 
 const getRandomColor = () => `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
 const CONDENSED_FONTS = [
-  'DM Sans', 'Roboto Condensed', 'Oswald', 'Bebas Neue', 'Anton', 'PT Sans Narrow', 'Barlow Condensed'
+    'Lato', 'Anton', 'Bebas Neue', 'DM Sans', 'Oswald', 'PT Sans Narrow', 'Roboto Condensed', 'Barlow Condensed'
 ];
 
 const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   id: generateUniqueId(),
   name: name,
+  formalName: '',
   color: getRandomColor(),
   isRealPrize: false,
   probability: 0,
@@ -390,7 +392,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   };
 
   const copyStyle = (index: number) => {
-    const { id, name, color, isRealPrize, probability, ...style } = form.getValues(`segments.${index}`);
+    const { id, name, color, isRealPrize, probability, formalName, ...style } = form.getValues(`segments.${index}`);
     setCopiedStyle(style);
     toast({
         title: "Estilo Copiado",
@@ -812,6 +814,23 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                   <TabsTrigger value="icon"><PictureInPicture className="mr-2 h-4 w-4"/>Icono</TabsTrigger>
                                                 </TabsList>
                                                 <TabsContent value="probability" className="pt-4 space-y-6">
+                                                    <FormField
+                                                      control={form.control}
+                                                      name={`segments.${index}.formalName`}
+                                                      render={({ field }) => (
+                                                        <FormItem>
+                                                          <FormLabel>Nombre Formal del Premio</FormLabel>
+                                                          <FormControl>
+                                                            <Input {...field} placeholder="Ej: 2x1 en Cerveza Lager" value={field.value || ''} />
+                                                          </FormControl>
+                                                          <FormDescription>
+                                                            Este es el nombre que se usará en los emails de notificación. Si se deja vacío, se usará el nombre del gajo.
+                                                          </FormDescription>
+                                                          <FormMessage />
+                                                        </FormItem>
+                                                      )}
+                                                    />
+                                                    <Separator/>
                                                   <FormField
                                                       control={form.control}
                                                       name={`segments.${index}.isRealPrize`}

@@ -191,7 +191,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             const winningSegment = validSegments[winningIndex];
             if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
 
-            const result = { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize };
+            const prizeNameToDisplay = winningSegment.formalName || winningSegment.name;
+            const result = { name: prizeNameToDisplay, isRealPrize: !!winningSegment.isRealPrize };
             setSpinResult(result);
 
             // Actualizar Firestore para disparar la animación en la TV
@@ -202,15 +203,15 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             const gameUpdateData: { [key: string]: any } = {
                 plays: increment(1),
                 spinRequest: { timestamp: serverTimestamp(), customerId: customerId, winningId: winningSegment.id },
-                lastResult: { name: winningSegment.name, isRealPrize: !!winningSegment.isRealPrize, customerId: customerId, timestamp: serverTimestamp() }
+                lastResult: { name: prizeNameToDisplay, isRealPrize: !!winningSegment.isRealPrize, customerId: customerId, timestamp: serverTimestamp() }
             };
             const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
 
             if (winningSegment.isRealPrize) {
                 gameUpdateData.prizesAwarded = increment(1);
-                customerUpdateData.prizeWonName = winningSegment.name;
+                customerUpdateData.prizeWonName = prizeNameToDisplay;
                 customerUpdateData.prizeWonAt = serverTimestamp();
-                sendPrizeNotification({ gameId, customerId: customerId, prizeName: winningSegment.name });
+                sendPrizeNotification({ gameId, customerId: customerId, prizeName: prizeNameToDisplay });
             }
 
             batch.update(gameRef, gameUpdateData);
