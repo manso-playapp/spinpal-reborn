@@ -160,24 +160,22 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 </Card>
             );
         case 'SHOW_RESULT':
-            return (
-                <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in zoom-in-95">
-                    <CardHeader className="p-6">
-                        <CardTitle className="font-headline text-6xl md:text-7xl flex items-center justify-center gap-4 text-primary">
-                            {spinResult?.isRealPrize ? <Gift className="h-16 w-16 md:h-20 md:w-20" /> : <ThumbsDown className="text-red-400 h-16 w-16 md:h-20 md:w-20" />}
-                            {spinResult?.isRealPrize ? '¡Premio!' : '¡Casi!'}
-                        </CardTitle>
-                        <Separator className="bg-primary/20 mt-4"/>
-                    </CardHeader>
-                    <CardContent className="p-6 pt-0">
-                        <p className="text-4xl md:text-5xl font-semibold">
-                            {spinResult?.name}
-                        </p>
-                        <CardDescription className="text-white/80 mt-4 text-lg md:text-xl">
-                            {spinResult?.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
-                        </CardDescription>
-                    </CardContent>
-                </Card>
+             return (
+                <div 
+                    className="text-center text-white p-4 rounded-lg animate-in fade-in zoom-in-95"
+                    style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+                >
+                    <h2 className="font-headline text-6xl md:text-7xl font-bold flex items-center justify-center gap-4 text-primary">
+                        {spinResult?.isRealPrize ? <Gift className="h-16 w-16 md:h-20 md:w-20" /> : <ThumbsDown className="text-red-400 h-16 w-16 md:h-20 md:w-20" />}
+                        {spinResult?.isRealPrize ? '¡Premio!' : '¡Casi!'}
+                    </h2>
+                    <p className="mt-4 text-4xl md:text-5xl font-semibold">
+                        {spinResult?.name}
+                    </p>
+                    <p className="text-white/80 mt-4 text-lg md:text-xl">
+                        {spinResult?.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
+                    </p>
+                </div>
             );
         case 'IDLE':
         default:
@@ -244,7 +242,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
           }}
         >
             <div 
-              className="w-full max-w-sm text-center"
+              className="w-full max-w-md text-center"
               style={{
                 transform: `scale(${game.qrCodeScale})`,
                 transformOrigin: 'bottom center'
