@@ -221,7 +221,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             // Esperar un tiempo prudencial para la animación antes de mostrar el resultado
             setTimeout(() => {
                 setUiState('SUCCESS'); // -> Pasa a la pantalla de CIERRE (Paso 4)
-            }, 8000); // 8 segundos para la animación
+            }, 11000); // 11 segundos para la animación
 
         } catch (error: any) {
             console.error('Error during spin logic:', error);
@@ -400,5 +400,3 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
     return renderContent();
 }
-
-    
