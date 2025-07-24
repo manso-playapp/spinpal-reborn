@@ -393,10 +393,10 @@ service cloud.firestore {
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ImageIcon/>Paso 3.5: Configurar Reglas de Storage</CardTitle>
-                        <CardDescription>Protege la subida de archivos para que solo tú puedas subir imágenes.</CardDescription>
+                        <CardDescription>Protege la subida de archivos para que solo tú y tus clientes podáis subir imágenes a vuestros juegos.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                       <p>Estas reglas son cruciales para asegurar que solo los usuarios administradores puedan subir o borrar imágenes, mientras que cualquier persona puede verlas (necesario para el juego).</p>
+                       <p>Estas reglas son cruciales para asegurar que solo los usuarios autorizados (el super admin o el cliente dueño del juego) puedan subir o borrar imágenes, mientras que cualquier persona puede verlas (necesario para el juego).</p>
                        <Button asChild variant="outline">
                             <Link href={`https://console.firebase.google.com/project/${projectId}/storage/rules`} target="_blank">
                                 Ir a las Reglas de Storage <ExternalLink className="ml-2 h-4 w-4" />
@@ -408,6 +408,16 @@ service cloud.firestore {
 service firebase.storage {
   match /b/{bucket}/o {
     
+    // Función para verificar si el usuario es el Super Administrador
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.token.email == 'grupomanso@gmail.com';
+    }
+
+    // Función para verificar si el usuario es el cliente dueño del juego
+    function isGameClient(gameId) {
+      return request.auth != null && request.auth.token.email == get(/databases/(default)/documents/games/$(gameId)).data.clientEmail;
+    }
+
     // Permite la lectura pública de cualquier archivo.
     // Esto es necesario para que las imágenes se puedan mostrar en el juego y el editor.
     match /{allPaths=**} {
@@ -415,10 +425,9 @@ service firebase.storage {
     }
 
     // Solo permite la escritura (subida, actualización, eliminación)
-    // a los usuarios que estén autenticados en la aplicación (tu cuenta de admin).
-    // Esto previene que usuarios anónimos suban archivos.
-    match /{allPaths=**} {
-      allow write: if request.auth != null;
+    // a los usuarios que estén autorizados para el juego específico.
+    match /games/{gameId}/{allPaths=**} {
+      allow write: if isSuperAdmin() || isGameClient(gameId);
     }
   }
 }`}</code></pre>
