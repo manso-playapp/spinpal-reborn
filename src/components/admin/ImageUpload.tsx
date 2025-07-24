@@ -3,12 +3,13 @@
 
 import { useState, useRef } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { storage } from '@/lib/firebase/config';
+import { storage, auth } from '@/lib/firebase/config';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import NextImage from 'next/image';
 
@@ -19,6 +20,7 @@ interface ImageUploadProps {
 
 export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
   const { watch, setValue } = useFormContext();
+  const { user } = useAuth(); // Usamos el hook de autenticación
   const imageUrl = watch(fieldName);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
@@ -26,13 +28,22 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleUpload = (file: File) => {
-    if (!storage) {
+    if (!storage || !auth) {
       toast({
         variant: 'destructive',
         title: 'Error de Configuración',
-        description: 'Firebase Storage no está configurado. Revisa tus variables de entorno.',
+        description: 'Firebase Storage o Auth no están configurados. Revisa tus variables de entorno.',
       });
       return;
+    }
+    
+    if (!user) {
+        toast({
+            variant: 'destructive',
+            title: 'No autenticado',
+            description: 'Debes iniciar sesión para subir imágenes.',
+        });
+        return;
     }
 
     if (!file.type.startsWith('image/')) {
@@ -45,6 +56,8 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
     }
 
     setUploadStatus('Iniciando subida...');
+    setUploadProgress(0); // Reinicia el progreso
+    
     const storageRef = ref(storage, `games/${gameId}/${fieldName}-${Date.now()}-${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
@@ -64,11 +77,15 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
       },
       (error) => {
         setUploadProgress(null);
-        setUploadStatus(`Error: ${error.message}`);
+        let errorMessage = `Hubo un problema al subir la imagen: ${error.message}`;
+        if(error.code === 'storage/unauthorized') {
+            errorMessage = 'Error de permisos. Asegúrate de que las reglas de Storage están bien configuradas y has iniciado sesión.';
+        }
+        setUploadStatus(`Error: ${errorMessage}`);
         toast({
           variant: 'destructive',
           title: 'Error al subir',
-          description: `Hubo un problema al subir la imagen: ${error.message}`,
+          description: errorMessage,
         });
       },
       () => {
@@ -112,7 +129,7 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
             variant="outline"
             size="icon"
             onClick={() => fileInputRef.current?.click()}
-            disabled={uploadProgress !== null}
+            disabled={uploadProgress !== null || !user}
             aria-label="Subir imagen"
             >
             <Upload className="h-4 w-4" />
