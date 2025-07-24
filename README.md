@@ -64,6 +64,10 @@ La aplicación depende de Firebase para la autenticación de usuarios y la base 
     -   Haz clic en "Crear base de datos".
     -   Inicia en **modo de prueba** (podrás cambiarlo más tarde).
     -   Elige una ubicación para tus servidores y haz clic en "Habilitar".
+3.  **Storage**: En la consola de Firebase, ve a la sección "Storage".
+    -   Haz clic en "Comenzar".
+    -   Sigue los pasos de configuración, puedes mantener las opciones por defecto.
+    -   Una vez creado, ve a la pestaña "Reglas" o "Rules".
 
 ### 3.2. Configuración de Gemini API (para IA)
 
@@ -89,9 +93,12 @@ La aplicación utiliza Resend para enviar correos de notificación de premios.
 4.  **Dominio de Envío**: Para asegurar que los correos lleguen a la bandeja de entrada, debes verificar tu dominio en Resend y configurar DKIM y DMARC. Sigue las instrucciones de la sección "Domains" en Resend.
 5.  **Actualiza el Remitente**: Una vez verificado tu dominio, cambia la dirección de correo del remitente en el archivo `src/ai/flows/prize-notification-flow.ts` (busca la variable `fromAddress`) a una dirección de tu propio dominio (ej: `noreply@tuempresa.com`).
 
-## 4. Reglas de Seguridad de Firestore
+## 4. Reglas de Seguridad
 
-Estas reglas son cruciales para proteger tu base de datos.
+Estas reglas son cruciales para proteger tu base de datos y tus archivos.
+
+### 4.1. Reglas de Firestore
+
 1.  En la consola de Firebase, ve a "Firestore Database" y luego a la pestaña "Reglas".
 2.  Copia y pega el siguiente contenido, reemplazando las reglas existentes:
 
@@ -133,6 +140,34 @@ service cloud.firestore {
 
     match /health_check/{doc} {
       allow read, write: if true;
+    }
+  }
+}
+```
+3.  Haz clic en **"Publicar"**.
+
+### 4.2. Reglas de Storage
+
+1.  En la consola de Firebase, ve a "Storage" y luego a la pestaña "Reglas".
+2.  Copia y pega el siguiente contenido, reemplazando las reglas existentes:
+
+```
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Permite la lectura pública de cualquier archivo.
+    // Esto es necesario para que las imágenes se puedan mostrar en el juego y el editor.
+    match /{allPaths=**} {
+      allow read;
+    }
+
+    // Solo permite la escritura (subida, actualización, eliminación)
+    // a los usuarios que estén autenticados en la aplicación.
+    // Esto previene que usuarios anónimos suban archivos.
+    match /{allPaths=**} {
+      allow write: if request.auth != null;
     }
   }
 }

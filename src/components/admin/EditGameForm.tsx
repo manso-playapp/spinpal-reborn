@@ -12,6 +12,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ImageUpload } from '@/components/admin/ImageUpload';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -631,19 +632,16 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                       <CardContent className="space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold">Imagen del Borde</h4>
                                     <FormField
-                                    control={form.control}
-                                    name="config.borderImage"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>URL</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="https://placehold.co/500x500.png" {...field} value={field.value ?? ''} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
+                                        name="config.borderImage"
+                                        control={form.control}
+                                        render={() => (
+                                            <FormItem>
+                                                <FormLabel>Imagen del Borde</FormLabel>
+                                                <ImageUpload fieldName="config.borderImage" gameId={initialGame.id} />
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
                                     <FormField
                                     control={form.control}
@@ -666,19 +664,16 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     />
                                 </div>
                                 <div className="space-y-4">
-                                     <h4 className="font-semibold">Imagen del Centro/Puntero</h4>
                                      <FormField
-                                    control={form.control}
-                                    name="config.centerImage"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>URL</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="https://placehold.co/500x500.png" {...field} value={field.value ?? ''} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
+                                        name="config.centerImage"
+                                        control={form.control}
+                                        render={() => (
+                                            <FormItem>
+                                                <FormLabel>Imagen del Centro/Puntero</FormLabel>
+                                                <ImageUpload fieldName="config.centerImage" gameId={initialGame.id} />
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
                                     <FormField
                                     control={form.control}
@@ -968,15 +963,18 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                         <Slider value={[field.value ?? 1]} onValueChange={(v) => field.onChange(v[0])} min={0.1} max={2} step={0.05} />
                                                       </FormItem>
                                                    )}/>
-                                                    <FormField control={form.control} name={`segments.${index}.iconUrl`} render={({ field }) => (
-                                                      <FormItem>
-                                                        <FormLabel>O usa una URL de imagen personalizada</FormLabel>
-                                                         <FormControl>
-                                                            <Input placeholder="https://..." {...field} value={field.value || ''}/>
-                                                         </FormControl>
-                                                        <FormDescription>Si rellenas este campo, se usará esta imagen en lugar del icono de Lucide.</FormDescription>
-                                                      </FormItem>
-                                                   )}/>
+                                                   <FormField
+                                                        name={`segments.${index}.iconUrl`}
+                                                        control={form.control}
+                                                        render={() => (
+                                                          <FormItem>
+                                                            <FormLabel>O usa una URL de imagen personalizada</FormLabel>
+                                                            <ImageUpload fieldName={`segments.${index}.iconUrl`} gameId={initialGame.id} />
+                                                             <FormDescription>Si rellenas este campo, se usará esta imagen en lugar del icono de Lucide.</FormDescription>
+                                                            <FormMessage/>
+                                                          </FormItem>
+                                                        )}
+                                                    />
                                                 </TabsContent>
                                               </Tabs>
                                             </AccordionContent>
@@ -1009,21 +1007,19 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                          <div className="space-y-4">
                             <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Pantalla de TV/Display</h3>
                              <FormField
-                              control={form.control}
-                              name="backgroundImage"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>URL de Imagen de Fondo (TV)</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="https://ejemplo.com/imagen.jpg" {...field} value={field.value || ''} />
-                                  </FormControl>
-                                  <FormDescription>
-                                    Pega la URL de la imagen que quieres usar de fondo. Déjalo en blanco para no usar ninguna.
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                                control={form.control}
+                                name="backgroundImage"
+                                render={() => (
+                                    <FormItem>
+                                    <FormLabel>Imagen de Fondo (TV)</FormLabel>
+                                    <ImageUpload fieldName="backgroundImage" gameId={initialGame.id} />
+                                    <FormDescription>
+                                        Sube una imagen para usar de fondo. Déjalo en blanco para no usar ninguna.
+                                    </FormDescription>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
                             <FormField
                               control={form.control}
                               name="backgroundFit"
@@ -1129,21 +1125,19 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                         <Separator />
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium flex items-center gap-2"><Smartphone /> Pantalla de Registro (Móvil)</h3>
-                             <FormField
-                              control={form.control}
-                              name="mobileBackgroundImage"
-                              render={({ field }) => (
+                            <FormField
+                                control={form.control}
+                                name="mobileBackgroundImage"
+                                render={() => (
                                 <FormItem>
-                                  <FormLabel>URL de Imagen de Fondo (Móvil)</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="https://ejemplo.com/fondo-movil.jpg" {...field} value={field.value || ''} />
-                                  </FormControl>
-                                  <FormDescription>
+                                    <FormLabel>Imagen de Fondo (Móvil)</FormLabel>
+                                    <ImageUpload fieldName="mobileBackgroundImage" gameId={initialGame.id} />
+                                    <FormDescription>
                                     Fondo para la pantalla de registro en el móvil. Si se deja en blanco, usará el color de fondo por defecto.
-                                  </FormDescription>
-                                  <FormMessage />
+                                    </FormDescription>
+                                    <FormMessage />
                                 </FormItem>
-                              )}
+                                )}
                             />
                             <FormField
                               control={form.control}
