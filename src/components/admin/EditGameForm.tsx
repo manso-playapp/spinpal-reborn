@@ -163,7 +163,7 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   isRealPrize: false,
   probability: 0,
   textColor: '#FFFFFF',
-  fontFamily: 'DM Sans',
+  fontFamily: 'Bebas Neue',
   fontSize: 16,
   isCurved: true,
   lineHeight: 1,
