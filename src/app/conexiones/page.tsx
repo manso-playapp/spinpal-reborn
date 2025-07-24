@@ -451,7 +451,7 @@ service firebase.storage {
                        <p>Debes añadir un registro DNS más en tu proveedor de dominio (DONWEB, etc.):</p>
                        <div className="p-4 bg-muted rounded-md text-sm space-y-2">
                            <p><strong>Tipo de Registro:</strong> <code>TXT</code></p>
-                           <p><strong>Host / Nombre:</strong> <code>_dmarc.mansoestudiocreativo.com</code> (¡Recuerda, usa tu dominio!)</p>
+                           <p><strong>Host / Nombre:</strong> <code>_dmarc.tudominio.com</code> (¡Recuerda, usa tu dominio!)</p>
                            <p><strong>Valor:</strong> <code>v=DMARC1; p=none;</code></p>
                        </div>
                        <ul className="list-disc list-inside space-y-2 pl-4 text-muted-foreground">
