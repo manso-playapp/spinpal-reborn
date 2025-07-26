@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Gamepad2, Edit, Trash2, Copy as CopyIcon, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye, Briefcase, ExternalLink } from 'lucide-react';
+import { PlusCircle, Gamepad2, Edit, Trash2, Copy as CopyIcon, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye, Briefcase, ExternalLink, Clipboard } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -58,7 +57,10 @@ interface Game {
     seconds: number;
     nanoseconds: number;
   } | null;
+  [key: string]: any; // Allow any other fields for migration
 }
+
+const MIGRATION_MODE = true; // Set to true to enable migration view
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -89,19 +91,90 @@ export default function AdminDashboard() {
     }
   }, [user]);
 
+  const copyToClipboard = (text: string, message: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+        title: "¡Copiado!",
+        description: message,
+    });
+  };
+
+  const handleCopyGameData = async (gameId: string) => {
+    try {
+        const gameRef = doc(db, 'games', gameId);
+        const gameSnap = await getDoc(gameRef);
+
+        if (gameSnap.exists()) {
+            const gameData = gameSnap.data();
+            // Clean up the data for re-import
+            const { id, plays, prizesAwarded, lastResult, spinRequest, ...cleanData } = gameData;
+            const dataString = JSON.stringify({ ...cleanData, plays: 0, prizesAwarded: 0, createdAt: new Date().toISOString() }, null, 2);
+            copyToClipboard(dataString, 'Los datos JSON del juego han sido copiados.');
+        } else {
+             throw new Error("El juego no existe.");
+        }
+    } catch (error) {
+        console.error("Error copying game data: ", error);
+        toast({
+            variant: "destructive",
+            title: "Error al copiar",
+            description: "No se pudieron copiar los datos del juego.",
+        });
+    }
+  };
+
+
+  if (MIGRATION_MODE) {
+    return (
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md mb-6" role="alert">
+                <h2 className="font-bold text-lg">MODO MIGRACIÓN ACTIVO</h2>
+                <p className="mt-2">
+                    Este panel está en modo de migración. No verás el dashboard normal. Sigue estos pasos:
+                </p>
+                <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Abre el panel de administrador en el proyecto **VIEJO ("RULETA")**.</li>
+                    <li>Para cada juego listado abajo, haz clic en **"Copiar Datos del Juego (JSON)"**.</li>
+                    <li>Abre un editor de texto (como el Bloc de Notas o VSCode) y **pega los datos** de cada juego. Guarda estos archivos.</li>
+                    <li>Luego, iremos al proyecto **NUEVO ("SpinPal Reborn")** y crearemos los juegos a partir de estos datos.</li>
+                    <li>Después de migrar los juegos, haz clic en **"Descargar Clientes (CSV)"** para cada juego.</li>
+                </ol>
+            </div>
+             {loading ? <Skeleton className="h-40 w-full" /> : (
+                <div className="space-y-4">
+                    {games.map(game => (
+                        <Card key={game.id}>
+                            <CardHeader>
+                                <CardTitle>{game.name}</CardTitle>
+                                <CardDescription>ID del Juego: {game.id}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex gap-4">
+                                <Button onClick={() => handleCopyGameData(game.id)}>
+                                    <Clipboard className="mr-2 h-4 w-4" />
+                                    Copiar Datos del Juego (JSON)
+                                </Button>
+                                 <Button variant="secondary" asChild>
+                                    <Link href={`/admin/clientes/${game.id}`}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Descargar Clientes (CSV)
+                                    </Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+             )}
+        </main>
+    );
+  }
+
+  // --- El resto del componente queda como estaba ---
+
   const getGameUrl = (gameId: string) => {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/juego/${gameId}`;
     }
     return `/juego/${gameId}`;
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-        title: "¡Enlace Copiado!",
-        description: "El enlace público del juego ha sido copiado a tu portapapeles.",
-    });
   };
 
   const handleDuplicateGame = async (gameId: string) => {
@@ -395,7 +468,7 @@ export default function AdminDashboard() {
                             <Input value={getGameUrl(game.id)} readOnly className="h-9 text-xs"/>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => copyToClipboard(getGameUrl(game.id))}>
+                                    <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={() => copyToClipboard(getGameUrl(game.id), "El enlace público del juego ha sido copiado a tu portapapeles.")}>
                                         <CopyIcon className="h-4 w-4" />
                                         <span className="sr-only">Copiar</span>
                                     </Button>
@@ -433,3 +506,5 @@ export default function AdminDashboard() {
     </TooltipProvider>
   );
 }
+
+    
