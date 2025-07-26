@@ -46,6 +46,7 @@ import { Separator } from '../ui/separator';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import SpinningWheel from '@/components/game/SpinningWheel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
 const generateUniqueId = () => Math.random().toString(36).substring(2, 11);
 
@@ -78,6 +79,7 @@ const formSchema = z.object({
   exemptedEmails: z.string().optional(),
   instagramProfile: z.string().url({ message: 'Debe ser una URL de Instagram válida.' }).or(z.literal('')).optional(),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios.').max(16, 'No puedes tener más de 16 premios.'),
+  segmentsJson: z.string().optional(),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
   mobileBackgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).optional(),
@@ -198,6 +200,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       exemptedEmails: (initialGame.exemptedEmails || []).join(', '),
       instagramProfile: initialGame.instagramProfile || '',
       segments: initialGame.segments && initialGame.segments.length > 0 ? initialGame.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
+      segmentsJson: JSON.stringify(initialGame.segments, null, 2),
       backgroundImage: initialGame.backgroundImage || '',
       backgroundFit: initialGame.backgroundFit || 'cover',
       mobileBackgroundImage: initialGame.mobileBackgroundImage || '',
@@ -226,6 +229,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data() as Game;
+            const segmentsData = data.segments && data.segments.length > 0 ? data.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')];
             const formValues = {
               name: data.name || '',
               status: data.status || 'demo',
@@ -234,7 +238,8 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
               managementType: data.managementType || 'client',
               exemptedEmails: (data.exemptedEmails || []).join(', '),
               instagramProfile: data.instagramProfile || '',
-              segments: data.segments && data.segments.length > 0 ? data.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
+              segments: segmentsData,
+              segmentsJson: JSON.stringify(segmentsData, null, 2),
               backgroundImage: data.backgroundImage || '',
               backgroundFit: data.backgroundFit || 'cover',
               mobileBackgroundImage: data.mobileBackgroundImage || '',
@@ -264,14 +269,13 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   }, [initialGame.id, form]);
   
   const watchedFormData = form.watch();
+  const watchedSegments = form.watch('segments');
 
-  const { fields, append, remove, move, insert } = useFieldArray({
+  const { fields, append, remove, move, insert, replace } = useFieldArray({
     control: form.control,
     name: 'segments',
     keyName: "fieldId",
   });
-  
-  const watchedSegments = form.watch('segments');
 
   const { realPrizeTotalProbability, nonRealPrizeProbability } = useMemo(() => {
     const realPrizeSegments = watchedSegments.filter(s => s.isRealPrize);
@@ -301,6 +305,25 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     });
   }, [nonRealPrizeProbability, watchedSegments, form]);
   
+  useEffect(() => {
+    form.setValue('segmentsJson', JSON.stringify(watchedSegments, null, 2));
+  }, [watchedSegments, form]);
+
+  const handleJsonChange = (jsonString: string) => {
+    try {
+      const parsedSegments = JSON.parse(jsonString);
+      const result = z.array(segmentSchema).safeParse(parsedSegments);
+      if (result.success) {
+        replace(result.data);
+        form.clearErrors('segmentsJson');
+      } else {
+        form.setError('segmentsJson', { type: 'manual', message: 'El formato JSON es inválido o no coincide con el esquema.' });
+      }
+    } catch (e) {
+      form.setError('segmentsJson', { type: 'manual', message: 'El JSON no es válido.' });
+    }
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -341,6 +364,8 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       delete updateData.borderScale;
       delete updateData.centerImage;
       delete updateData.centerScale;
+      delete (updateData as any).segmentsJson;
+
 
       await updateDoc(gameRef, updateData);
 
@@ -465,10 +490,11 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
               {/* Columna de Controles */}
               <div className="lg:col-span-2 space-y-4">
                 <Tabs defaultValue="prizes" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="data"><Settings className="mr-2 h-4 w-4" />Datos Generales</TabsTrigger>
                     <TabsTrigger value="prizes"><Gamepad2 className="mr-2 h-4 w-4" />Ruleta</TabsTrigger>
                     <TabsTrigger value="gameConfig"><Settings className="mr-2 h-4 w-4"/>Pantallas</TabsTrigger>
+                    <TabsTrigger value="json" className="text-destructive"><FileText className="mr-2 h-4 w-4"/>JSON</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="data">
@@ -1233,6 +1259,43 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                         </div>
                       </CardContent>
                     </Card>
+                  </TabsContent>
+                  <TabsContent value="json">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Editor de Premios (JSON)</CardTitle>
+                            <CardDescription>Copia y pega la configuración de los premios para migrar o duplicar ruletas rápidamente.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <Alert>
+                                <FileText className="h-4 w-4" />
+                                <AlertTitle>Instrucciones</AlertTitle>
+                                <AlertDescription>
+                                    Puedes copiar el código de abajo (que representa los premios actuales) y pegarlo en el campo JSON de otro juego para clonar la configuración de los premios.
+                                </AlertDescription>
+                            </Alert>
+                             <FormField
+                                control={form.control}
+                                name="segmentsJson"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Configuración de Premios en JSON</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            className="min-h-[400px] font-mono text-xs"
+                                            {...field}
+                                            onChange={(e) => {
+                                                field.onChange(e);
+                                                handleJsonChange(e.target.value);
+                                            }}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                     </Card>
                   </TabsContent>
                 </Tabs>
                 <div className="mt-8">
