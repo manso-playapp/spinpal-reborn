@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Resend } from 'resend';
 import TestEmailSender from '@/components/admin/TestEmailSender';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type ServiceStatus = {
   connected: boolean;
