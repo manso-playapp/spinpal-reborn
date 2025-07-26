@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { Resend } from 'resend';
 import TestEmailSender from '@/components/admin/TestEmailSender';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type ServiceStatus = {
   connected: boolean;
@@ -218,6 +219,74 @@ const ServiceStatusCard = ({
   </Card>
 );
 
+const ProjectInfoTable = ({ connectedProjectId }: { connectedProjectId: string | undefined }) => {
+    const projects = [
+        { name: 'SpinPal Reborn (Nuevo)', id: 'spinpal-reborn', number: '824009813017', isTarget: true },
+        { name: 'RULETA (Viejo)', id: 'ruleta-414418', number: '1097208882035', isTarget: false },
+    ];
+
+    const isConnected = !!connectedProjectId;
+    const connectedProject = projects.find(p => p.id === connectedProjectId);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Info /> Resumen de Conexión de Firebase</CardTitle>
+                <CardDescription>Esta tabla muestra a qué proyecto de Firebase está conectada la aplicación actualmente.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {!isConnected ? (
+                     <Alert variant="destructive">
+                        <HelpCircle className="h-4 w-4" />
+                        <AlertTitle>No Conectado</AlertTitle>
+                        <AlertDescription>
+                            La aplicación no está conectada a ningún proyecto de Firebase. Por favor, configura tus credenciales en el archivo <code>.env</code> siguiendo el Paso 0 de la guía de abajo.
+                        </AlertDescription>
+                    </Alert>
+                ) : (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Servicio</TableHead>
+                            <TableHead>Proyecto Conectado</TableHead>
+                            <TableHead>ID del Proyecto</TableHead>
+                            <TableHead className="text-right">Estado</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        <TableRow>
+                            <TableCell className="font-medium">Firebase (Auth, Firestore, Storage)</TableCell>
+                            <TableCell>{connectedProject?.name || 'Proyecto Desconocido'}</TableCell>
+                            <TableCell><Badge variant="outline">{connectedProjectId}</Badge></TableCell>
+                            <TableCell className="text-right">
+                                {connectedProject?.isTarget ? (
+                                    <Badge className="bg-green-600 text-white">
+                                        <CheckCircle2 className="mr-1 h-3 w-3" />
+                                        Correcto
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="destructive">
+                                        <XCircle className="mr-1 h-3 w-3" />
+                                        Incorrecto
+                                    </Badge>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+                )}
+                 <Alert className="mt-4">
+                    <HelpCircle className="h-4 w-4" />
+                    <AlertTitle>¿Qué significa esto?</AlertTitle>
+                    <AlertDescription>
+                        Para que la migración y el funcionamiento normal sean correctos, todos los servicios deben estar conectados al proyecto <strong>SpinPal Reborn (Nuevo)</strong>. Si ves que está conectado a "RULETA (Viejo)", necesitas actualizar tus credenciales en el archivo <code>.env</code> con las del proyecto nuevo.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default async function ConexionesPage() {
   const servicesStatus = await checkServices();
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -231,6 +300,8 @@ export default async function ConexionesPage() {
             Verifica que todos los servicios estén configurados y funcionando correctamente.
           </p>
         </div>
+
+        <ProjectInfoTable connectedProjectId={projectId} />
 
         <div className="space-y-4">
           <ServiceStatusCard title="Firebase Auth" icon={<UserPlus />} status={servicesStatus.auth} />
