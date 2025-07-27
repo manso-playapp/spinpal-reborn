@@ -103,7 +103,7 @@ async function checkServices(): Promise<{
 
   if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
     // Chequeo de Autenticación
-    if (auth.app) {
+    if (auth?.app) {
       status.auth = {
         connected: true,
         message: 'El servicio de Autenticación de Firebase está conectado correctamente.',
@@ -160,7 +160,7 @@ async function checkServices(): Promise<{
       const commonError = {
         connected: false,
         message: 'No has configurado tus credenciales de Firebase en el archivo .env.',
-        details: 'Ve al Paso 0 de la guía para obtenerlas y pegarlas en el archivo.',
+        details: 'Copia tus credenciales desde la consola de Firebase al archivo .env para conectar la aplicación.',
         isConfigured: 'no' as const,
         actionUrl: `https://console.firebase.google.com/project/_/settings/general/`
       };
@@ -221,13 +221,12 @@ const ServiceStatusCard = ({
   </Card>
 );
 
-const ConnectionStatusTable = () => {
+const ConnectionStatusTable = ({ firestoreConnected }: { firestoreConnected: boolean }) => {
     const projects = {
         spinPalReborn: { name: "SpinPal Reborn", id: "spinpal-reborn", number: "824009813017" },
         ruleta: { name: "Ruleta", id: "ruleta-414418", number: "826559679868" }
     };
     
-    // --- Lógica de Diagnóstico ---
     const connectedProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     const githubRepoUrl = packageJson.repository.url;
 
@@ -242,12 +241,12 @@ const ConnectionStatusTable = () => {
             serviceName: "Firestore / Auth / Storage",
             description: "La base de datos y autenticación que usa la app.",
             ruleta: { 
-                status: connectedProjectId === projects.ruleta.id ? 'positive' : 'negative',
-                text: connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
+                status: firestoreConnected && connectedProjectId === projects.ruleta.id ? 'positive' : 'negative',
+                text: firestoreConnected && connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
             },
             spinPalReborn: { 
-                status: connectedProjectId === projects.spinPalReborn.id ? 'positive' : 'negative',
-                text: connectedProjectId === projects.spinPalReborn.id ? 'Conectado' : 'No conectado'
+                status: firestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'positive' : 'negative',
+                text: firestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'Conectado' : 'No conectado'
             },
         },
         appHosting: {
@@ -353,7 +352,7 @@ export default async function ConexionesPage() {
           </p>
         </div>
 
-        <ConnectionStatusTable />
+        <ConnectionStatusTable firestoreConnected={servicesStatus.firestore.connected} />
 
         <div className="grid md:grid-cols-2 gap-4">
           <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firestore} />
@@ -381,7 +380,7 @@ export default async function ConexionesPage() {
                     <CardContent className="space-y-4">
                         <p>Para que la aplicación pueda funcionar, necesitas obtener tus credenciales de Firebase y pegarlas en el archivo <code>.env</code> que se encuentra en la raíz de tu proyecto.</p>
                         <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId}/settings/general`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/settings/general`} target="_blank">
                                 Ir a la Configuración del Proyecto en Firebase <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -402,7 +401,7 @@ export default async function ConexionesPage() {
                     <CardContent className="space-y-4">
                         <p>Para que el login funcione, necesitas habilitar los métodos de inicio de sesión en Firebase.</p>
                         <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId}/authentication/providers`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/authentication/providers`} target="_blank">
                                 Ir a Firebase Auth <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -421,7 +420,7 @@ export default async function ConexionesPage() {
                     <CardContent className="space-y-4">
                         <p>Firestore es la base de datos que usará tu aplicación.</p>
                          <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId}/firestore`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/firestore`} target="_blank">
                                 Ir a Firestore <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -441,7 +440,7 @@ export default async function ConexionesPage() {
                     <CardContent className="space-y-4">
                        <p>Estas reglas aseguran que solo los usuarios autorizados puedan modificar los datos.</p>
                        <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId}/firestore/rules`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/firestore/rules`} target="_blank">
                                 Ir a las Reglas de Firestore <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -498,7 +497,7 @@ service cloud.firestore {
                     <CardContent className="space-y-4">
                        <p>Estas reglas son cruciales para asegurar que solo los usuarios autorizados (el super admin o el cliente dueño del juego) puedan subir o borrar imágenes, mientras que cualquier persona puede verlas (necesario para el juego).</p>
                        <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId}/storage/rules`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/storage/rules`} target="_blank">
                                 Ir a las Reglas de Storage <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -588,3 +587,5 @@ service firebase.storage {
     </div>
   );
 }
+
+    
