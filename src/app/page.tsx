@@ -68,7 +68,7 @@ export default function Home() {
           <div className="mx-auto mb-4">
             <Logo className="h-20 w-auto text-primary" />
           </div>
-          <CardTitle className="font-headline text-3xl">Bienvenido a PlayApp</CardTitle>
+          <CardTitle className="font-headline text-3xl">¡Hola Mundo! Esto es una prueba.</CardTitle>
           <CardDescription>
             Selecciona tu tipo de acceso para continuar.
           </CardDescription>
@@ -98,4 +98,3 @@ export default function Home() {
     </div>
   );
 }
-
