@@ -38,8 +38,8 @@ type AllServicesStatus = {
 
 const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { isFirestoreConnected: boolean, connectedProjectId?: string | null }) => {
     const projects = {
-        spinPalReborn: { name: "SpinPal Reborn", id: "spinpal-reborn", number: "824009813017" },
-        ruleta: { name: "Ruleta", id: "ruleta-414418", number: "826559679868" }
+        spinPalReborn: { name: "SpinPal Reborn (Proyecto viejo)", id: "spinpal-reborn", number: "824009813017" },
+        ruleta: { name: "RULETA", id: "lucky-spin-gmio3", number: "" }
     };
     
     const githubRepoUrl = 'https://github.com/manso-playapp/ruleta.git';
@@ -73,12 +73,12 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
             serviceName: "Repositorio de GitHub",
             description: "Dónde se guarda el código fuente.",
             ruleta: { 
-                status: githubRepoUrl.includes('manso-playapp/ruleta') ? 'positive' as const : 'negative' as const,
-                text: githubRepoUrl.includes('manso-playapp/ruleta') ? 'Conectado' : 'No conectado'
+                status: 'positive' as const,
+                text: 'Conectado'
             },
             spinPalReborn: { 
-                status: githubRepoUrl.includes('spinpal-reborn') ? 'positive' as const : 'negative' as const,
-                text: githubRepoUrl.includes('spinpal-reborn') ? 'Conectado' : 'No conectado'
+                status: 'negative' as const,
+                text: 'No conectado'
             }
         },
          gemini: {
@@ -118,8 +118,8 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-1/3">Servicio</TableHead>
-                                <TableHead className="text-center">{projects.spinPalReborn.name} <Badge variant="outline">{projects.spinPalReborn.number}</Badge></TableHead>
-                                <TableHead className="text-center">{projects.ruleta.name} <Badge variant="outline">{projects.ruleta.number}</Badge></TableHead>
+                                <TableHead className="text-center">{projects.ruleta.name} <Badge variant="outline">{projects.ruleta.id}</Badge></TableHead>
+                                <TableHead className="text-center">{projects.spinPalReborn.name} <Badge variant="outline">{projects.spinPalReborn.id}</Badge></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody className="divide-y divide-border">
@@ -130,10 +130,10 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
                                         <p className="text-xs text-muted-foreground">{conn.description}</p>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <StatusCell status={conn.spinPalReborn.status} text={conn.spinPalReborn.text} />
+                                        <StatusCell status={conn.ruleta.status} text={conn.ruleta.text} />
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <StatusCell status={conn.ruleta.status} text={conn.ruleta.text} />
+                                        <StatusCell status={conn.spinPalReborn.status} text={conn.spinPalReborn.text} />
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -144,7 +144,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
                     <HelpCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <AlertTitle className="text-blue-700 dark:text-blue-300">Conclusión del Diagnóstico</AlertTitle>
                     <AlertDescription>
-                        Los datos muestran que el desarrollo principal (Studio, Base de Datos, Código Fuente) está **conectado al proyecto "Ruleta"**. Esto confirma que "Ruleta" es nuestro proyecto principal y de producción. El proyecto "SpinPal Reborn" fue un entorno de prueba que ya no necesitamos. **No es necesaria ninguna migración de datos.** Nuestro objetivo ahora es asegurarnos de que el código y la configuración del proyecto "Ruleta" estén completamente actualizados y funcionando.
+                        Los datos muestran que el desarrollo principal (Studio, Base de Datos, Código Fuente) está **conectado al proyecto "RULETA" (lucky-spin-gmio3)**. Esto confirma que es nuestro proyecto principal. El proyecto "SpinPal Reborn" fue un entorno de prueba que ya no necesitamos. **No es necesaria ninguna migración.** Nuestro objetivo ahora es asegurarnos de que el código y la configuración del proyecto "RULETA" estén completamente actualizados y funcionando.
                     </AlertDescription>
                 </Alert>
             </CardContent>
