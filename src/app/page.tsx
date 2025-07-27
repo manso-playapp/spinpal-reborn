@@ -1,9 +1,6 @@
-
 'use client';
 
-import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
@@ -12,14 +9,15 @@ import Logo from '@/components/logo';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import React from 'react';
 
-export default function Home() {
-  const { user, loading, isSuperAdmin } = useAuth();
+function LoginPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [isClientLoading, setIsClientLoading] = React.useState(false);
-
-
+  const { user, loading, isSuperAdmin } = useAuth();
+  
   React.useEffect(() => {
     if (!loading && user) {
       if (isSuperAdmin) {
@@ -61,14 +59,15 @@ export default function Home() {
     );
   }
 
+
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl border-primary/20">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <Logo className="h-20 w-auto text-primary" />
           </div>
-          <CardTitle className="font-headline text-3xl">¡Hola Mundo! Esto es una prueba.</CardTitle>
+          <CardTitle className="font-headline text-3xl">Bienvenido a SpinPal</CardTitle>
           <CardDescription>
             Selecciona tu tipo de acceso para continuar.
           </CardDescription>
@@ -96,5 +95,9 @@ export default function Home() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
+}
+
+export default function Home() {
+    return <LoginPageContent />
 }
