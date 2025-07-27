@@ -341,6 +341,7 @@ const ConnectionStatusTable = ({ firestoreConnected }: { firestoreConnected: boo
 export default async function ConexionesPage() {
   const servicesStatus = await checkServices();
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const isFirestoreConnected = servicesStatus.firestore.isConfigured === 'yes' || servicesStatus.firestore.isConfigured === 'partial';
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background p-4 sm:p-8">
@@ -352,7 +353,7 @@ export default async function ConexionesPage() {
           </p>
         </div>
 
-        <ConnectionStatusTable firestoreConnected={servicesStatus.firestore.connected} />
+        <ConnectionStatusTable firestoreConnected={isFirestoreConnected} />
 
         <div className="grid md:grid-cols-2 gap-4">
           <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firestore} />
@@ -587,5 +588,3 @@ service firebase.storage {
     </div>
   );
 }
-
-    
