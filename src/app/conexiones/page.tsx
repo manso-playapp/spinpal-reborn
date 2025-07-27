@@ -222,13 +222,12 @@ const ServiceStatusCard = ({
   </Card>
 );
 
-const ConnectionStatusTable = ({ isFirestoreConnected }: { isFirestoreConnected: boolean }) => {
+const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { isFirestoreConnected: boolean, connectedProjectId?: string | null }) => {
     const projects = {
         spinPalReborn: { name: "SpinPal Reborn", id: "spinpal-reborn", number: "824009813017" },
         ruleta: { name: "Ruleta", id: "ruleta-414418", number: "826559679868" }
     };
     
-    const connectedProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     const githubRepoUrl = packageJson.repository.url || '';
 
     const connections = {
@@ -354,7 +353,7 @@ export default async function ConexionesPage() {
           </p>
         </div>
 
-        <ConnectionStatusTable isFirestoreConnected={isFirestoreConnected} />
+        <ConnectionStatusTable isFirestoreConnected={isFirestoreConnected} connectedProjectId={projectId}/>
 
         <div className="grid md:grid-cols-2 gap-4">
           <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firestore} />
