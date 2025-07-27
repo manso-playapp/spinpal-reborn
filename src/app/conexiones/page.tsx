@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -228,7 +229,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected }: { isFirestoreConnected:
     };
     
     const connectedProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-    const githubRepoUrl = packageJson.repository.url;
+    const githubRepoUrl = packageJson.repository.url || '';
 
     const connections = {
         firebaseStudio: {
@@ -589,5 +590,3 @@ service firebase.storage {
     </div>
   );
 }
-
-    
