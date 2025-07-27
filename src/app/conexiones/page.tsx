@@ -221,7 +221,7 @@ const ServiceStatusCard = ({
   </Card>
 );
 
-const ConnectionStatusTable = ({ firestoreConnected }: { firestoreConnected: boolean }) => {
+const ConnectionStatusTable = ({ isFirestoreConnected }: { isFirestoreConnected: boolean }) => {
     const projects = {
         spinPalReborn: { name: "SpinPal Reborn", id: "spinpal-reborn", number: "824009813017" },
         ruleta: { name: "Ruleta", id: "ruleta-414418", number: "826559679868" }
@@ -234,50 +234,50 @@ const ConnectionStatusTable = ({ firestoreConnected }: { firestoreConnected: boo
         firebaseStudio: {
             serviceName: "Firebase Studio",
             description: "El entorno donde se edita el código.",
-            ruleta: { status: 'positive', text: 'Conectado' },
-            spinPalReborn: { status: 'negative', text: 'No conectado' }
+            ruleta: { status: 'positive' as const, text: 'Conectado' },
+            spinPalReborn: { status: 'negative' as const, text: 'No conectado' }
         },
         firestore: {
             serviceName: "Firestore / Auth / Storage",
             description: "La base de datos y autenticación que usa la app.",
             ruleta: { 
-                status: firestoreConnected && connectedProjectId === projects.ruleta.id ? 'positive' : 'negative',
-                text: firestoreConnected && connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
+                status: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'positive' as const : 'negative' as const,
+                text: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
             },
             spinPalReborn: { 
-                status: firestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'positive' : 'negative',
-                text: firestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'Conectado' : 'No conectado'
+                status: isFirestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'positive' as const : 'negative' as const,
+                text: isFirestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'Conectado' : 'No conectado'
             },
         },
         appHosting: {
             serviceName: "App Hosting (Vercel/Netlify/etc)",
             description: "Dónde está desplegada la versión pública de la app.",
-            ruleta: { status: 'neutral', text: 'Desconocido' },
-            spinPalReborn: { status: 'neutral', text: 'Desconocido' },
+            ruleta: { status: 'neutral' as const, text: 'Desconocido' },
+            spinPalReborn: { status: 'neutral' as const, text: 'Desconocido' },
         },
         github: {
             serviceName: "Repositorio de GitHub",
             description: "Dónde se guarda el código fuente.",
             ruleta: { 
-                status: githubRepoUrl.includes(projects.ruleta.id) || githubRepoUrl.includes('manso-playapp/ruleta') ? 'positive' : 'negative',
+                status: githubRepoUrl.includes(projects.ruleta.id) || githubRepoUrl.includes('manso-playapp/ruleta') ? 'positive' as const : 'negative' as const,
                 text: githubRepoUrl.includes(projects.ruleta.id) || githubRepoUrl.includes('manso-playapp/ruleta') ? 'Conectado' : 'No conectado'
             },
             spinPalReborn: { 
-                status: githubRepoUrl.includes(projects.spinPalReborn.id) ? 'positive' : 'negative',
+                status: githubRepoUrl.includes(projects.spinPalReborn.id) ? 'positive' as const : 'negative' as const,
                 text: githubRepoUrl.includes(projects.spinPalReborn.id) ? 'Conectado' : 'No conectado'
             }
         },
          gemini: {
             serviceName: "Gemini API (IA)",
             description: "Servicio de IA para funciones inteligentes.",
-            ruleta: { status: 'neutral', text: 'Independiente' },
-            spinPalReborn: { status: 'neutral', text: 'Independiente' },
+            ruleta: { status: 'neutral' as const, text: 'Independiente' },
+            spinPalReborn: { status: 'neutral' as const, text: 'Independiente' },
         },
         resend: {
             serviceName: "Resend API (Emails)",
             description: "Servicio para envío de correos de premios.",
-            ruleta: { status: 'neutral', text: 'Independiente' },
-            spinPalReborn: { status: 'neutral', text: 'Independiente' },
+            ruleta: { status: 'neutral' as const, text: 'Independiente' },
+            spinPalReborn: { status: 'neutral' as const, text: 'Independiente' },
         }
     };
 
@@ -353,19 +353,20 @@ export default async function ConexionesPage() {
           </p>
         </div>
 
-        <ConnectionStatusTable firestoreConnected={isFirestoreConnected} />
+        <ConnectionStatusTable isFirestoreConnected={isFirestoreConnected} />
 
         <div className="grid md:grid-cols-2 gap-4">
           <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firestore} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
-          <ServiceStatusCard title="Resend API (Emails)" icon={<Mail />} status={servicesStatus.resend}>
-            {servicesStatus.resend.isConfigured === 'yes' && (
-                <div className="mt-4 pt-4 border-t">
-                    <TestEmailSender />
-                </div>
-            )}
-          </ServiceStatusCard>
         </div>
+        
+        <ServiceStatusCard title="Resend API (Emails)" icon={<Mail />} status={servicesStatus.resend}>
+          {servicesStatus.resend.isConfigured === 'yes' && (
+              <div className="mt-4 pt-4 border-t">
+                  <TestEmailSender />
+              </div>
+          )}
+        </ServiceStatusCard>
 
         <Separator />
 
@@ -588,3 +589,5 @@ service firebase.storage {
     </div>
   );
 }
+
+    
