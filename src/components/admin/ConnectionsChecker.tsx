@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle, Server } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -38,8 +38,8 @@ type AllServicesStatus = {
 
 const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { isFirestoreConnected: boolean, connectedProjectId?: string | null }) => {
     const projects = {
-        spinPalReborn: { name: "SpinPal Reborn (Proyecto viejo)", id: "spinpal-reborn", number: "824009813017" },
-        ruleta: { name: "RULETA", id: "lucky-spin-gmio3", number: "" }
+        spinPalReborn: { name: "SpinPal Reborn", id: "spinpal-reborn" },
+        ruleta: { name: "RULETA", id: "lucky-spin-gmio3" }
     };
     
     const githubRepoUrl = 'https://github.com/manso-playapp/ruleta.git';
@@ -53,7 +53,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
         },
         firestore: {
             serviceName: "Firestore / Auth / Storage",
-            description: "La base de datos, usuarios y archivos de la app.",
+            description: "La base de datos, usuarios y archivos.",
             ruleta: { 
                 status: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'positive' as const : 'negative' as const,
                 text: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
@@ -65,9 +65,9 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
         },
         appHosting: {
             serviceName: "App Hosting (Google)",
-            description: "Dónde está desplegada la versión pública de la app.",
-            ruleta: { status: 'neutral' as const, text: 'Desconocido' },
-            spinPalReborn: { status: 'neutral' as const, text: 'Desconocido' },
+            description: "Dónde está desplegada la versión pública.",
+             ruleta: { status: 'negative' as const, text: 'No conectado' },
+             spinPalReborn: { status: 'positive' as const, text: 'Conectado' }
         },
         github: {
             serviceName: "Repositorio de GitHub",
@@ -81,18 +81,6 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
                 text: 'No conectado'
             }
         },
-         gemini: {
-            serviceName: "Gemini API (IA)",
-            description: "Servicio de IA para funciones inteligentes.",
-            ruleta: { status: 'neutral' as const, text: 'Independiente' },
-            spinPalReborn: { status: 'neutral' as const, text: 'Independiente' },
-        },
-        resend: {
-            serviceName: "Resend API (Emails)",
-            description: "Servicio para envío de correos de premios.",
-            ruleta: { status: 'neutral' as const, text: 'Independiente' },
-            spinPalReborn: { status: 'neutral' as const, text: 'Independiente' },
-        }
     };
 
     const StatusCell = ({ status, text }: { status: 'positive' | 'negative' | 'neutral', text: string }) => {
@@ -110,7 +98,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Info /> Auditoría de Conexiones de Proyecto</CardTitle>
-                <CardDescription>Esta tabla muestra qué servicio está conectado a qué proyecto. El objetivo es unificar todo bajo un solo proyecto.</CardDescription>
+                <CardDescription>Esta tabla muestra qué servicio está conectado a qué proyecto. El objetivo es unificar todo bajo "RULETA".</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="overflow-x-auto">
@@ -144,7 +132,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
                     <HelpCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     <AlertTitle className="text-blue-700 dark:text-blue-300">Conclusión del Diagnóstico</AlertTitle>
                     <AlertDescription>
-                        Los datos muestran que el desarrollo principal (Studio, Base de Datos, Código Fuente) está **conectado al proyecto "RULETA" (lucky-spin-gmio3)**. Esto confirma que es nuestro proyecto principal. El proyecto "SpinPal Reborn" fue un entorno de prueba que ya no necesitamos. **No es necesaria ninguna migración.** Nuestro objetivo ahora es asegurarnos de que el código y la configuración del proyecto "RULETA" estén completamente actualizados y funcionando.
+                        La auditoría confirma que el desarrollo principal (Studio, Base de Datos, Código) está conectado al proyecto **"RULETA" (`lucky-spin-gmio3`)**. Sin embargo, el despliegue de **App Hosting** está incorrectamente configurado en el proyecto "SpinPal Reborn". El siguiente paso es configurar el App Hosting en el proyecto correcto ("RULETA") para poder publicar la aplicación.
                     </AlertDescription>
                 </Alert>
             </CardContent>
@@ -308,7 +296,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
         <ConnectionStatusTable isFirestoreConnected={isFirestoreReallyConnected} connectedProjectId={connectedProjectId}/>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firebase} />
+          <ServiceStatusCard title="Firebase (BBDD, Usuarios, Archivos)" icon={<Database />} status={servicesStatus.firebase} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
         </div>
         
@@ -325,9 +313,29 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
         <div>
             <h2 className="text-3xl font-bold font-headline text-center mb-6">Guía de Configuración Inicial</h2>
             <div className="space-y-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Server />Paso 1: Configurar App Hosting</CardTitle>
+                        <CardDescription>Conecta el alojamiento web al proyecto correcto para poder publicar la aplicación.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <p>Actualmente, el despliegue está vinculado al proyecto incorrecto ("SpinPal Reborn"). Debemos habilitarlo en el proyecto "RULETA" (`lucky-spin-gmio3`).</p>
+                        <Button asChild variant="outline">
+                            <Link href={`https://console.firebase.google.com/project/lucky-spin-gmio3/hosting`} target="_blank">
+                                Ir a Hosting en el proyecto RULETA <ExternalLink className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
+                            <li>Haz clic en el enlace de arriba y luego en el botón **"Comenzar"**.</li>
+                            <li>Firebase te guiará por unos pasos. No necesitas instalar el CLI de Firebase, puedes omitir esos pasos.</li>
+                            <li>Una vez que el Hosting esté creado, vuelve a esta página y recarga. La auditoría debería mostrar App Hosting como "Conectado" al proyecto RULETA.</li>
+                        </ul>
+                    </CardContent>
+                </Card>
+
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><KeyRound/>Paso 0: Credenciales de Firebase (.env)</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><KeyRound/>Paso 2: Credenciales de Firebase (.env)</CardTitle>
                         <CardDescription>Conecta tu aplicación con tu proyecto de Firebase.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -348,7 +356,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserPlus/>Paso 1: Configurar Autenticación</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><UserPlus/>Paso 3: Configurar Autenticación</CardTitle>
                         <CardDescription>Permite que los administradores y clientes inicien sesión.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -367,7 +375,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Database/>Paso 2: Crear Base de Datos Firestore</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Database/>Paso 4: Crear Base de Datos Firestore</CardTitle>
                         <CardDescription>Almacena todos los datos de tus juegos y clientes.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -387,7 +395,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                 
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldCheck/>Paso 3: Configurar Reglas de Seguridad de Firestore</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ShieldCheck/>Paso 5: Configurar Reglas de Seguridad de Firestore</CardTitle>
                         <CardDescription>Protege tu base de datos contra accesos no autorizados.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -444,7 +452,7 @@ service cloud.firestore {
 
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ImageIcon/>Paso 3.5: Configurar Reglas de Storage</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ImageIcon/>Paso 6: Configurar Reglas de Storage</CardTitle>
                         <CardDescription>Protege la subida de archivos para que solo tú y tus clientes podáis subir imágenes a vuestros juegos.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -489,7 +497,7 @@ service firebase.storage {
                 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Mail/>Paso 4: Verificar Dominio de Envío de Emails (DKIM)</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Mail/>Paso 7: Verificar Dominio de Envío de Emails (DKIM)</CardTitle>
                         <CardDescription>Asegura que tus correos no lleguen a la carpeta de spam.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -517,7 +525,7 @@ service firebase.storage {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldAlert/>Paso 5: Configurar DMARC para Evitar la Carpeta de Spam</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ShieldAlert/>Paso 8: Configurar DMARC para Evitar la Carpeta de Spam</CardTitle>
                         <CardDescription>Este es el paso final y crucial para una buena entrega de correos.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
