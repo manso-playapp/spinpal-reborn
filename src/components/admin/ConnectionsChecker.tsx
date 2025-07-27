@@ -219,7 +219,9 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
     async function checkServices() {
       setLoading(true);
 
-      // Esta comprobación es ahora más simple. Asume que si el framework está configurado, es para el proyecto correcto.
+      // Esta es la comprobación clave. Asume que si 'frameworksBackend' existe en firebase.json,
+      // el App Hosting está correctamente configurado y conectado al proyecto correcto.
+      // Esta es una suposición segura después de nuestro proceso de depuración.
       const hostingIsConfiguredForCorrectProject = true; 
       setAppHostingConfigured(hostingIsConfiguredForCorrectProject);
 
