@@ -1,5 +1,6 @@
+'use client';
 
-
+import * as React from 'react';
 import {
   Card,
   CardContent,
@@ -19,7 +20,7 @@ import { Resend } from 'resend';
 import TestEmailSender from '@/components/admin/TestEmailSender';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import packageJson from '../../../package.json';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ServiceStatus = {
   connected: boolean;
@@ -29,198 +30,12 @@ type ServiceStatus = {
   isConfigured: 'yes' | 'no' | 'partial';
 };
 
-async function checkServices(): Promise<{
+type AllServicesStatus = {
   auth: ServiceStatus;
   firestore: ServiceStatus;
   gemini: ServiceStatus;
   resend: ServiceStatus;
-}> {
-  const status = {
-    auth: {
-      connected: false,
-      message: 'No se pudo verificar el servicio de Autenticación.',
-      isConfigured: 'no' as const,
-    },
-    firestore: {
-      connected: false,
-      message: 'No se pudo verificar el servicio de Firestore.',
-      isConfigured: 'no' as const,
-    },
-    gemini: {
-      connected: false,
-      message: 'La clave de API de Gemini no está configurada.',
-      details: 'Añade tu clave al archivo .env para habilitar las funciones de IA. Puedes obtenerla gratis desde Google AI Studio.',
-      isConfigured: 'no' as const,
-      actionUrl: 'https://aistudio.google.com/app/apikey'
-    },
-    resend: {
-        connected: false,
-        message: 'La clave de API de Resend no está configurada.',
-        details: 'Añade tu clave al archivo .env para habilitar el envío de correos.',
-        isConfigured: 'no' as const,
-        actionUrl: 'https://resend.com/docs/introduction'
-    }
-  };
-
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-
-  // Chequeo de Gemini API Key
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
-      status.gemini = {
-        connected: true,
-        message: 'La clave de API de Gemini está configurada correctamente.',
-        details: '¡Todo listo para integrar funciones de IA en tu aplicación!',
-        isConfigured: 'yes',
-        actionUrl: 'https://aistudio.google.com/app/apikey'
-      };
-  }
-
-  // Chequeo de Resend API Key
-  const resendApiKey = process.env.RESEND_API_KEY;
-  if (resendApiKey) {
-    try {
-        const resend = new Resend(resendApiKey);
-        const { data, error } = await resend.domains.list();
-        if (error) throw error;
-        
-        status.resend = {
-            connected: true,
-            message: 'La API de Resend está conectada y funcionando.',
-            details: `Se encontraron ${data.length} dominios verificados. ¡Asegúrate de que el remitente que uses sea uno de ellos!`,
-            isConfigured: 'yes',
-            actionUrl: 'https://resend.com/domains'
-        }
-    } catch (error: any) {
-         status.resend = {
-            connected: false,
-            message: 'Error al verificar la clave de API de Resend.',
-            details: 'La clave parece ser incorrecta o no tiene los permisos necesarios para leer dominios. Por favor, revisa tu clave en el panel de Resend.',
-            isConfigured: 'no',
-            actionUrl: 'https://resend.com/api-keys'
-        }
-    }
-  }
-
-
-  if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-    // Chequeo de Autenticación
-    if (auth?.app) {
-      status.auth = {
-        connected: true,
-        message: 'El servicio de Autenticación de Firebase está conectado correctamente.',
-        details: 'Recuerda habilitar los proveedores de inicio de sesión que necesites.',
-        isConfigured: 'yes',
-      };
-    }
-
-    // Chequeo de Firestore
-    try {
-      const healthCheckRef = doc(db, 'health_check', 'connectivity-test');
-      await setDoc(healthCheckRef, { timestamp: new Date() });
-      const docSnap = await getDoc(healthCheckRef);
-      if (docSnap.exists()){
-         status.firestore = {
-            connected: true,
-            message: 'El servicio de Firestore funciona correctamente.',
-            details: 'La base de datos está creada y se puede escribir en ella.',
-            isConfigured: 'yes',
-          };
-      } else {
-        throw new Error("Document write failed silently");
-      }
-    } catch (error: any) {
-        const errorMessage = (error.message || '').toLowerCase();
-        
-        if (errorMessage.includes('firestore api has not been used') || error.code === 'unimplemented' || error.code === 'failed-precondition') {
-             status.firestore = {
-                connected: false,
-                message: 'La API de Firestore no está habilitada en tu proyecto.',
-                details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud. Esto puede tardar unos minutos en reflejarse.',
-                isConfigured: 'no',
-                actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${projectId}`,
-            };
-        } else if (error.code === 'permission-denied') {
-            status.firestore = {
-                connected: true,
-                message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.',
-                details: 'Esto es esperado si ya configuraste las reglas de seguridad. Si es la primera vez, crea la base de datos en modo de prueba o ajusta las reglas.',
-                isConfigured: 'partial',
-                actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore/rules`,
-            };
-        } else {
-            status.firestore = {
-                connected: false,
-                message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?',
-                details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Si ya la creaste, puede que la API de Firestore no esté habilitada (ver arriba). Código de error: ${error.code || 'desconocido'}.`,
-                isConfigured: 'no',
-                actionUrl: `https://console.firebase.google.com/project/${projectId}/firestore`
-            };
-      }
-    }
-  } else {
-      const commonError = {
-        connected: false,
-        message: 'No has configurado tus credenciales de Firebase en el archivo .env.',
-        details: 'Copia tus credenciales desde la consola de Firebase al archivo .env para conectar la aplicación.',
-        isConfigured: 'no' as const,
-        actionUrl: `https://console.firebase.google.com/project/_/settings/general/`
-      };
-      status.auth = commonError;
-      status.firestore = commonError;
-  }
-
-  return status;
-}
-
-const ServiceStatusCard = ({
-  title,
-  icon,
-  status,
-  children,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  status: ServiceStatus;
-  children?: React.ReactNode;
-}) => (
-  <Card className={`shadow-md border-l-4 ${status.isConfigured === 'yes' ? 'border-green-500' : (status.isConfigured === 'partial' ? 'border-yellow-500' : 'border-red-500')}`}>
-    <CardHeader>
-      <CardTitle className="text-xl font-headline flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {icon}
-          <span>{title}</span>
-        </div>
-        <Badge variant={status.connected ? 'default' : 'destructive'} className={status.connected ? 'bg-green-600' : ''}>
-          {status.connected ? 'Conectado' : 'Desconectado'}
-        </Badge>
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="flex flex-col gap-4">
-      <div className="flex items-start gap-4">
-        {status.isConfigured === 'yes' ? (
-          <CheckCircle2 className="h-6 w-6 text-green-500 mt-1 flex-shrink-0" />
-        ) : (
-          <XCircle className={`h-6 w-6 ${status.isConfigured === 'partial' ? 'text-yellow-500' : 'text-destructive'} mt-1 flex-shrink-0`} />
-        )}
-        <div className="flex-grow">
-          <p className="font-semibold">{status.message}</p>
-          {status.details && (
-            <p className="text-sm text-muted-foreground mt-1">{status.details}</p>
-
-          )}
-        </div>
-      </div>
-      {children}
-      {status.actionUrl && (
-        <Button asChild variant="outline" size="sm" className="self-start mt-2">
-          <Link href={status.actionUrl} target="_blank">
-            Ir a la configuración <ExternalLink className="ml-2 h-4 w-4" />
-          </Link>
-        </Button>
-      )}
-    </CardContent>
-  </Card>
-);
+};
 
 const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { isFirestoreConnected: boolean, connectedProjectId?: string | null }) => {
     const projects = {
@@ -228,7 +43,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
         ruleta: { name: "Ruleta", id: "ruleta-414418", number: "826559679868" }
     };
     
-    const githubRepoUrl = packageJson.repository.url || '';
+    const githubRepoUrl = 'https://github.com/manso-playapp/ruleta.git';
 
     const connections = {
         firebaseStudio: {
@@ -338,10 +153,189 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
     );
 }
 
-export default async function ConexionesPage() {
-  const servicesStatus = await checkServices();
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const isFirestoreConnected = servicesStatus.firestore.isConfigured === 'yes' || servicesStatus.firestore.isConfigured === 'partial';
+const ServiceStatusCard = ({
+  title,
+  icon,
+  status,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  status: ServiceStatus;
+  children?: React.ReactNode;
+}) => (
+  <Card className={`shadow-md border-l-4 ${status.isConfigured === 'yes' ? 'border-green-500' : (status.isConfigured === 'partial' ? 'border-yellow-500' : 'border-red-500')}`}>
+    <CardHeader>
+      <CardTitle className="text-xl font-headline flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {icon}
+          <span>{title}</span>
+        </div>
+        <Badge variant={status.connected ? 'default' : 'destructive'} className={status.connected ? 'bg-green-600' : ''}>
+          {status.connected ? 'Conectado' : 'Desconectado'}
+        </Badge>
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="flex flex-col gap-4">
+      <div className="flex items-start gap-4">
+        {status.isConfigured === 'yes' ? (
+          <CheckCircle2 className="h-6 w-6 text-green-500 mt-1 flex-shrink-0" />
+        ) : (
+          <XCircle className={`h-6 w-6 ${status.isConfigured === 'partial' ? 'text-yellow-500' : 'text-destructive'} mt-1 flex-shrink-0`} />
+        )}
+        <div className="flex-grow">
+          <p className="font-semibold">{status.message}</p>
+          {status.details && (
+            <p className="text-sm text-muted-foreground mt-1">{status.details}</p>
+
+          )}
+        </div>
+      </div>
+      {children}
+      {status.actionUrl && (
+        <Button asChild variant="outline" size="sm" className="self-start mt-2">
+          <Link href={status.actionUrl} target="_blank">
+            Ir a la configuración <ExternalLink className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
+      )}
+    </CardContent>
+  </Card>
+);
+
+export default function ConexionesPage() {
+  const [servicesStatus, setServicesStatus] = React.useState<AllServicesStatus | null>(null);
+  const [projectId, setProjectId] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function checkServices() {
+      const status: AllServicesStatus = {
+        auth: {
+          connected: false,
+          message: 'No se pudo verificar el servicio de Autenticación.',
+          isConfigured: 'no' as const,
+        },
+        firestore: {
+          connected: false,
+          message: 'No se pudo verificar el servicio de Firestore.',
+          isConfigured: 'no' as const,
+        },
+        gemini: {
+          connected: false,
+          message: 'La clave de API de Gemini no está configurada.',
+          details: 'Añade tu clave al archivo .env para habilitar las funciones de IA. Puedes obtenerla gratis desde Google AI Studio.',
+          isConfigured: 'no' as const,
+          actionUrl: 'https://aistudio.google.com/app/apikey'
+        },
+        resend: {
+            connected: false,
+            message: 'La clave de API de Resend no está configurada.',
+            details: 'Añade tu clave al archivo .env para habilitar el envío de correos.',
+            isConfigured: 'no' as const,
+            actionUrl: 'https://resend.com/docs/introduction'
+        }
+      };
+
+      const currentProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+      setProjectId(currentProjectId || null);
+
+      if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.length > 10) {
+          status.gemini = {
+            connected: true,
+            message: 'La clave de API de Gemini está configurada correctamente.',
+            details: '¡Todo listo para integrar funciones de IA en tu aplicación!',
+            isConfigured: 'yes',
+            actionUrl: 'https://aistudio.google.com/app/apikey'
+          };
+      }
+
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (resendApiKey) {
+        try {
+            const resend = new Resend(resendApiKey);
+            const { data, error } = await resend.domains.list();
+            if (error) throw error;
+            
+            status.resend = {
+                connected: true,
+                message: 'La API de Resend está conectada y funcionando.',
+                details: `Se encontraron ${data.length} dominios verificados. ¡Asegúrate de que el remitente que uses sea uno de ellos!`,
+                isConfigured: 'yes',
+                actionUrl: 'https://resend.com/domains'
+            }
+        } catch (error: any) {
+             status.resend = {
+                connected: false,
+                message: 'Error al verificar la clave de API de Resend.',
+                details: 'La clave parece ser incorrecta o no tiene los permisos necesarios para leer dominios. Por favor, revisa tu clave en el panel de Resend.',
+                isConfigured: 'no',
+                actionUrl: 'https://resend.com/api-keys'
+            }
+        }
+      }
+
+      if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY && db) {
+        if (auth?.app) {
+          status.auth = {
+            connected: true,
+            message: 'El servicio de Autenticación de Firebase está conectado correctamente.',
+            details: 'Recuerda habilitar los proveedores de inicio de sesión que necesites.',
+            isConfigured: 'yes',
+          };
+        }
+
+        try {
+          const healthCheckRef = doc(db, 'health_check', 'connectivity-test');
+          await setDoc(healthCheckRef, { timestamp: new Date() });
+          const docSnap = await getDoc(healthCheckRef);
+          if (docSnap.exists()){
+             status.firestore = {
+                connected: true,
+                message: 'El servicio de Firestore funciona correctamente.',
+                details: 'La base de datos está creada y se puede escribir en ella.',
+                isConfigured: 'yes',
+              };
+          } else {
+            throw new Error("Document write failed silently");
+          }
+        } catch (error: any) {
+            const errorMessage = (error.message || '').toLowerCase();
+            if (errorMessage.includes('firestore api has not been used') || error.code === 'unimplemented' || error.code === 'failed-precondition') {
+                 status.firestore = { connected: false, message: 'La API de Firestore no está habilitada en tu proyecto.', details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud.', isConfigured: 'no', actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${currentProjectId}` };
+            } else if (error.code === 'permission-denied') {
+                status.firestore = { connected: true, message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.', details: 'Esto es esperado si ya configuraste las reglas de seguridad.', isConfigured: 'partial', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore/rules`};
+            } else {
+                status.firestore = { connected: false, message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?', details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Error: ${error.code || 'desconocido'}.`, isConfigured: 'no', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore`};
+          }
+        }
+      } else {
+          const commonError = { connected: false, message: 'No has configurado tus credenciales de Firebase en el archivo .env.', details: 'Copia tus credenciales desde la consola de Firebase al archivo .env para conectar la aplicación.', isConfigured: 'no' as const, actionUrl: `https://console.firebase.google.com/project/_/settings/general/`};
+          status.auth = commonError;
+          status.firestore = commonError;
+      }
+      
+      setServicesStatus(status);
+      setLoading(false);
+    }
+
+    checkServices();
+  }, []);
+
+  const isFirestoreConnected = servicesStatus?.firestore.isConfigured === 'yes' || servicesStatus?.firestore.isConfigured === 'partial';
+
+  if (loading || !servicesStatus) {
+    return (
+        <div className="flex min-h-screen flex-col items-center bg-background p-4 sm:p-8">
+            <div className="w-full max-w-5xl space-y-8">
+                <Skeleton className="h-10 w-1/2 mx-auto" />
+                <Skeleton className="h-6 w-3/4 mx-auto" />
+                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background p-4 sm:p-8">
