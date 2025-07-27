@@ -364,7 +364,7 @@ export default async function ConexionesPage() {
                     <TestEmailSender />
                 </div>
             )}
-          </Service-StatusCard>
+          </ServiceStatusCard>
         </div>
 
         <Separator />
