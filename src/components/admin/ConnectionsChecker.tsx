@@ -53,7 +53,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
         },
         firestore: {
             serviceName: "Firestore / Auth / Storage",
-            description: "La base de datos y autenticación que usa la app.",
+            description: "La base de datos, usuarios y archivos de la app.",
             ruleta: { 
                 status: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'positive' as const : 'negative' as const,
                 text: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
@@ -64,7 +64,7 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
             },
         },
         appHosting: {
-            serviceName: "App Hosting (Vercel/Netlify/etc)",
+            serviceName: "App Hosting (Google)",
             description: "Dónde está desplegada la versión pública de la app.",
             ruleta: { status: 'neutral' as const, text: 'Desconocido' },
             spinPalReborn: { status: 'neutral' as const, text: 'Desconocido' },
@@ -211,9 +211,12 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
   const [servicesStatus, setServicesStatus] = React.useState<AllServicesStatus | null>(null);
   const [connectedProjectId, setConnectedProjectId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [isFirestoreReallyConnected, setIsFirestoreReallyConnected] = React.useState(false);
 
   React.useEffect(() => {
     async function checkServices() {
+      setLoading(true);
+
       const status: AllServicesStatus = {
         firebase: {
           connected: false,
@@ -263,21 +266,25 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                   details: 'La base de datos está creada y se puede escribir en ella.',
                   isConfigured: 'yes',
                 };
+                setIsFirestoreReallyConnected(true);
             } else {
               throw new Error("Document write failed silently");
             }
           } catch (error: any) {
+              setIsFirestoreReallyConnected(false);
               const errorMessage = (error.message || '').toLowerCase();
               if (errorMessage.includes('firestore api has not been used') || error.code === 'unimplemented' || error.code === 'failed-precondition') {
                    status.firebase = { connected: false, message: 'La API de Firestore no está habilitada en tu proyecto.', details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud.', isConfigured: 'no', actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${currentProjectId}` };
               } else if (error.code === 'permission-denied') {
                   status.firebase = { connected: true, message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.', details: 'Esto es esperado si ya configuraste las reglas de seguridad.', isConfigured: 'partial', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore/rules`};
+                  setIsFirestoreReallyConnected(true);
               } else {
                   status.firebase = { connected: false, message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?', details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Error: ${error.code || 'desconocido'}.`, isConfigured: 'no', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore`};
             }
           }
       } else {
           status.firebase = { connected: false, message: 'No has configurado tus credenciales de Firebase en el archivo .env.', details: 'Copia tus credenciales desde la consola de Firebase al archivo .env para conectar la aplicación.', isConfigured: 'no' as const, actionUrl: `https://console.firebase.google.com/project/_/settings/general/`};
+          setIsFirestoreReallyConnected(false);
       }
       
       setServicesStatus(status);
@@ -286,8 +293,6 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
     checkServices();
   }, [isGeminiConfigured, isResendConfigured]);
-
-  const isFirestoreConnected = servicesStatus?.firebase.isConfigured === 'yes' || servicesStatus?.firebase.isConfigured === 'partial';
 
   if (loading || !servicesStatus) {
     return (
@@ -300,7 +305,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
   return (
     <>
-        <ConnectionStatusTable isFirestoreConnected={isFirestoreConnected} connectedProjectId={connectedProjectId}/>
+        <ConnectionStatusTable isFirestoreConnected={isFirestoreReallyConnected} connectedProjectId={connectedProjectId}/>
 
         <div className="grid md:grid-cols-2 gap-4">
           <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firebase} />
