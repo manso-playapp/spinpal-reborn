@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle, GitBranch, Server } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -31,8 +31,7 @@ type ServiceStatus = {
 };
 
 type AllServicesStatus = {
-  auth: ServiceStatus;
-  firestore: ServiceStatus;
+  firebase: ServiceStatus;
   gemini: ServiceStatus;
   resend: ServiceStatus;
 };
@@ -74,12 +73,12 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
             serviceName: "Repositorio de GitHub",
             description: "Dónde se guarda el código fuente.",
             ruleta: { 
-                status: githubRepoUrl.includes(projects.ruleta.id) || githubRepoUrl.includes('manso-playapp/ruleta') ? 'positive' as const : 'negative' as const,
-                text: githubRepoUrl.includes(projects.ruleta.id) || githubRepoUrl.includes('manso-playapp/ruleta') ? 'Conectado' : 'No conectado'
+                status: githubRepoUrl.includes('manso-playapp/ruleta') ? 'positive' as const : 'negative' as const,
+                text: githubRepoUrl.includes('manso-playapp/ruleta') ? 'Conectado' : 'No conectado'
             },
             spinPalReborn: { 
-                status: githubRepoUrl.includes(projects.spinPalReborn.id) ? 'positive' as const : 'negative' as const,
-                text: githubRepoUrl.includes(projects.spinPalReborn.id) ? 'Conectado' : 'No conectado'
+                status: githubRepoUrl.includes('spinpal-reborn') ? 'positive' as const : 'negative' as const,
+                text: githubRepoUrl.includes('spinpal-reborn') ? 'Conectado' : 'No conectado'
             }
         },
          gemini: {
@@ -203,127 +202,82 @@ const ServiceStatusCard = ({
   </Card>
 );
 
-export default function ConnectionsChecker() {
+interface ConnectionsCheckerProps {
+    isGeminiConfigured: boolean;
+    isResendConfigured: boolean;
+}
+
+export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigured }: ConnectionsCheckerProps) {
   const [servicesStatus, setServicesStatus] = React.useState<AllServicesStatus | null>(null);
-  const [projectId, setProjectId] = React.useState<string | null>(null);
-  const [geminiApiKey, setGeminiApiKey] = React.useState<string | null>(null);
-  const [resendApiKey, setResendApiKey] = React.useState<string | null>(null);
+  const [connectedProjectId, setConnectedProjectId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    // This function will run on the client, after the component mounts.
-    // We can safely access environment variables meant for the client here.
-    const checkApiKeys = async () => {
-        const geminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY_DUMMY; // This is a placeholder for a real client-side check if needed
-        const resendKey = process.env.NEXT_PUBLIC_RESEND_API_KEY_DUMMY;
-        
-        // Simulating the check that would happen on the server, but on the client
-        // In a real app, you might have a dedicated API route to check status
-        // For now, we will rely on Firebase checks and assume keys are present if Firebase is.
-    }
-    checkApiKeys();
-
     async function checkServices() {
       const status: AllServicesStatus = {
-        auth: {
-          connected: false,
-          message: 'No se pudo verificar el servicio de Autenticación.',
-          isConfigured: 'no' as const,
-        },
-        firestore: {
+        firebase: {
           connected: false,
           message: 'No se pudo verificar el servicio de Firestore.',
           isConfigured: 'no' as const,
         },
         gemini: {
-          connected: false,
-          message: 'La clave de API de Gemini no está configurada.',
-          details: 'Añade tu clave al archivo .env para habilitar las funciones de IA. Puedes obtenerla gratis desde Google AI Studio.',
-          isConfigured: 'no' as const,
+          connected: isGeminiConfigured,
+          message: isGeminiConfigured 
+            ? 'La clave de API de Gemini está configurada correctamente.'
+            : 'La clave de API de Gemini no está configurada.',
+          details: isGeminiConfigured 
+            ? '¡Todo listo para integrar funciones de IA en tu aplicación!'
+            : 'Añade tu clave al archivo .env para habilitar las funciones de IA. Puedes obtenerla gratis desde Google AI Studio.',
+          isConfigured: isGeminiConfigured ? 'yes' : 'no',
           actionUrl: 'https://aistudio.google.com/app/apikey'
         },
         resend: {
-            connected: false,
-            message: 'La clave de API de Resend no está configurada.',
-            details: 'Añade tu clave al archivo .env para habilitar el envío de correos.',
-            isConfigured: 'no' as const,
-            actionUrl: 'https://resend.com/docs/introduction'
+            connected: isResendConfigured,
+            message: isResendConfigured
+                ? 'La API de Resend está conectada y funcionando.'
+                : 'La clave de API de Resend no está configurada.',
+            details: isResendConfigured
+                ? `La clave está presente. Se recomienda hacer una prueba de envío.`
+                : 'Añade tu clave al archivo .env para habilitar el envío de correos.',
+            isConfigured: isResendConfigured ? 'yes' : 'no',
+            actionUrl: 'https://resend.com/domains'
         }
       };
-
-      const currentProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-      setProjectId(currentProjectId || null);
       
-      // Since we can't access server-side env vars here, these checks will be simplified.
-      // The real check should be done via an API route if sensitive verification is needed.
-      // For this case, we assume if firebase is setup, the user *might* have the others.
-      // This is a limitation of making the whole component client-side without a backend call.
-      // We will simulate the check based on the presence of the Firebase config
+      const currentProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || null;
+      setConnectedProjectId(currentProjectId);
       
-      const hasGeminiKey = !!process.env.NEXT_PUBLIC_GEMINI_API_KEY_DUMMY; // Placeholder
-      const hasResendKey = !!process.env.NEXT_PUBLIC_RESEND_API_KEY_DUMMY; // Placeholder
-
-      if (process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
-          status.gemini = {
-            connected: true,
-            message: 'La clave de API de Gemini está configurada correctamente.',
-            details: '¡Todo listo para integrar funciones de IA en tu aplicación!',
-            isConfigured: 'yes',
-            actionUrl: 'https://aistudio.google.com/app/apikey'
-          };
-      }
-      
-      if (process.env.NEXT_PUBLIC_RESEND_API_KEY) {
-            status.resend = {
-                connected: true,
-                message: 'La API de Resend está conectada y funcionando.',
-                details: `La clave está presente. Se recomienda hacer una prueba de envío.`,
-                isConfigured: 'yes',
-                actionUrl: 'https://resend.com/domains'
-            }
-        }
-
-
-      if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY && db) {
-        setProjectId(auth.app.options.projectId || null);
-
-        if (auth?.app) {
-          status.auth = {
-            connected: true,
-            message: 'El servicio de Autenticación de Firebase está conectado correctamente.',
-            details: 'Recuerda habilitar los proveedores de inicio de sesión que necesites.',
-            isConfigured: 'yes',
-          };
-        }
-
-        try {
-          const healthCheckRef = doc(db, 'health_check', 'connectivity-test');
-          await setDoc(healthCheckRef, { timestamp: new Date() });
-          const docSnap = await getDoc(healthCheckRef);
-          if (docSnap.exists()){
-             status.firestore = {
-                connected: true,
-                message: 'El servicio de Firestore funciona correctamente.',
-                details: 'La base de datos está creada y se puede escribir en ella.',
-                isConfigured: 'yes',
-              };
-          } else {
-            throw new Error("Document write failed silently");
-          }
-        } catch (error: any) {
-            const errorMessage = (error.message || '').toLowerCase();
-            if (errorMessage.includes('firestore api has not been used') || error.code === 'unimplemented' || error.code === 'failed-precondition') {
-                 status.firestore = { connected: false, message: 'La API de Firestore no está habilitada en tu proyecto.', details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud.', isConfigured: 'no', actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${currentProjectId}` };
-            } else if (error.code === 'permission-denied') {
-                status.firestore = { connected: true, message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.', details: 'Esto es esperado si ya configuraste las reglas de seguridad.', isConfigured: 'partial', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore/rules`};
+      if (getApps().length > 0 && process.env.NEXT_PUBLIC_FIREBASE_API_KEY && db && auth) {
+          status.firebase.connected = true; // Assume connection is possible
+          status.firebase.isConfigured = 'partial'; // Start as partial
+          status.firebase.message = 'Las credenciales de Firebase están presentes en .env.';
+        
+          try {
+            const healthCheckRef = doc(db, 'health_check', 'connectivity-test');
+            await setDoc(healthCheckRef, { timestamp: new Date() });
+            const docSnap = await getDoc(healthCheckRef);
+            if (docSnap.exists()){
+               status.firebase = {
+                  connected: true,
+                  message: 'El servicio de Firestore funciona correctamente.',
+                  details: 'La base de datos está creada y se puede escribir en ella.',
+                  isConfigured: 'yes',
+                };
             } else {
-                status.firestore = { connected: false, message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?', details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Error: ${error.code || 'desconocido'}.`, isConfigured: 'no', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore`};
+              throw new Error("Document write failed silently");
+            }
+          } catch (error: any) {
+              const errorMessage = (error.message || '').toLowerCase();
+              if (errorMessage.includes('firestore api has not been used') || error.code === 'unimplemented' || error.code === 'failed-precondition') {
+                   status.firebase = { connected: false, message: 'La API de Firestore no está habilitada en tu proyecto.', details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud.', isConfigured: 'no', actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${currentProjectId}` };
+              } else if (error.code === 'permission-denied') {
+                  status.firebase = { connected: true, message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.', details: 'Esto es esperado si ya configuraste las reglas de seguridad.', isConfigured: 'partial', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore/rules`};
+              } else {
+                  status.firebase = { connected: false, message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?', details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Error: ${error.code || 'desconocido'}.`, isConfigured: 'no', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore`};
+            }
           }
-        }
       } else {
-          const commonError = { connected: false, message: 'No has configurado tus credenciales de Firebase en el archivo .env.', details: 'Copia tus credenciales desde la consola de Firebase al archivo .env para conectar la aplicación.', isConfigured: 'no' as const, actionUrl: `https://console.firebase.google.com/project/_/settings/general/`};
-          status.auth = commonError;
-          status.firestore = commonError;
+          status.firebase = { connected: false, message: 'No has configurado tus credenciales de Firebase en el archivo .env.', details: 'Copia tus credenciales desde la consola de Firebase al archivo .env para conectar la aplicación.', isConfigured: 'no' as const, actionUrl: `https://console.firebase.google.com/project/_/settings/general/`};
       }
       
       setServicesStatus(status);
@@ -331,9 +285,9 @@ export default function ConnectionsChecker() {
     }
 
     checkServices();
-  }, []);
+  }, [isGeminiConfigured, isResendConfigured]);
 
-  const isFirestoreConnected = servicesStatus?.firestore.isConfigured === 'yes' || servicesStatus?.firestore.isConfigured === 'partial';
+  const isFirestoreConnected = servicesStatus?.firebase.isConfigured === 'yes' || servicesStatus?.firebase.isConfigured === 'partial';
 
   if (loading || !servicesStatus) {
     return (
@@ -346,10 +300,10 @@ export default function ConnectionsChecker() {
 
   return (
     <>
-        <ConnectionStatusTable isFirestoreConnected={isFirestoreConnected} connectedProjectId={projectId}/>
+        <ConnectionStatusTable isFirestoreConnected={isFirestoreConnected} connectedProjectId={connectedProjectId}/>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firestore} />
+          <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firebase} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
         </div>
         
@@ -374,7 +328,7 @@ export default function ConnectionsChecker() {
                     <CardContent className="space-y-4">
                         <p>Para que la aplicación pueda funcionar, necesitas obtener tus credenciales de Firebase y pegarlas en el archivo <code>.env</code> que se encuentra en la raíz de tu proyecto.</p>
                         <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/settings/general`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/settings/general`} target="_blank">
                                 Ir a la Configuración del Proyecto en Firebase <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -395,7 +349,7 @@ export default function ConnectionsChecker() {
                     <CardContent className="space-y-4">
                         <p>Para que el login funcione, necesitas habilitar los métodos de inicio de sesión en Firebase.</p>
                         <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/authentication/providers`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/authentication/providers`} target="_blank">
                                 Ir a Firebase Auth <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -414,7 +368,7 @@ export default function ConnectionsChecker() {
                     <CardContent className="space-y-4">
                         <p>Firestore es la base de datos que usará tu aplicación.</p>
                          <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/firestore`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/firestore`} target="_blank">
                                 Ir a Firestore <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -434,7 +388,7 @@ export default function ConnectionsChecker() {
                     <CardContent className="space-y-4">
                        <p>Estas reglas aseguran que solo los usuarios autorizados puedan modificar los datos.</p>
                        <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/firestore/rules`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/firestore/rules`} target="_blank">
                                 Ir a las Reglas de Firestore <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
@@ -491,7 +445,7 @@ service cloud.firestore {
                     <CardContent className="space-y-4">
                        <p>Estas reglas son cruciales para asegurar que solo los usuarios autorizados (el super admin o el cliente dueño del juego) puedan subir o borrar imágenes, mientras que cualquier persona puede verlas (necesario para el juego).</p>
                        <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${projectId || '_'}/storage/rules`} target="_blank">
+                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/storage/rules`} target="_blank">
                                 Ir a las Reglas de Storage <ExternalLink className="ml-2 h-4 w-4" />
                             </Link>
                         </Button>
