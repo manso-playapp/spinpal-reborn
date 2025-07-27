@@ -60,7 +60,7 @@ interface Game {
   [key: string]: any; // Allow any other fields for migration
 }
 
-const MIGRATION_MODE = true; // Set to true to enable migration view
+const MIGRATION_MODE = false; // Set to true to enable migration view
 
 export default function AdminDashboard() {
   const { user } = useAuth();
