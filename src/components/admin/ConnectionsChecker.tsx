@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle, Server } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle, Server, AlertTriangle } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -48,8 +48,14 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
         firebaseStudio: {
             serviceName: "Firebase Studio",
             description: "El entorno donde se edita el código.",
-            ruleta: { status: 'positive' as const, text: 'Conectado' },
-            spinPalReborn: { status: 'negative' as const, text: 'No conectado' }
+            ruleta: { 
+                status: 'positive' as const, 
+                text: 'Conectado' 
+            },
+            spinPalReborn: { 
+                status: 'negative' as const, 
+                text: 'No conectado' 
+            }
         },
         firestore: {
             serviceName: "Firestore / Auth / Storage",
@@ -66,8 +72,14 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
         appHosting: {
             serviceName: "App Hosting (Google)",
             description: "Dónde está desplegada la versión pública.",
-             ruleta: { status: 'negative' as const, text: 'No conectado' },
-             spinPalReborn: { status: 'positive' as const, text: 'Conectado' }
+             ruleta: { 
+                status: 'negative' as const, 
+                text: 'No conectado' 
+            },
+             spinPalReborn: { 
+                status: 'positive' as const, 
+                text: 'Conectado' 
+            }
         },
         github: {
             serviceName: "Repositorio de GitHub",
@@ -128,11 +140,11 @@ const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId }: { i
                         </TableBody>
                     </Table>
                 </div>
-                 <Alert className="mt-4 border-blue-500/50 text-blue-800 dark:border-blue-500/60 dark:text-blue-300 dark:bg-blue-900/20">
-                    <HelpCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <AlertTitle className="text-blue-700 dark:text-blue-300">Conclusión del Diagnóstico</AlertTitle>
+                 <Alert className="mt-4 border-yellow-500/50 text-yellow-800 dark:border-yellow-500/60 dark:text-yellow-300 dark:bg-yellow-900/20">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    <AlertTitle className="text-yellow-700 dark:text-yellow-300">Conclusión del Diagnóstico</AlertTitle>
                     <AlertDescription>
-                        La auditoría confirma que el desarrollo principal (Studio, Base de Datos, Código) está conectado al proyecto **"RULETA" (`lucky-spin-gmio3`)**. Sin embargo, el despliegue de **App Hosting** está incorrectamente configurado en el proyecto "SpinPal Reborn". El siguiente paso es configurar el App Hosting en el proyecto correcto ("RULETA") para poder publicar la aplicación.
+                        La auditoría confirma que el desarrollo está conectado al proyecto **"RULETA"**, pero el despliegue de **App Hosting** está incorrectamente configurado en "SpinPal Reborn". El siguiente paso es habilitar App Hosting en el proyecto correcto para poder publicar la aplicación.
                     </AlertDescription>
                 </Alert>
             </CardContent>
