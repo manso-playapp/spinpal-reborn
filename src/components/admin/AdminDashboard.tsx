@@ -60,7 +60,7 @@ interface Game {
   [key: string]: any; // Allow any other fields for migration
 }
 
-const MIGRATION_MODE = false; // Set to true to enable migration view
+const MIGRATION_MODE = false; // Set to false to disable migration view
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -191,6 +191,8 @@ export default function AdminDashboard() {
                 prizesAwarded: 0,
                 createdAt: serverTimestamp(),
             };
+            delete newGameData.lastResult;
+            delete newGameData.spinRequest;
             await addDoc(collection(db, 'games'), newGameData);
             toast({
                 title: "¡Juego Duplicado!",
@@ -506,5 +508,3 @@ export default function AdminDashboard() {
     </TooltipProvider>
   );
 }
-
-    

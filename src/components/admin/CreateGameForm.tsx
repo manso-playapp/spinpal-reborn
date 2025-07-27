@@ -32,6 +32,27 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Textarea } from '../ui/textarea';
+
+const segmentSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
+  formalName: z.string().optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
+  isRealPrize: z.boolean().optional(),
+  probability: z.number().optional(),
+  textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
+  fontFamily: z.string().default('DM Sans'),
+  fontSize: z.number().min(4).max(40).default(16),
+  isCurved: z.boolean().default(true),
+  lineHeight: z.number().min(0.5).max(3).default(1),
+  letterSpacing: z.number().min(-5).max(10).default(0.5),
+  letterSpacingLineTwo: z.number().min(-5).max(10).optional(),
+  distanceFromCenter: z.number().min(0).max(1).default(0.7),
+  iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
+  iconName: z.string().optional(),
+  iconScale: z.number().min(0.1).max(2).default(1),
+});
 
 const formSchema = z.object({
   name: z.string().min(3, {
@@ -41,6 +62,7 @@ const formSchema = z.object({
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   status: z.enum(['activo', 'demo']),
   managementType: z.enum(['client', 'playapp']).default('client'),
+  importJson: z.string().optional(),
 });
 
 type GameFormValues = z.infer<typeof formSchema>;
@@ -60,24 +82,52 @@ export default function CreateGameForm() {
       clientName: '',
       clientEmail: '',
       managementType: 'client',
+      importJson: '',
     },
   });
 
   const onSubmit = async (data: GameFormValues) => {
     setLoading(true);
+    let segmentsToSave = [
+        { id: generateUniqueId(), name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+        { id: generateUniqueId(), name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+    ];
+
+    if (data.importJson) {
+        try {
+            const parsedData = JSON.parse(data.importJson);
+            // Intentamos validar si es un objeto de juego completo o solo un array de segmentos
+            let parsedSegments;
+            if (Array.isArray(parsedData)) {
+                parsedSegments = parsedData;
+            } else if (parsedData.segments && Array.isArray(parsedData.segments)) {
+                parsedSegments = parsedData.segments;
+            }
+
+            const validationResult = z.array(segmentSchema.partial()).safeParse(parsedSegments);
+            if (validationResult.success) {
+                segmentsToSave = validationResult.data.map(seg => ({ ...seg, id: seg.id || generateUniqueId() })) as any;
+                 toast({ title: '¡Datos Importados!', description: 'Se usará la configuración de premios del JSON que pegaste.' });
+            } else {
+                 toast({ variant: 'destructive', title: 'Error en JSON', description: 'El JSON de premios no es válido. Se usará la configuración por defecto.' });
+            }
+        } catch (e) {
+             toast({ variant: 'destructive', title: 'Error en JSON', description: 'El texto introducido no es un JSON válido. Se usará la configuración por defecto.' });
+        }
+    }
+
+
     try {
       const docRef = await addDoc(collection(db, 'games'), {
-        ...data,
+        name: data.name,
+        clientName: data.clientName,
+        clientEmail: data.clientEmail,
+        status: data.status,
+        managementType: data.managementType,
         plays: 0,
         prizesAwarded: 0,
         createdAt: serverTimestamp(),
-        // Default values for new games
-        segments: [
-            { id: generateUniqueId(), name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-            { id: generateUniqueId(), name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-            { id: generateUniqueId(), name: 'Premio 2', color: '#4CAF50', isRealPrize: true, probability: 5, textColor: '#FFFFFF', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-            { id: generateUniqueId(), name: 'Sigue Intentando', color: '#F0F0F0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-        ],
+        segments: segmentsToSave,
         borderImage: 'https://i.imgur.com/J62nHj9.png',
         borderScale: 1,
         centerImage: 'https://i.imgur.com/N3PAzB2.png',
@@ -250,6 +300,27 @@ export default function CreateGameForm() {
                     </FormControl>
                     </FormItem>
                 )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="importJson"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Importar desde JSON (Opcional)</FormLabel>
+                        <FormControl>
+                            <Textarea
+                            placeholder='Pega aquí el JSON de un juego exportado para clonar su configuración de premios.'
+                            className="min-h-[120px] font-mono text-sm"
+                            {...field}
+                            disabled={loading}
+                            />
+                        </FormControl>
+                        <FormDescription>
+                            Puedes usar esta opción para migrar un juego desde otro proyecto. Pega los datos del campo `segments` aquí.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
                 />
                 <Button type="submit" disabled={loading}>
                 {loading ? 'Creando...' : 'Crear y Configurar Juego'}

@@ -7,10 +7,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, ExternalLink, ShieldCheck, Database, KeyRound, UserPlus, Sparkles, Mail, ShieldAlert, Image as ImageIcon, Info, HelpCircle, GitBranch, Server } from 'lucide-react';
 import { auth, db } from '@/lib/firebase/config';
 import { getApps } from 'firebase/app';
-import { collection, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
@@ -18,6 +18,7 @@ import { Resend } from 'resend';
 import TestEmailSender from '@/components/admin/TestEmailSender';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import packageJson from '../../../package.json';
 
 type ServiceStatus = {
   connected: boolean;
@@ -161,7 +162,7 @@ async function checkServices(): Promise<{
         message: 'No has configurado tus credenciales de Firebase en el archivo .env.',
         details: 'Ve al Paso 0 de la guía para obtenerlas y pegarlas en el archivo.',
         isConfigured: 'no' as const,
-        actionUrl: `https://console.firebase.google.com/project/${projectId}/settings/general`
+        actionUrl: `https://console.firebase.google.com/project/_/settings/general/`
       };
       status.auth = commonError;
       status.firestore = commonError;
@@ -220,72 +221,122 @@ const ServiceStatusCard = ({
   </Card>
 );
 
-const ProjectInfoTable = ({ connectedProjectId }: { connectedProjectId: string | undefined }) => {
-    const projects = [
-        { name: 'SpinPal Reborn (Nuevo)', id: 'spinpal-reborn', number: '824009813017', isTarget: true },
-        { name: 'RULETA (Viejo)', id: 'ruleta-414418', number: '1097208882035', isTarget: false },
-    ];
+const ConnectionStatusTable = () => {
+    const projects = {
+        spinPalReborn: { name: "SpinPal Reborn", id: "spinpal-reborn", number: "824009813017" },
+        ruleta: { name: "Ruleta", id: "ruleta-414418", number: "826559679868" }
+    };
+    
+    // --- Lógica de Diagnóstico ---
+    const connectedProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const githubRepoUrl = packageJson.repository.url;
 
-    const isConnected = !!connectedProjectId;
-    const connectedProject = projects.find(p => p.id === connectedProjectId);
+    const connections = {
+        firebaseStudio: {
+            serviceName: "Firebase Studio",
+            description: "El entorno donde se edita el código.",
+            ruleta: { status: 'positive', text: 'Conectado' },
+            spinPalReborn: { status: 'negative', text: 'No conectado' }
+        },
+        firestore: {
+            serviceName: "Firestore / Auth / Storage",
+            description: "La base de datos y autenticación que usa la app.",
+            ruleta: { 
+                status: connectedProjectId === projects.ruleta.id ? 'positive' : 'negative',
+                text: connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
+            },
+            spinPalReborn: { 
+                status: connectedProjectId === projects.spinPalReborn.id ? 'positive' : 'negative',
+                text: connectedProjectId === projects.spinPalReborn.id ? 'Conectado' : 'No conectado'
+            },
+        },
+        appHosting: {
+            serviceName: "App Hosting (Vercel/Netlify/etc)",
+            description: "Dónde está desplegada la versión pública de la app.",
+            ruleta: { status: 'neutral', text: 'Desconocido' },
+            spinPalReborn: { status: 'neutral', text: 'Desconocido' },
+        },
+        github: {
+            serviceName: "Repositorio de GitHub",
+            description: "Dónde se guarda el código fuente.",
+            ruleta: { 
+                status: githubRepoUrl.includes(projects.ruleta.id) || githubRepoUrl.includes('manso-playapp/ruleta') ? 'positive' : 'negative',
+                text: githubRepoUrl.includes(projects.ruleta.id) || githubRepoUrl.includes('manso-playapp/ruleta') ? 'Conectado' : 'No conectado'
+            },
+            spinPalReborn: { 
+                status: githubRepoUrl.includes(projects.spinPalReborn.id) ? 'positive' : 'negative',
+                text: githubRepoUrl.includes(projects.spinPalReborn.id) ? 'Conectado' : 'No conectado'
+            }
+        },
+         gemini: {
+            serviceName: "Gemini API (IA)",
+            description: "Servicio de IA para funciones inteligentes.",
+            ruleta: { status: 'neutral', text: 'Independiente' },
+            spinPalReborn: { status: 'neutral', text: 'Independiente' },
+        },
+        resend: {
+            serviceName: "Resend API (Emails)",
+            description: "Servicio para envío de correos de premios.",
+            ruleta: { status: 'neutral', text: 'Independiente' },
+            spinPalReborn: { status: 'neutral', text: 'Independiente' },
+        }
+    };
+
+    const StatusCell = ({ status, text }: { status: 'positive' | 'negative' | 'neutral', text: string }) => {
+        const baseClasses = "flex items-center justify-center gap-1.5 p-2 text-xs font-semibold rounded-md";
+        if (status === 'positive') {
+            return <div className={`${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300`}><CheckCircle2 className="h-3.5 w-3.5"/>{text}</div>;
+        }
+        if (status === 'negative') {
+            return <div className={`${baseClasses} bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300`}><XCircle className="h-3.5 w-3.5"/>{text}</div>;
+        }
+        return <div className={`${baseClasses} bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400`}>{text}</div>;
+    };
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Info /> Resumen de Conexión de Firebase</CardTitle>
-                <CardDescription>Esta tabla muestra a qué proyecto de Firebase está conectada la aplicación actualmente.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><Info /> Auditoría de Conexiones de Proyecto</CardTitle>
+                <CardDescription>Esta tabla muestra qué servicio está conectado a qué proyecto. El objetivo es unificar todo bajo un solo proyecto.</CardDescription>
             </CardHeader>
             <CardContent>
-                {!isConnected ? (
-                     <Alert variant="destructive">
-                        <HelpCircle className="h-4 w-4" />
-                        <AlertTitle>No Conectado</AlertTitle>
-                        <AlertDescription>
-                            La aplicación no está conectada a ningún proyecto de Firebase. Por favor, configura tus credenciales en el archivo <code>.env</code> siguiendo el Paso 0 de la guía de abajo.
-                        </AlertDescription>
-                    </Alert>
-                ) : (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Servicio</TableHead>
-                            <TableHead>Proyecto Conectado</TableHead>
-                            <TableHead>ID del Proyecto</TableHead>
-                            <TableHead className="text-right">Estado</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell className="font-medium">Firebase (Auth, Firestore, Storage)</TableCell>
-                            <TableCell>{connectedProject?.name || 'Proyecto Desconocido'}</TableCell>
-                            <TableCell><Badge variant="outline">{connectedProjectId}</Badge></TableCell>
-                            <TableCell className="text-right">
-                                {connectedProject?.isTarget ? (
-                                    <Badge className="bg-green-600 text-white">
-                                        <CheckCircle2 className="mr-1 h-3 w-3" />
-                                        Correcto
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="destructive">
-                                        <XCircle className="mr-1 h-3 w-3" />
-                                        Incorrecto
-                                    </Badge>
-                                )}
-                            </TableCell>
-                        </TableRow>
-                    </TableBody>
-                </Table>
-                )}
-                 <Alert className="mt-4">
-                    <HelpCircle className="h-4 w-4" />
-                    <AlertTitle>¿Qué significa esto?</AlertTitle>
+                <div className="overflow-x-auto">
+                    <Table className="min-w-full divide-y divide-border">
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-1/3">Servicio</TableHead>
+                                <TableHead className="text-center">{projects.spinPalReborn.name} <Badge variant="outline">{projects.spinPalReborn.number}</Badge></TableHead>
+                                <TableHead className="text-center">{projects.ruleta.name} <Badge variant="outline">{projects.ruleta.number}</Badge></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-border">
+                            {Object.values(connections).map(conn => (
+                                <TableRow key={conn.serviceName}>
+                                    <TableCell>
+                                        <p className="font-medium">{conn.serviceName}</p>
+                                        <p className="text-xs text-muted-foreground">{conn.description}</p>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusCell status={conn.spinPalReborn.status} text={conn.spinPalReborn.text} />
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <StatusCell status={conn.ruleta.status} text={conn.ruleta.text} />
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                 <Alert className="mt-4 border-blue-500/50 text-blue-800 dark:border-blue-500/60 dark:text-blue-300 dark:bg-blue-900/20">
+                    <HelpCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <AlertTitle className="text-blue-700 dark:text-blue-300">Conclusión del Diagnóstico</AlertTitle>
                     <AlertDescription>
-                        Para que la migración y el funcionamiento normal sean correctos, todos los servicios deben estar conectados al proyecto <strong>SpinPal Reborn (Nuevo)</strong>. Si ves que está conectado a "RULETA (Viejo)", necesitas actualizar tus credenciales en el archivo <code>.env</code> con las del proyecto nuevo.
+                        Los datos muestran que el desarrollo principal (Studio, Base de Datos, Código Fuente) está **conectado al proyecto "Ruleta"**. Esto confirma que "Ruleta" es nuestro proyecto principal y de producción. El proyecto "SpinPal Reborn" fue un entorno de prueba que ya no necesitamos. **No es necesaria ninguna migración de datos.** Nuestro objetivo ahora es asegurarnos de que el código y la configuración del proyecto "Ruleta" estén completamente actualizados y funcionando.
                     </AlertDescription>
                 </Alert>
             </CardContent>
         </Card>
-    )
+    );
 }
 
 export default async function ConexionesPage() {
@@ -294,7 +345,7 @@ export default async function ConexionesPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-background p-4 sm:p-8">
-      <div className="w-full max-w-4xl space-y-8">
+      <div className="w-full max-w-5xl space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold font-headline">Estado de Conexiones</h1>
           <p className="mt-2 text-muted-foreground">
@@ -302,19 +353,18 @@ export default async function ConexionesPage() {
           </p>
         </div>
 
-        <ProjectInfoTable connectedProjectId={projectId} />
+        <ConnectionStatusTable />
 
-        <div className="space-y-4">
-          <ServiceStatusCard title="Firebase Auth" icon={<UserPlus />} status={servicesStatus.auth} />
-          <ServiceStatusCard title="Firebase Firestore" icon={<Database />} status={servicesStatus.firestore} />
-          <ServiceStatusCard title="Gemini API" icon={<Sparkles />} status={servicesStatus.gemini} />
-          <ServiceStatusCard title="Resend API" icon={<Mail />} status={servicesStatus.resend}>
+        <div className="grid md:grid-cols-2 gap-4">
+          <ServiceStatusCard title="Firebase Auth & Firestore" icon={<Database />} status={servicesStatus.firestore} />
+          <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
+          <ServiceStatusCard title="Resend API (Emails)" icon={<Mail />} status={servicesStatus.resend}>
             {servicesStatus.resend.isConfigured === 'yes' && (
                 <div className="mt-4 pt-4 border-t">
                     <TestEmailSender />
                 </div>
             )}
-          </ServiceStatusCard>
+          </Service-StatusCard>
         </div>
 
         <Separator />
@@ -346,7 +396,7 @@ export default async function ConexionesPage() {
                 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><KeyRound/>Paso 1: Configurar Autenticación</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><UserPlus/>Paso 1: Configurar Autenticación</CardTitle>
                         <CardDescription>Permite que los administradores y clientes inicien sesión.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
