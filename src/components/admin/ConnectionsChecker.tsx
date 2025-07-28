@@ -184,18 +184,17 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
   return (
     <>
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <ServiceStatusCard title="Firebase (BBDD, Usuarios, Archivos)" icon={<Database />} status={servicesStatus.firebase} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
+          <ServiceStatusCard title="Resend API (Emails)" icon={<Mail />} status={servicesStatus.resend}>
+            {servicesStatus.resend.isConfigured === 'yes' && (
+                <div className="mt-4 pt-4 border-t">
+                    <TestEmailSender />
+                </div>
+            )}
+          </ServiceStatusCard>
         </div>
-        
-        <ServiceStatusCard title="Resend API (Emails)" icon={<Mail />} status={servicesStatus.resend}>
-          {servicesStatus.resend.isConfigured === 'yes' && (
-              <div className="mt-4 pt-4 border-t">
-                  <TestEmailSender />
-              </div>
-          )}
-        </ServiceStatusCard>
 
         <Separator />
 
