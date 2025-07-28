@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -88,7 +89,7 @@ export default function LoginPage() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Error de Configuración</AlertTitle>
                     <AlertDescription>
-                        Firebase no está configurado. Ve a <Link href="/conexiones" className="font-bold underline">Conexiones</Link> para solucionarlo.
+                        Firebase no está configurado. Ve a <Link href="/admin/conexiones" className="font-bold underline">Conexiones</Link> para solucionarlo.
                     </AlertDescription>
                 </Alert>
             )}
