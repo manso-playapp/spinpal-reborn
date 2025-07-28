@@ -36,122 +36,6 @@ type AllServicesStatus = {
   resend: ServiceStatus;
 };
 
-const ConnectionStatusTable = ({ isFirestoreConnected, connectedProjectId, appHostingConfigured }: { isFirestoreConnected: boolean, connectedProjectId?: string | null, appHostingConfigured: boolean }) => {
-    const projects = {
-        spinPalReborn: { name: "SpinPal Reborn", id: "spinpal-reborn" },
-        ruleta: { name: "RULETA", id: "lucky-spin-gmio3" }
-    };
-    
-    const githubRepoUrl = 'https://github.com/manso-playapp/ruleta.git';
-
-    const connections = {
-        firebaseStudio: {
-            serviceName: "Firebase Studio",
-            description: "El entorno donde se edita el código.",
-            ruleta: { 
-                status: 'positive' as const, 
-                text: 'Conectado' 
-            },
-            spinPalReborn: { 
-                status: 'negative' as const, 
-                text: 'No conectado' 
-            }
-        },
-        firestore: {
-            serviceName: "Firestore / Auth / Storage",
-            description: "La base de datos, usuarios y archivos.",
-            ruleta: { 
-                status: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'positive' as const : 'negative' as const,
-                text: isFirestoreConnected && connectedProjectId === projects.ruleta.id ? 'Conectado' : 'No conectado'
-            },
-            spinPalReborn: { 
-                status: isFirestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'positive' as const : 'negative' as const,
-                text: isFirestoreConnected && connectedProjectId === projects.spinPalReborn.id ? 'Conectado' : 'No conectado'
-            },
-        },
-        appHosting: {
-            serviceName: "App Hosting (Google)",
-            description: "Dónde está desplegada la versión pública.",
-             ruleta: { 
-                status: appHostingConfigured ? 'positive' as const : 'negative' as const, 
-                text: appHostingConfigured ? 'Conectado' : 'No conectado' 
-            },
-             spinPalReborn: { 
-                status: 'negative' as const, 
-                text: 'No conectado' 
-            }
-        },
-        github: {
-            serviceName: "Repositorio de GitHub",
-            description: "Dónde se guarda el código fuente.",
-            ruleta: { 
-                status: 'positive' as const,
-                text: 'Conectado'
-            },
-            spinPalReborn: { 
-                status: 'negative' as const,
-                text: 'No conectado'
-            }
-        },
-    };
-
-    const StatusCell = ({ status, text }: { status: 'positive' | 'negative' | 'neutral', text: string }) => {
-        const baseClasses = "flex items-center justify-center gap-1.5 p-2 text-xs font-semibold rounded-md";
-        if (status === 'positive') {
-            return <div className={`${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300`}><CheckCircle2 className="h-3.5 w-3.5"/>{text}</div>;
-        }
-        if (status === 'negative') {
-            return <div className={`${baseClasses} bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300`}><XCircle className="h-3.5 w-3.5"/>{text}</div>;
-        }
-        return <div className={`${baseClasses} bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400`}>{text}</div>;
-    };
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Info /> Auditoría de Conexiones de Proyecto</CardTitle>
-                <CardDescription>Esta tabla muestra qué servicio está conectado a qué proyecto. El objetivo es unificar todo bajo "RULETA".</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="overflow-x-auto">
-                    <Table className="min-w-full divide-y divide-border">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-1/3">Servicio</TableHead>
-                                <TableHead className="text-center">{projects.ruleta.name} <Badge variant="outline">{projects.ruleta.id}</Badge></TableHead>
-                                <TableHead className="text-center">{projects.spinPalReborn.name} <Badge variant="outline">{projects.spinPalReborn.id}</Badge></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody className="divide-y divide-border">
-                            {Object.values(connections).map(conn => (
-                                <TableRow key={conn.serviceName}>
-                                    <TableCell>
-                                        <p className="font-medium">{conn.serviceName}</p>
-                                        <p className="text-xs text-muted-foreground">{conn.description}</p>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <StatusCell status={conn.ruleta.status} text={conn.ruleta.text} />
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <StatusCell status={conn.spinPalReborn.status} text={conn.spinPalReborn.text} />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-                 <Alert className="mt-4 border-green-500/50 text-green-800 dark:border-green-500/60 dark:text-green-300 dark:bg-green-900/20">
-                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <AlertTitle className="text-green-700 dark:text-green-300">¡Auditoría Completa y Correcta!</AlertTitle>
-                    <AlertDescription>
-                        Todas las conexiones apuntan al proyecto **"RULETA" (`lucky-spin-gmio3`)**. La aplicación está lista para ser desplegada en el entorno correcto. El proyecto "SpinPal Reborn" ya no está vinculado.
-                    </AlertDescription>
-                </Alert>
-            </CardContent>
-        </Card>
-    );
-}
-
 const ServiceStatusCard = ({
   title,
   icon,
@@ -211,19 +95,10 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
   const [servicesStatus, setServicesStatus] = React.useState<AllServicesStatus | null>(null);
   const [connectedProjectId, setConnectedProjectId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [isFirestoreReallyConnected, setIsFirestoreReallyConnected] = React.useState(false);
-  const [appHostingConfigured, setAppHostingConfigured] = React.useState(false);
-
 
   React.useEffect(() => {
     async function checkServices() {
       setLoading(true);
-
-      // Esta es la comprobación clave. Asume que si 'frameworksBackend' existe en firebase.json,
-      // el App Hosting está correctamente configurado y conectado al proyecto correcto.
-      // Esta es una suposición segura después de nuestro proceso de depuración.
-      const hostingIsConfiguredForCorrectProject = true; 
-      setAppHostingConfigured(hostingIsConfiguredForCorrectProject);
 
       const status: AllServicesStatus = {
         firebase: {
@@ -274,25 +149,21 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                   details: 'La base de datos está creada y se puede escribir en ella.',
                   isConfigured: 'yes',
                 };
-                setIsFirestoreReallyConnected(true);
             } else {
               throw new Error("Document write failed silently");
             }
           } catch (error: any) {
-              setIsFirestoreReallyConnected(false);
               const errorMessage = (error.message || '').toLowerCase();
               if (errorMessage.includes('firestore api has not been used') || error.code === 'unimplemented' || error.code === 'failed-precondition') {
                    status.firebase = { connected: false, message: 'La API de Firestore no está habilitada en tu proyecto.', details: 'Haz clic en el botón para habilitarla en tu proyecto de Google Cloud.', isConfigured: 'no', actionUrl: `https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=${currentProjectId}` };
               } else if (error.code === 'permission-denied') {
                   status.firebase = { connected: true, message: 'Conexión exitosa, pero no se pudo escribir en la base de datos.', details: 'Esto es esperado si ya configuraste las reglas de seguridad.', isConfigured: 'partial', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore/rules`};
-                  setIsFirestoreReallyConnected(true);
               } else {
                   status.firebase = { connected: false, message: 'No se pudo conectar con Firestore. ¿Creaste la base de datos?', details: `Asegúrate de haber creado la base de datos en tu proyecto de Firebase. Error: ${error.code || 'desconocido'}.`, isConfigured: 'no', actionUrl: `https://console.firebase.google.com/project/${currentProjectId}/firestore`};
             }
           }
       } else {
           status.firebase = { connected: false, message: 'No has configurado tus credenciales de Firebase en el archivo .env.', details: 'Copia tus credenciales desde la consola de Firebase al archivo .env para conectar la aplicación.', isConfigured: 'no' as const, actionUrl: `https://console.firebase.google.com/project/_/settings/general/`};
-          setIsFirestoreReallyConnected(false);
       }
       
       setServicesStatus(status);
@@ -305,7 +176,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
   if (loading || !servicesStatus) {
     return (
         <div className="w-full space-y-8">
-            <Skeleton className="h-96 w-full" />
+            <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
         </div>
     )
@@ -313,8 +184,6 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
   return (
     <>
-        <ConnectionStatusTable isFirestoreConnected={isFirestoreReallyConnected} connectedProjectId={connectedProjectId} appHostingConfigured={appHostingConfigured}/>
-
         <div className="grid md:grid-cols-2 gap-4">
           <ServiceStatusCard title="Firebase (BBDD, Usuarios, Archivos)" icon={<Database />} status={servicesStatus.firebase} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
