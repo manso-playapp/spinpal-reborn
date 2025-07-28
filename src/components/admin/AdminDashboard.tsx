@@ -53,10 +53,7 @@ interface Game {
   managementType?: 'client' | 'playapp';
   plays: number;
   prizesAwarded: number;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  } | null;
+  createdAt: any; // More flexible to handle different timestamp formats
   [key: string]: any; // Allow any other fields for migration
 }
 
@@ -264,9 +261,10 @@ export default function AdminDashboard() {
       
       const customersData = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        const registrationDate = data.registeredAt && typeof data.registeredAt.toDate === 'function'
-          ? data.registeredAt.toDate().toLocaleString()
-          : 'N/A';
+        const registeredAt = data.registeredAt;
+        const registrationDate = registeredAt && typeof registeredAt.toDate === 'function'
+          ? registeredAt.toDate().toLocaleString()
+          : (registeredAt ? new Date(registeredAt).toLocaleString() : 'N/A');
           
         return {
           nombre: data.name || '',
@@ -299,6 +297,13 @@ export default function AdminDashboard() {
         description: 'No se pudieron descargar los datos. Inténtalo de nuevo.',
       });
     }
+  };
+  
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    // Handle both Firebase Timestamp object and string formats
+    const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+    return format(date, "dd/MM/yyyy");
   };
 
   return (
@@ -349,7 +354,7 @@ export default function AdminDashboard() {
                                 </Badge>
                                 <span>•</span>
                                 <p>
-                                    Creado: {game.createdAt ? format(new Date(game.createdAt.seconds * 1000), "dd/MM/yyyy") : 'N/A'}
+                                    Creado: {formatDate(game.createdAt)}
                                 </p>
                             </div>
                         </div>

@@ -52,16 +52,18 @@ interface Customer {
   email: string;
   phone?: string;
   hasPlayed: boolean;
-  registeredAt: {
-    seconds: number;
-    nanoseconds: number;
-  } | null;
+  registeredAt: any;
   prizeWonName?: string;
-  prizeWonAt?: {
-    seconds: number;
-    nanoseconds: number;
-  } | null;
+  prizeWonAt?: any;
 }
+
+const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    // Handle both Firebase Timestamp object and string formats
+    const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
+    return date.toLocaleString();
+};
+
 
 export default function CustomerList({ gameId, gameName }: { gameId: string, gameName: string }) {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -176,8 +178,7 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
             </Button>
         ),
         cell: ({ row }) => {
-            const date = row.original.registeredAt;
-            return date ? new Date(date.seconds * 1000).toLocaleString() : 'N/A';
+            return formatDate(row.original.registeredAt);
         }
     },
     {
@@ -258,10 +259,10 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
       nombre: customer.name || '',
       email: customer.email || '',
       telefono: customer.phone || '',
-      fecha_registro: customer.registeredAt ? new Date(customer.registeredAt.seconds * 1000).toLocaleString() : 'N/A',
+      fecha_registro: formatDate(customer.registeredAt),
       ha_jugado: customer.hasPlayed ? 'Sí' : 'No',
       premio_ganado: customer.prizeWonName || '-',
-      fecha_premio: customer.prizeWonAt ? new Date(customer.prizeWonAt.seconds * 1000).toLocaleString() : 'N/A',
+      fecha_premio: formatDate(customer.prizeWonAt),
     }));
 
     const csv = Papa.unparse(customersData);
