@@ -40,8 +40,7 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
 }
 
 export default async function EditGamePage({ params }: EditGamePageProps) {
-  const { id } = params;
-  const game = await getGameData(id);
+  const game = await getGameData(params.id);
 
   if (!game) {
     notFound();

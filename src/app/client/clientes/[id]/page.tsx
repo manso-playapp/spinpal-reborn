@@ -25,8 +25,7 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
 }
 
 export default async function ClientCustomerListPage({ params }: ClientCustomerListPageProps) {
-  const { id } = params;
-  const game = await getGameData(id);
+  const game = await getGameData(params.id);
 
   if (!game) {
     notFound();
@@ -47,7 +46,7 @@ export default async function ClientCustomerListPage({ params }: ClientCustomerL
                         Participantes de: <span className="font-bold">{game.name}</span>
                     </h1>
                 </div>
-                <CustomerList gameId={id} gameName={game.name} />
+                <CustomerList gameId={params.id} gameName={game.name} />
             </main>
       </ClientLayout>
     </AuthWrapper>
