@@ -2,10 +2,23 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { format } from 'date-fns';
 import { Providers } from './providers';
+import { Poppins, PT_Sans } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-poppins',
+});
+
+const ptSans = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-pt-sans',
+});
 
 export const metadata: Metadata = {
-  title: 'PlayApp',
-  description: 'El blueprint de reconstrucción definitivo.',
+  title: 'SpinPal Reborn',
+  description: 'Aplicación de ruleta de premios interactiva.',
 };
 
 // Genera un ID de compilación numérico basado en la fecha y hora YYMMDDHHMM
@@ -20,13 +33,8 @@ export default function RootLayout({
   const displayVersion = `Build: ${buildId}`;
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=PT+Sans:wght@400;700&family=Lato:wght@400;700&family=Anton&family=Barlow+Condensed:wght@400;700&family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,700&family=Oswald:wght@400;700&family=PT+Sans+Narrow:wght@400;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <body>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${poppins.variable} ${ptSans.variable}`}>
         <Providers>
           {children}
         </Providers>
