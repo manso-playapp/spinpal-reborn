@@ -25,8 +25,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-export default async function EditGamePage({ params }: { params: { id: string } }) {
-  const gameId = params.id;
+export default async function EditGamePage(props: { params: { id: string } }) {
+  const gameId = props.params.id;
   const game = await getGameData(gameId);
 
   if (!game) {
