@@ -206,7 +206,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
   return (
     <>
-        <div className="grid grid-cols-1 gap-6">
+        <div className="flex flex-col gap-6">
           <ServiceStatusCard title="Firebase (BBDD, Usuarios, Archivos)" icon={<Database />} status={servicesStatus.firebase} projectId={connectedProjectId} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
           <ServiceStatusCard title="Resend API (Emails)" icon={<Mail />} status={servicesStatus.resend}>
@@ -289,7 +289,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                         </Link>
                     </Button>
                     <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase, reemplazando el contenido existente:</p>
-                    <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
+                    <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto whitespace-pre-wrap"><code>{`rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -344,7 +344,7 @@ service cloud.firestore {
                         </Link>
                     </Button>
                     <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase Storage:</p>
-                    <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
+                    <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto whitespace-pre-wrap"><code>{`rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
