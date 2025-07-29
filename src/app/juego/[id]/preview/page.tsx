@@ -1,5 +1,3 @@
-
-
 // This is a special layout-less page for the iframe preview
 import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';

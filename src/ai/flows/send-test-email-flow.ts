@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A flow for sending a test email via Resend.
