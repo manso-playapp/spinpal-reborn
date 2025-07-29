@@ -4,6 +4,10 @@ import { notFound } from 'next/navigation';
 import CustomerRegistrationForm from '@/components/game/CustomerRegistrationForm';
 import Logo from '@/components/logo';
 
+interface PlayerPageProps {
+  params: { id: string };
+}
+
 async function getGameData(id: string) {
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
@@ -21,7 +25,7 @@ async function getGameData(id: string) {
   };
 }
 
-export default async function PlayerPage({ params }: { params: { id:string } }) {
+export default async function PlayerPage({ params }: PlayerPageProps) {
   const game = await getGameData(params.id);
 
   if (!game) {

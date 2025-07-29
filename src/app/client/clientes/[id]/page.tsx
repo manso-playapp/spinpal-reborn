@@ -8,6 +8,10 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
+interface ClientCustomerListPageProps {
+  params: { id: string };
+}
+
 async function getGameData(id: string): Promise<{ name: string } | null> {
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
@@ -20,7 +24,7 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
+export default async function ClientCustomerListPage({ params }: ClientCustomerListPageProps) {
   const game = await getGameData(params.id);
 
   if (!game) {
