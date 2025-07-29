@@ -203,7 +203,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
             <div className="space-y-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><KeyRound/>Paso 1: Credenciales de Firebase (.env)</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><KeyRound/>Credenciales de Firebase (.env)</CardTitle>
                         <CardDescription>Conecta tu aplicación con tu proyecto de Firebase.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -224,7 +224,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserPlus/>Paso 2: Configurar Autenticación</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><UserPlus/>Configurar Autenticación</CardTitle>
                         <CardDescription>Permite que los administradores y clientes inicien sesión.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -243,7 +243,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Database/>Paso 3: Crear Base de Datos Firestore</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Database/>Crear Base de Datos Firestore</CardTitle>
                         <CardDescription>Almacena todos los datos de tus juegos y clientes.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -263,7 +263,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                 
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldCheck/>Paso 4: Configurar Reglas de Seguridad de Firestore</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ShieldCheck/>Configurar Reglas de Seguridad de Firestore</CardTitle>
                         <CardDescription>Protege tu base de datos contra accesos no autorizados.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -320,7 +320,7 @@ service cloud.firestore {
 
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ImageIcon/>Paso 5: Configurar Reglas de Storage</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ImageIcon/>Configurar Reglas de Storage</CardTitle>
                         <CardDescription>Protege la subida de archivos para que solo tú y tus clientes podáis subir imágenes a vuestros juegos.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -365,7 +365,7 @@ service firebase.storage {
                 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Mail/>Paso 6: Verificar Dominio de Envío de Emails (DKIM)</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><Mail/>Verificar Dominio de Envío de Emails (DKIM)</CardTitle>
                         <CardDescription>Asegura que tus correos no lleguen a la carpeta de spam.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -393,7 +393,7 @@ service firebase.storage {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldAlert/>Paso 7: Configurar DMARC para Evitar la Carpeta de Spam</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><ShieldAlert/>Configurar DMARC para Evitar la Carpeta de Spam</CardTitle>
                         <CardDescription>Este es el paso final y crucial para una buena entrega de correos.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -415,3 +415,5 @@ service firebase.storage {
     </>
   );
 }
+
+    
