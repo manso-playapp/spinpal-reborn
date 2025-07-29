@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import TestEmailSender from '@/components/admin/TestEmailSender';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -97,6 +96,21 @@ interface ConnectionsCheckerProps {
     isGeminiConfigured: boolean;
     isResendConfigured: boolean;
 }
+
+const GuideSection = ({ title, icon, description, children }: { title: string, icon: React.ReactNode, description: string, children: React.ReactNode }) => (
+    <Card className="overflow-hidden">
+        <CardHeader className="bg-muted/30">
+            <CardTitle className="flex items-center gap-3 text-lg font-headline">
+                {icon}
+                {title}
+            </CardTitle>
+            <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+            {children}
+        </CardContent>
+    </Card>
+);
 
 export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigured }: ConnectionsCheckerProps) {
   const [servicesStatus, setServicesStatus] = React.useState<AllServicesStatus | null>(null);
@@ -185,6 +199,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
         <div className="w-full space-y-8">
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
         </div>
     )
   }
@@ -208,80 +223,73 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
         <div>
             <h2 className="text-3xl font-bold font-headline text-center mb-6">Guía de Configuración Inicial</h2>
             <div className="space-y-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><KeyRound/>Credenciales de Firebase (.env)</CardTitle>
-                        <CardDescription>Conecta tu aplicación con tu proyecto de Firebase.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p>Para que la aplicación pueda funcionar, necesitas obtener tus credenciales de Firebase y pegarlas en el archivo <code>.env</code> que se encuentra en la raíz de tu proyecto.</p>
-                        <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/settings/general`} target="_blank">
-                                Ir a la Configuración del Proyecto en Firebase <ExternalLink className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                        <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                            <li>En la consola de Firebase, ve a la "Configuración del Proyecto" (el ícono del engranaje).</li>
-                            <li>En la pestaña "General", baja hasta la sección "Tus apps".</li>
-                            <li>Busca tu aplicación web y haz clic en el botón de opción "Configuración" y selecciona el formato **"CDN"**.</li>
-                            <li>Verás un objeto de configuración. Copia los valores y pégalos en las variables correspondientes del archivo <code>.env</code>.</li>
-                        </ul>
-                    </CardContent>
-                </Card>
+                <GuideSection
+                    title="Credenciales de Firebase (.env)"
+                    icon={<KeyRound/>}
+                    description="Conecta tu aplicación con tu proyecto de Firebase."
+                >
+                    <p>Para que la aplicación pueda funcionar, necesitas obtener tus credenciales de Firebase y pegarlas en el archivo <code>.env</code> que se encuentra en la raíz de tu proyecto.</p>
+                    <Button asChild variant="outline">
+                        <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/settings/general`} target="_blank">
+                            Ir a la Configuración del Proyecto en Firebase <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
+                        <li>En la consola de Firebase, ve a la "Configuración del Proyecto" (el ícono del engranaje).</li>
+                        <li>En la pestaña "General", baja hasta la sección "Tus apps".</li>
+                        <li>Busca tu aplicación web y haz clic en el botón de opción "Configuración" y selecciona el formato **"CDN"**.</li>
+                        <li>Verás un objeto de configuración. Copia los valores y pégalos en las variables correspondientes del archivo <code>.env</code>.</li>
+                    </ul>
+                </GuideSection>
                 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserPlus/>Configurar Autenticación</CardTitle>
-                        <CardDescription>Permite que los administradores y clientes inicien sesión.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p>Para que el login funcione, necesitas habilitar los métodos de inicio de sesión en Firebase.</p>
-                        <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/authentication/providers`} target="_blank">
-                                Ir a Firebase Auth <ExternalLink className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                        <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                            <li>En la pestaña <strong>"Sign-in method"</strong>, busca y habilita <strong>"Correo electrónico/Contraseña"</strong> (para el admin) y <strong>"Google"</strong> (para los clientes).</li>
-                            <li>Ve a la pestaña <strong>"Users"</strong> y haz clic en <strong>"Add user"</strong> para crear tu usuario administrador.</li>
-                        </ul>
-                    </CardContent>
-                </Card>
+                <GuideSection
+                    title="Configurar Autenticación"
+                    icon={<UserPlus/>}
+                    description="Permite que los administradores y clientes inicien sesión."
+                >
+                    <p>Para que el login funcione, necesitas habilitar los métodos de inicio de sesión en Firebase.</p>
+                    <Button asChild variant="outline">
+                        <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/authentication/providers`} target="_blank">
+                            Ir a Firebase Auth <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
+                        <li>En la pestaña <strong>"Sign-in method"</strong>, busca y habilita <strong>"Correo electrónico/Contraseña"</strong> (para el admin) y <strong>"Google"</strong> (para los clientes).</li>
+                        <li>Ve a la pestaña <strong>"Users"</strong> y haz clic en <strong>"Add user"</strong> para crear tu usuario administrador.</li>
+                    </ul>
+                </GuideSection>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Database/>Crear Base de Datos Firestore</CardTitle>
-                        <CardDescription>Almacena todos los datos de tus juegos y clientes.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p>Firestore es la base de datos que usará tu aplicación.</p>
-                         <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/firestore`} target="_blank">
-                                Ir a Firestore <ExternalLink className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                        <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                            <li>Haz clic en <strong>"Crear base de datos"</strong>.</li>
-                            <li>Selecciona <strong>"Iniciar en modo de prueba"</strong>. Esto permite leer y escribir temporalmente, ideal para empezar.</li>
-                            <li>Elige una ubicación para tus servidores y haz clic en "Habilitar".</li>
-                        </ul>
-                    </CardContent>
-                </Card>
+                <GuideSection
+                    title="Crear Base de Datos Firestore"
+                    icon={<Database/>}
+                    description="Almacena todos los datos de tus juegos y clientes."
+                >
+                    <p>Firestore es la base de datos que usará tu aplicación.</p>
+                     <Button asChild variant="outline">
+                        <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/firestore`} target="_blank">
+                            Ir a Firestore <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
+                        <li>Haz clic en <strong>"Crear base de datos"</strong>.</li>
+                        <li>Selecciona <strong>"Iniciar en modo de prueba"</strong>. Esto permite leer y escribir temporalmente, ideal para empezar.</li>
+                        <li>Elige una ubicación para tus servidores y haz clic en "Habilitar".</li>
+                    </ul>
+                </GuideSection>
                 
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldCheck/>Configurar Reglas de Seguridad de Firestore</CardTitle>
-                        <CardDescription>Protege tu base de datos contra accesos no autorizados.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       <p>Estas reglas aseguran que solo los usuarios autorizados puedan modificar los datos.</p>
-                       <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/firestore/rules`} target="_blank">
-                                Ir a las Reglas de Firestore <ExternalLink className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                        <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase, reemplazando el contenido existente:</p>
-                        <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
+                <GuideSection
+                    title="Reglas de Seguridad de Firestore"
+                    icon={<ShieldCheck/>}
+                    description="Protege tu base de datos contra accesos no autorizados."
+                >
+                   <p>Estas reglas aseguran que solo los usuarios autorizados puedan modificar los datos.</p>
+                   <Button asChild variant="outline">
+                        <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/firestore/rules`} target="_blank">
+                            Ir a las Reglas de Firestore <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase, reemplazando el contenido existente:</p>
+                    <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -321,24 +329,22 @@ service cloud.firestore {
     }
   }
 }`}</code></pre>
-                        <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
-                    </CardContent>
-                </Card>
+                    <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
+                </GuideSection>
 
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ImageIcon/>Configurar Reglas de Storage</CardTitle>
-                        <CardDescription>Protege la subida de archivos para que solo tú y tus clientes podáis subir imágenes a vuestros juegos.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       <p>Estas reglas son cruciales para asegurar que solo los usuarios autorizados (el super admin o el cliente dueño del juego) puedan subir o borrar imágenes, mientras que cualquier persona puede verlas (necesario para el juego).</p>
-                       <Button asChild variant="outline">
-                            <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/storage/rules`} target="_blank">
-                                Ir a las Reglas de Storage <ExternalLink className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                        <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase Storage:</p>
-                        <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
+                <GuideSection
+                    title="Reglas de Storage"
+                    icon={<ImageIcon/>}
+                    description="Protege la subida de archivos para que solo tú y tus clientes podáis subir imágenes a vuestros juegos."
+                >
+                   <p>Estas reglas son cruciales para asegurar que solo los usuarios autorizados (el super admin o el cliente dueño del juego) puedan subir o borrar imágenes, mientras que cualquier persona puede verlas (necesario para el juego).</p>
+                   <Button asChild variant="outline">
+                        <Link href={`https://console.firebase.google.com/project/${connectedProjectId || '_'}/storage/rules`} target="_blank">
+                            Ir a las Reglas de Storage <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <p className="font-bold text-destructive">¡IMPORTANTE! Copia y pega el siguiente código en el editor de reglas de tu consola de Firebase Storage:</p>
+                    <pre className="p-4 bg-muted rounded-md text-sm overflow-x-auto"><code>{`rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
@@ -366,57 +372,52 @@ service firebase.storage {
     }
   }
 }`}</code></pre>
-                        <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
-                    </CardContent>
-                </Card>
+                    <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
+                </GuideSection>
                 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Mail/>Verificar Dominio de Envío de Emails (DKIM)</CardTitle>
-                        <CardDescription>Asegura que tus correos no lleguen a la carpeta de spam.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       <p>Para que Resend pueda enviar correos en tu nombre, debes demostrar que eres el dueño del dominio (ej: `tuempresa.com`). Sin este paso, los correos se enviarán desde `onboarding@resend.dev` y es muy probable que sean marcados como spam.</p>
-                       <Button asChild variant="outline">
-                            <Link href="https://resend.com/domains" target="_blank">
-                                Ir a Dominios en Resend <ExternalLink className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                        <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                            <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
-                            <li>Resend te dará unos registros DNS que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, DONWEB, etc.).</li>
-                            <li className='font-bold text-card-foreground'>
-                                <strong>¡Atención Proveedores como DONWEB!</strong> Si el panel de tu dominio no acepta un nombre de host como `send` o `resend._domainkey`, es porque espera el nombre completo. Debes construirlo tú mismo:
-                                <ul className="list-disc list-inside pl-6 mt-2 font-normal">
-                                    <li>Si Resend pide un registro <strong>CNAME</strong> con el host `send`, en tu panel debes poner `send.tudominio.com`.</li>
-                                    <li>Si Resend pide un registro <strong>TXT</strong> con el host `resend._domainkey`, en tu panel debes poner `resend._domainkey.tudominio.com`.</li>
-                                </ul>
-                            </li>
-                            <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como "Verified".</li>
-                            <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`src/ai/flows/prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
-                        </ul>
-                    </CardContent>
-                </Card>
+                <GuideSection
+                    title="Verificar Dominio de Envío de Emails (DKIM)"
+                    icon={<Mail/>}
+                    description="Asegura que tus correos no lleguen a la carpeta de spam."
+                >
+                   <p>Para que Resend pueda enviar correos en tu nombre, debes demostrar que eres el dueño del dominio (ej: `tuempresa.com`). Sin este paso, los correos se enviarán desde `onboarding@resend.dev` y es muy probable que sean marcados como spam.</p>
+                   <Button asChild variant="outline">
+                        <Link href="https://resend.com/domains" target="_blank">
+                            Ir a Dominios en Resend <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                    <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
+                        <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
+                        <li>Resend te dará unos registros DNS que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, DONWEB, etc.).</li>
+                        <li className='font-bold text-card-foreground'>
+                            <strong>¡Atención Proveedores como DONWEB!</strong> Si el panel de tu dominio no acepta un nombre de host como `send` o `resend._domainkey`, es porque espera el nombre completo. Debes construirlo tú mismo:
+                            <ul className="list-disc list-inside pl-6 mt-2 font-normal">
+                                <li>Si Resend pide un registro <strong>CNAME</strong> con el host `send`, en tu panel debes poner `send.tudominio.com`.</li>
+                                <li>Si Resend pide un registro <strong>TXT</strong> con el host `resend._domainkey`, en tu panel debes poner `resend._domainkey.tudominio.com`.</li>
+                            </ul>
+                        </li>
+                        <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como "Verified".</li>
+                        <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`src/ai/flows/prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
+                    </ul>
+                </GuideSection>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldAlert/>Configurar DMARC para Evitar la Carpeta de Spam</CardTitle>
-                        <CardDescription>Este es el paso final y crucial para una buena entrega de correos.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       <p>Aunque tu dominio esté verificado (Paso 4, que configura DKIM), los proveedores como Gmail necesitan una política DMARC para confiar plenamente en tus correos. Sin esto, es muy probable que terminen en spam.</p>
-                       <p>Debes añadir un registro DNS más en tu proveedor de dominio (DONWEB, etc.):</p>
-                       <div className="p-4 bg-muted rounded-md text-sm space-y-2">
-                           <p><strong>Tipo de Registro:</strong> <code>TXT</code></p>
-                           <p><strong>Host / Nombre:</strong> <code>_dmarc.tudominio.com</code> (¡Recuerda, usa tu dominio!)</p>
-                           <p><strong>Valor:</strong> <code>v=DMARC1; p=none;</code></p>
-                       </div>
-                       <ul className="list-disc list-inside space-y-2 pl-4 text-muted-foreground">
-                            <li>El valor <code>p=none</code> le dice a los servidores de correo que no tomen ninguna acción si un correo falla la verificación, pero que te empiecen a enviar reportes. Es la forma más segura de empezar.</li>
-                            <li>Una vez que lo configures, la entrega a la bandeja de entrada debería mejorar drásticamente.</li>
-                       </ul>
-                    </CardContent>
-                </Card>
+                <GuideSection
+                    title="Configurar DMARC para Evitar la Carpeta de Spam"
+                    icon={<ShieldAlert/>}
+                    description="Este es el paso final y crucial para una buena entrega de correos."
+                >
+                   <p>Aunque tu dominio esté verificado (Paso 4, que configura DKIM), los proveedores como Gmail necesitan una política DMARC para confiar plenamente en tus correos. Sin esto, es muy probable que terminen en spam.</p>
+                   <p>Debes añadir un registro DNS más en tu proveedor de dominio (DONWEB, etc.):</p>
+                   <div className="p-4 bg-muted rounded-md text-sm space-y-2">
+                       <p><strong>Tipo de Registro:</strong> <code>TXT</code></p>
+                       <p><strong>Host / Nombre:</strong> <code>_dmarc.tudominio.com</code> (¡Recuerda, usa tu dominio!)</p>
+                       <p><strong>Valor:</strong> <code>v=DMARC1; p=none;</code></p>
+                   </div>
+                   <ul className="list-disc list-inside space-y-2 pl-4 text-muted-foreground">
+                        <li>El valor <code>p=none</code> le dice a los servidores de correo que no tomen ninguna acción si un correo falla la verificación, pero que te empiecen a enviar reportes. Es la forma más segura de empezar.</li>
+                        <li>Una vez que lo configures, la entrega a la bandeja de entrada debería mejorar drásticamente.</li>
+                   </ul>
+                </GuideSection>
             </div>
         </div>
     </>
