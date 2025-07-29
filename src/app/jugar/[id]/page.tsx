@@ -51,7 +51,7 @@ export default async function PlayerPage({ params }: { params: { id:string } }) 
         <CustomerRegistrationForm gameId={game.id} />
       </div>
        <div className="w-full z-10 py-2">
-          <a href="https://mansoestudiocreativo.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-white/80 hover:text-white transition-colors text-xs">
+          <a href="https://playapp.mansoestudiocreativo.com" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 text-white/80 hover:text-white transition-colors text-xs">
               <span className="font-semibold">Desarrollado por</span>
               <Logo className="h-4 w-auto text-white" />
           </a>

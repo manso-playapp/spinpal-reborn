@@ -50,7 +50,7 @@ const sendTestEmailFlow = ai.defineFlow(
     }
 
     const resend = new Resend(resendApiKey);
-    const fromAddress = 'noreply@mansoestudiocreativo.com'; 
+    const fromAddress = 'noreply@playapp.mansoestudiocreativo.com'; 
     const subject = "Correo de Prueba desde SpinPal Reborn";
     const body = `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">

@@ -134,7 +134,7 @@ const prizeNotificationFlow = ai.defineFlow(
         };
     }
     const resend = new Resend(resendApiKey);
-    const fromAddress = 'noreply@mansoestudiocreativo.com'; 
+    const fromAddress = 'noreply@playapp.mansoestudiocreativo.com'; 
 
     try {
         // 1. Fetch Game and Customer data from Firestore
