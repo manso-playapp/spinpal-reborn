@@ -21,7 +21,11 @@ async function getGameData(id: string) {
   };
 }
 
-export default async function PlayerPage({ params }: { params: { id: string } }) {
+interface PageProps {
+  params: { id: string };
+}
+
+export default async function PlayerPage({ params }: PageProps) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
