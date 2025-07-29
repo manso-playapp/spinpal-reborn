@@ -18,7 +18,7 @@ export default function ConexionesPage() {
   return (
     <AuthWrapper adminOnly>
       <AdminLayout>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        <div className="p-4 md:p-8">
             <div className="mb-4">
                 <h1 className="font-headline text-2xl font-semibold">
                     Estado de Conexiones
@@ -31,7 +31,7 @@ export default function ConexionesPage() {
                 isResendConfigured={isResendConfigured} 
               />
             </Suspense>
-        </main>
+        </div>
       </AdminLayout>
     </AuthWrapper>
   );
