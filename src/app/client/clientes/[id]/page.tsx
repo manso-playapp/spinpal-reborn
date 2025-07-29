@@ -47,7 +47,7 @@ export default async function ClientCustomerListPage({ params }: ClientCustomerL
                         Participantes de: <span className="font-bold">{game.name}</span>
                     </h1>
                 </div>
-                <CustomerList gameId={params.id} gameName={game.name} />
+                <CustomerList gameId={id} gameName={game.name} />
             </main>
       </ClientLayout>
     </AuthWrapper>
