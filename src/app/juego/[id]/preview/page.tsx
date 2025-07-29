@@ -4,8 +4,6 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-
 // Definimos una interfaz para el objeto del juego serializado
 // Esto asegura que solo pasamos datos compatibles entre el servidor y el cliente.
 interface SerializableGame {
