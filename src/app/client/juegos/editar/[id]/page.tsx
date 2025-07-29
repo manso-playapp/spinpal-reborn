@@ -26,7 +26,7 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
   const data = gameSnap.data();
   
   // Convertimos el objeto a una cadena JSON y luego de vuelta a un objeto
-  // Esto elimina cualquier tipo de dato complejo como los Timestamps de Firebase
+  // Esto elimina cualquier tipo de dato complejo como los Timestamps de Firebase.
   const serializableData = JSON.parse(JSON.stringify({ id: gameSnap.id, ...data }));
 
   // Aseguramos que los segmentos sean siempre un array
