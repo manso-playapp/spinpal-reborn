@@ -26,7 +26,8 @@ async function getGameData(id: string) {
 }
 
 export default async function PlayerPage({ params }: PlayerPageProps) {
-  const game = await getGameData(params.id);
+  const { id } = params;
+  const game = await getGameData(id);
 
   if (!game) {
     notFound();

@@ -50,7 +50,8 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
 
 
 export default async function GamePreviewPage({ params }: GamePreviewPageProps) {
-  const gameData = await getGameData(params.id);
+  const { id } = params;
+  const gameData = await getGameData(id);
 
   if (!gameData) {
     notFound();

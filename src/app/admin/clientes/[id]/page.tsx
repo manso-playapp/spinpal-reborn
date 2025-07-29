@@ -25,7 +25,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
 }
 
 export default async function CustomerListPage({ params }: CustomerListPageProps) {
-  const game = await getGameData(params.id);
+  const { id } = params;
+  const game = await getGameData(id);
 
   if (!game) {
     notFound();
