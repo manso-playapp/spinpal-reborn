@@ -5,17 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
-// Definimos una interfaz para el objeto del juego serializado
-interface SerializableGame {
-  id: string;
-  name: string;
-  status: 'activo' | 'demo';
-  segments: { name: string }[];
-  // Añadimos cualquier otro campo que pueda venir de Firestore
-  [key: string]: any;
-}
-
-async function getGameData(id: string): Promise<SerializableGame | null> {
+async function getGameData(id: string) {
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
 
@@ -35,11 +25,7 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
   return serializableData;
 }
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default async function ClientEditGamePage({ params }: PageProps) {
+export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
