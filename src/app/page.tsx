@@ -24,7 +24,7 @@ export default function Home() {
                         </Link>
                     </Button>
                     <Button asChild size="lg" variant="secondary" className="h-12 text-base">
-                        <Link href="/client/dashboard">
+                        <Link href="/client/login">
                            Acceso Cliente
                            <ArrowRight className="ml-2 h-5 w-5" />
                         </Link>
