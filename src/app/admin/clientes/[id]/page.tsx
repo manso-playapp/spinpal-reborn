@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 
 interface CustomerListPageProps {
-    params: { id: string };
+  params: { id: string };
 }
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
