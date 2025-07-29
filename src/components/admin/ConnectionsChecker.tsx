@@ -378,7 +378,7 @@ service firebase.storage {
                         <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
                             <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
                             <li>Resend te dará unos registros DNS que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, DONWEB, etc.).</li>
-                            <li className='font-bold text-card-foreground'>
+                            <li class='font-bold text-card-foreground'>
                                 <strong>¡Atención Proveedores como DONWEB!</strong> Si el panel de tu dominio no acepta un nombre de host como `send` o `resend._domainkey`, es porque espera el nombre completo. Debes construirlo tú mismo:
                                 <ul className="list-disc list-inside pl-6 mt-2 font-normal">
                                     <li>Si Resend pide un registro <strong>CNAME</strong> con el host `send`, en tu panel debes poner `send.tudominio.com`.</li>

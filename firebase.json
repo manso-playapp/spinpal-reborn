@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "lucky-spin-gmio3",
+    "site": "spinpal-reborn",
     "source": ".",
     "ignore": [
       "firebase.json",
