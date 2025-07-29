@@ -40,11 +40,13 @@ const ServiceStatusCard = ({
   title,
   icon,
   status,
+  projectId,
   children,
 }: {
   title: string;
   icon: React.ReactNode;
   status: ServiceStatus;
+  projectId?: string | null;
   children?: React.ReactNode;
 }) => (
   <Card className={`shadow-md border-l-4 ${status.isConfigured === 'yes' ? 'border-green-500' : (status.isConfigured === 'partial' ? 'border-yellow-500' : 'border-red-500')}`}>
@@ -58,6 +60,11 @@ const ServiceStatusCard = ({
           {status.connected ? 'Conectado' : 'Desconectado'}
         </Badge>
       </CardTitle>
+       {projectId && (
+        <CardDescription className="pt-1">
+            Conectado al proyecto: <span className="font-bold text-foreground">{projectId}</span>
+        </CardDescription>
+      )}
     </CardHeader>
     <CardContent className="flex flex-col gap-4">
       <div className="flex items-start gap-4">
@@ -184,8 +191,8 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
 
   return (
     <>
-        <div className="grid grid-cols-1 gap-4">
-          <ServiceStatusCard title="Firebase (BBDD, Usuarios, Archivos)" icon={<Database />} status={servicesStatus.firebase} />
+        <div className="grid grid-cols-1 gap-6">
+          <ServiceStatusCard title="Firebase (BBDD, Usuarios, Archivos)" icon={<Database />} status={servicesStatus.firebase} projectId={connectedProjectId} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
           <ServiceStatusCard title="Resend API (Emails)" icon={<Mail />} status={servicesStatus.resend}>
             {servicesStatus.resend.isConfigured === 'yes' && (
@@ -378,7 +385,7 @@ service firebase.storage {
                         <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
                             <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
                             <li>Resend te dará unos registros DNS que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, DONWEB, etc.).</li>
-                            <li class='font-bold text-card-foreground'>
+                            <li className='font-bold text-card-foreground'>
                                 <strong>¡Atención Proveedores como DONWEB!</strong> Si el panel de tu dominio no acepta un nombre de host como `send` o `resend._domainkey`, es porque espera el nombre completo. Debes construirlo tú mismo:
                                 <ul className="list-disc list-inside pl-6 mt-2 font-normal">
                                     <li>Si Resend pide un registro <strong>CNAME</strong> con el host `send`, en tu panel debes poner `send.tudominio.com`.</li>
