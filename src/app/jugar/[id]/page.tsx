@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import CustomerRegistrationForm from '@/components/game/CustomerRegistrationForm';
 import Logo from '@/components/logo';
+import type { PageProps } from 'next';
 
 async function getGameData(id: string) {
   const gameRef = doc(db, 'games', id);
@@ -21,7 +22,7 @@ async function getGameData(id: string) {
   };
 }
 
-export default async function PlayerPage({ params }: { params: { id: string } }) {
+export default async function PlayerPage({ params }: PageProps<{ id: string }>) {
   const game = await getGameData(params.id);
 
   if (!game) {
