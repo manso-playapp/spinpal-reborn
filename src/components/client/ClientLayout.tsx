@@ -5,14 +5,12 @@ import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Logo from '../logo';
 import { Button } from '../ui/button';
-import { LogOut, Bell } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { LogOut, Bell, History, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { user, signOut, isSuperAdmin } = useAuth();
 
   return (
     <TooltipProvider>
@@ -20,7 +18,9 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
        <header className="sticky top-0 z-40 w-full border-b bg-background">
         <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
           <div className="flex gap-6 md:gap-10">
-            <Logo className="h-8 w-auto text-primary" />
+             <Link href={isSuperAdmin ? "/admin" : "/client/dashboard"}>
+                <Logo className="h-10 w-auto text-primary" />
+            </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-4">
             <nav className="flex items-center space-x-1">
@@ -29,13 +29,13 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" asChild>
                         <Link href="/client/changelog">
-                            <Bell className="h-5 w-5" />
-                            <span className="sr-only">Actualizaciones</span>
+                            <History className="h-5 w-5" />
+                            <span className="sr-only">Historial de Cambios</span>
                         </Link>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Ver actualizaciones</p>
+                    <p>Ver historial de cambios</p>
                   </TooltipContent>
                 </Tooltip>
                 <Tooltip>

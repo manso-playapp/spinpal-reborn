@@ -1,14 +1,13 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, where, getDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Gamepad2, Users, Link as LinkIcon, Copy, AlertTriangle, Briefcase } from 'lucide-react';
+import { Gamepad2, Users, Link as LinkIcon, Copy, AlertTriangle, Settings } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -16,6 +15,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '../ui/separator';
 
 interface Game {
   id: string;
@@ -52,8 +53,6 @@ export default function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [impersonatedEmail, setImpersonatedEmail] = useState<string | null>(null);
   const [viewTitle, setViewTitle] = useState('Mis Juegos');
-  const [clientData, setClientData] = useState<{name: string, email: string} | null>(null);
-
 
   useEffect(() => {
     const clientEmailParam = searchParams.get('clientEmail');
@@ -63,18 +62,15 @@ export default function ClientDashboard() {
         setImpersonatedEmail(clientEmailParam);
         const title = clientNameParam ? `Juegos de: ${clientNameParam}` : `Juegos de: ${clientEmailParam}`;
         setViewTitle(title);
-        setClientData({name: clientNameParam || 'Cliente sin nombre', email: clientEmailParam});
     } else if (user) {
         setImpersonatedEmail(user.email);
-        // We will fetch the client's name from one of their games
     }
 
   }, [searchParams, isSuperAdmin, user]);
 
-
   useEffect(() => {
     if (!impersonatedEmail) {
-        if (!user) setLoading(true); // Wait for user info
+        if (!user) setLoading(true);
         else setLoading(false);
         return;
     };
@@ -95,7 +91,7 @@ export default function ClientDashboard() {
         })) as Game[];
         
         if (!isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
-            setViewTitle(`Juegos de: ${gamesData[0].clientName}`);
+            setViewTitle(`Panel de: ${gamesData[0].clientName}`);
         } else if (!isSuperAdmin) {
             setViewTitle('Mis Juegos');
         }
@@ -132,7 +128,7 @@ export default function ClientDashboard() {
         <div className="flex items-center justify-between">
             <div>
                 <h1 className="font-headline text-2xl font-semibold">{viewTitle}</h1>
-                <p className="text-muted-foreground">Aquí puedes ver tus campañas activas y sus estadísticas.</p>
+                <p className="text-muted-foreground">Aquí puedes ver y configurar tus campañas activas.</p>
             </div>
              {isSuperAdmin && impersonatedEmail && (
                 <Button variant="outline" asChild>
@@ -143,8 +139,8 @@ export default function ClientDashboard() {
 
         {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
             </div>
         ) : games.length === 0 ? (
             <div className="mt-8 p-8 text-center border-2 border-dashed border-border rounded-lg">
@@ -155,25 +151,31 @@ export default function ClientDashboard() {
                 </p>
             </div>
         ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {games.map((game) => (
-            <Card key={game.id} className="flex flex-col hover:border-primary transition-colors duration-300">
+            <Card key={game.id} className="flex flex-col hover:border-primary/50 transition-colors duration-300 shadow-sm hover:shadow-lg">
                 <CardHeader>
-                    <CardTitle className="font-headline text-lg mb-1">{game.name}</CardTitle>
-                    <Badge variant={game.status === 'activo' ? 'default' : 'secondary'}>
-                        {game.status === 'activo' ? 'Activo' : 'Demo'}
-                    </Badge>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                            <CardTitle className="font-headline text-xl mb-1">{game.name}</CardTitle>
+                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className="text-xs">
+                                    {game.status === 'activo' ? 'Activo' : 'Demo'}
+                                </Badge>
+                            </div>
+                        </div>
+                    </div>
                 </CardHeader>
-                <CardContent className="flex-grow">
-                    <div className="flex justify-around text-center border-t border-b py-4 my-4">
+                <CardContent className="flex-grow space-y-4">
+                    <div className="flex justify-around text-center border-t border-b py-4">
                         <div className="px-2">
-                            <p className="text-2xl font-bold">{game.plays || 0}</p>
-                            <p className="text-xs text-muted-foreground">Jugadas</p>
+                            <p className="text-3xl font-bold">{game.plays || 0}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">Jugadas</p>
                         </div>
                         <div className="border-l"></div>
                         <div className="px-2">
-                            <p className="text-2xl font-bold">{game.prizesAwarded || 0}</p>
-                            <p className="text-xs text-muted-foreground">Premios</p>
+                            <p className="text-3xl font-bold">{game.prizesAwarded || 0}</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-wider">Premios</p>
                         </div>
                     </div>
                      {game.status === 'demo' && (
@@ -183,7 +185,11 @@ export default function ClientDashboard() {
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="flex flex-col gap-2">
+                <Separator />
+                <CardFooter className="p-4 grid gap-2">
+                     <Button asChild className="w-full">
+                        <Link href={`/client/juegos/editar/${game.id}`}><Settings className="mr-2 h-4 w-4"/> Configurar Juego</Link>
+                    </Button>
                     <div className="grid grid-cols-2 gap-2 w-full">
                         <Button asChild variant="secondary">
                             <Link href={`/client/clientes/${game.id}`}><Users className="mr-2 h-4 w-4" /> Participantes</Link>

@@ -13,6 +13,7 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import { SortableItem } from './SortableItem';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ImageUpload } from '@/components/admin/ImageUpload';
+import { useAuth } from '@/hooks/useAuth';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -183,6 +184,7 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
 export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const router = useRouter();
   const { toast } = useToast();
+  const { isSuperAdmin } = useAuth();
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
@@ -466,11 +468,13 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     });
   };
 
+  const backUrl = isSuperAdmin ? '/admin' : '/client/dashboard';
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
        <div className="flex items-center gap-4 mb-4">
           <Button variant="outline" size="icon" className="h-7 w-7" asChild>
-            <Link href="/admin">
+            <Link href={backUrl}>
               <ArrowLeft className="h-4 w-4" />
               <span className="sr-only">Volver</span>
             </Link>
@@ -490,14 +494,14 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
               {/* Columna de Controles */}
               <div className="lg:col-span-2 space-y-4">
                 <Tabs defaultValue="prizes" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="data"><Settings className="mr-2 h-4 w-4" />Datos Generales</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-3 md:grid-cols-4">
+                    <TabsTrigger value="data" className={!isSuperAdmin ? "hidden md:flex" : ""}><Settings className="mr-2 h-4 w-4" />Generales</TabsTrigger>
                     <TabsTrigger value="prizes"><Gamepad2 className="mr-2 h-4 w-4" />Ruleta</TabsTrigger>
                     <TabsTrigger value="gameConfig"><Settings className="mr-2 h-4 w-4"/>Pantallas</TabsTrigger>
-                    <TabsTrigger value="json" className="text-destructive"><FileText className="mr-2 h-4 w-4"/>JSON</TabsTrigger>
+                    <TabsTrigger value="json" className={!isSuperAdmin ? "hidden md:flex text-destructive" : "text-destructive"}><FileText className="mr-2 h-4 w-4"/>JSON</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="data">
+                  <TabsContent value="data" className={!isSuperAdmin ? "hidden md:block" : ""}>
                     <Card>
                       <CardContent className="p-6 space-y-8">
                         <FormField
@@ -507,7 +511,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Nombre del Juego</FormLabel>
                                 <FormControl>
-                                  <Input {...field} disabled={loading} />
+                                  <Input {...field} disabled={loading || !isSuperAdmin} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -520,7 +524,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Nombre del Cliente</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading} />
+                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading || !isSuperAdmin} />
                                 </FormControl>
                                 <FormDescription>
                                   El nombre que identifica al propietario de este juego.
@@ -536,7 +540,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Email del Cliente (para notificaciones y acceso)</FormLabel>
                                 <FormControl>
-                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} value={field.value || ''} />
+                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} value={field.value || ''} disabled={!isSuperAdmin}/>
                                 </FormControl>
                                  <FormDescription>
                                   Dirección donde el dueño del juego recibirá un aviso cuando un premio sea ganado.
@@ -556,7 +560,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
                                     className="flex flex-row space-x-4"
-                                    disabled={loading}
+                                    disabled={loading || !isSuperAdmin}
                                     >
                                     <FormItem className="flex items-center space-x-2 space-y-0">
                                         <FormControl>
@@ -1260,7 +1264,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                       </CardContent>
                     </Card>
                   </TabsContent>
-                  <TabsContent value="json">
+                  <TabsContent value="json" className={!isSuperAdmin ? "hidden md:block" : ""}>
                      <Card>
                         <CardHeader>
                             <CardTitle>Editor de Premios (JSON)</CardTitle>
