@@ -27,10 +27,6 @@ interface SerializableGame {
   [key: string]: any;
 }
 
-interface GamePreviewPageProps {
-  params: { id: string };
-}
-
 async function getGameData(id: string): Promise<SerializableGame | null> {
   if (!id) return null;
   const gameRef = doc(db, 'games', id);
@@ -49,7 +45,7 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
 }
 
 
-export default async function GamePreviewPage({ params }: GamePreviewPageProps) {
+export default async function GamePreviewPage({ params }: { params: { id: string } }) {
   const gameData = await getGameData(params.id);
 
   if (!gameData) {

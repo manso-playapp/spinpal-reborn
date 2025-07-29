@@ -8,10 +8,6 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 
-interface CustomerListPageProps {
-  params: { id: string };
-}
-
 async function getGameData(id: string): Promise<{ name: string } | null> {
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
@@ -24,7 +20,7 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-export default async function CustomerListPage({ params }: CustomerListPageProps) {
+export default async function CustomerListPage({ params }: { params: { id: string } }) {
   const game = await getGameData(params.id);
 
   if (!game) {

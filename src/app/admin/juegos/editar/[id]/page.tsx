@@ -15,10 +15,6 @@ interface SerializableGame {
   [key: string]: any;
 }
 
-interface EditGamePageProps {
-  params: { id: string };
-}
-
 async function getGameData(id: string): Promise<SerializableGame | null> {
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
@@ -39,7 +35,7 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
   return serializableData;
 }
 
-export default async function EditGamePage({ params }: EditGamePageProps) {
+export default async function EditGamePage({ params }: { params: { id: string } }) {
   const game = await getGameData(params.id);
 
   if (!game) {
