@@ -21,8 +21,8 @@ async function getGameData(id: string) {
   };
 }
 
-export default async function PlayerPage({ params: { id } }: { params: { id:string } }) {
-  const game = await getGameData(id);
+export default async function PlayerPage({ params }: { params: { id:string } }) {
+  const game = await getGameData(params.id);
 
   if (!game) {
     notFound();
