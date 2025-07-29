@@ -20,8 +20,7 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-export default async function ClientCustomerListPage(props: Promise<{ params: { id: string } }>) {
-  const { params } = await props;
+export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 

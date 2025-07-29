@@ -21,8 +21,7 @@ async function getGameData(id: string) {
   };
 }
 
-export default async function PlayerPage(props: Promise<{ params: { id: string } }>) {
-  const { params } = await props;
+export default async function PlayerPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
