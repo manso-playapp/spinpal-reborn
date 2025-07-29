@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
-import type { PageProps } from 'next';
+import { PageProps } from 'next';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
   const gameRef = doc(db, 'games', id);
@@ -22,7 +22,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
 }
 
 export default async function ClientCustomerListPage({ params }: PageProps<{ id: string }>) {
-  const game = await getGameData(params.id);
+  const gameId = params.id;
+  const game = await getGameData(gameId);
 
   if (!game) {
     notFound();
@@ -43,7 +44,7 @@ export default async function ClientCustomerListPage({ params }: PageProps<{ id:
                         Participantes de: <span className="font-bold">{game.name}</span>
                     </h1>
                 </div>
-                <CustomerList gameId={params.id} gameName={game.name} />
+                <CustomerList gameId={gameId} gameName={game.name} />
             </main>
       </ClientLayout>
     </AuthWrapper>

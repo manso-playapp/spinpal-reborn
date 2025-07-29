@@ -4,7 +4,7 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import type { PageProps } from 'next';
+import { PageProps } from 'next';
 
 // Definimos una interfaz para el objeto del juego serializado
 interface SerializableGame {
@@ -37,7 +37,8 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
 }
 
 export default async function EditGamePage({ params }: PageProps<{ id: string }>) {
-  const game = await getGameData(params.id);
+  const gameId = params.id;
+  const game = await getGameData(gameId);
 
   if (!game) {
     notFound();
