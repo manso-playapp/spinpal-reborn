@@ -99,14 +99,14 @@ interface ConnectionsCheckerProps {
 
 const GuideSection = ({ title, icon, description, children }: { title: string, icon: React.ReactNode, description: string, children: React.ReactNode }) => (
     <Card className="overflow-hidden">
-        <CardHeader className="bg-muted/30">
-            <CardTitle className="flex items-center gap-3 text-lg font-headline">
+        <CardHeader className="bg-muted/30 text-center">
+            <CardTitle className="flex items-center justify-center gap-3 text-2xl font-headline">
                 {icon}
                 {title}
             </CardTitle>
             <CardDescription>{description}</CardDescription>
         </CardHeader>
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-6 space-y-4 text-left">
             {children}
         </CardContent>
     </Card>
@@ -205,7 +205,7 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-6">
           <ServiceStatusCard title="Firebase (BBDD, Usuarios, Archivos)" icon={<Database />} status={servicesStatus.firebase} projectId={connectedProjectId} />
           <ServiceStatusCard title="Gemini API (IA)" icon={<Sparkles />} status={servicesStatus.gemini} />
@@ -420,7 +420,7 @@ service firebase.storage {
                 </GuideSection>
             </div>
         </div>
-    </>
+    </div>
   );
 }
 
