@@ -2,7 +2,6 @@ import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
-import { PageProps } from 'next';
 
 // Definimos una interfaz para el objeto del juego serializado
 // Esto asegura que solo pasamos datos compatibles entre el servidor y el cliente.
@@ -44,7 +43,7 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
 }
 
 
-export default async function GamePage({ params }: PageProps<{ id: string }>) {
+export default async function GamePage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 
