@@ -1,34 +1,17 @@
-
 # SpinPal Reborn - Instrucciones de Despliegue
 
-Este documento proporciona una guía completa para instalar, configurar y desplegar la aplicación SpinPal Reborn en tu propio servidor o entorno de desarrollo.
+Este documento proporciona una guía completa para configurar y desplegar la aplicación SpinPal Reborn en Firebase.
 
 ## 1. Requisitos Previos
 
-Antes de empezar, asegúrate de tener instalado lo siguiente en tu sistema:
-- **Node.js**: Versión 18.x o superior.
-- **npm**: Generalmente se instala junto con Node.js.
+- Una cuenta de Google.
+- Una cuenta de GitHub.
 
-## 2. Instalación
+## 2. Configuración de Entorno
 
-Sigue estos pasos para poner en marcha el proyecto:
+La aplicación utiliza variables de entorno para gestionar las claves de API y la configuración de servicios externos. Deberás configurar estas variables directamente en Firebase App Hosting.
 
-1.  **Descarga y descomprime el código** en una carpeta de tu elección.
-2.  Abre una terminal en la carpeta del proyecto.
-3.  Instala todas las dependencias necesarias ejecutando el siguiente comando:
-    ```bash
-    npm install
-    ```
-
-## 3. Configuración de Entorno
-
-La aplicación utiliza variables de entorno para gestionar las claves de API y la configuración de servicios externos.
-
-1.  En la raíz del proyecto, crea un nuevo archivo llamado `.env.local`.
-2.  Copia el contenido del archivo `.env` (que está vacío) a tu nuevo archivo `.env.local`.
-3.  Rellena las variables en `.env.local` como se describe en las siguientes secciones.
-
-### 3.1. Configuración de Firebase
+### 2.1. Configuración de Firebase
 
 La aplicación depende de Firebase para la autenticación de usuarios y la base de datos (Firestore).
 
@@ -36,14 +19,16 @@ La aplicación depende de Firebase para la autenticación de usuarios y la base 
 1.  Ve a la [Consola de Firebase](https://console.firebase.google.com/).
 2.  Haz clic en "Añadir proyecto" y sigue los pasos para crear un nuevo proyecto.
 
-**Paso B: Crear una Aplicación Web**
+**Paso B: Habilitar App Hosting**
+1. Dentro de tu proyecto, en el menú de la izquierda, selecciona **App Hosting**.
+2. Sigue el asistente para crear un nuevo "backend". Se te pedirá que conectes un repositorio de GitHub. Asegúrate de que el repositorio esté vacío o contenga la versión actualizada de esta aplicación.
+
+**Paso C: Obtener Credenciales y Configurar Variables de Entorno**
 1.  Dentro de tu proyecto de Firebase, ve a "Configuración del proyecto" (el icono del engranaje).
 2.  En la pestaña "General", baja hasta "Tus aplicaciones" y haz clic en el icono de web (`</>`).
 3.  Dale un apodo a tu aplicación y registra la aplicación.
-
-**Paso C: Obtener Credenciales**
-1.  Después de registrar la aplicación, Firebase te mostrará un objeto de configuración. Selecciona la opción **"CDN"**.
-2.  Copia los valores de este objeto y pégalos en tu archivo `.env.local`:
+4.  Después de registrarla, Firebase te mostrará un objeto de configuración **"CDN"**.
+5.  Ve a la consola de **App Hosting**, selecciona tu backend y ve a la pestaña de "Settings" o "Configuración". Aquí podrás añadir las siguientes variables de entorno usando los valores que acabas de obtener:
 
     ```env
     # Credenciales de Firebase
@@ -58,49 +43,28 @@ La aplicación depende de Firebase para la autenticación de usuarios y la base 
 **Paso D: Configurar Servicios de Firebase**
 1.  **Authentication**: En la consola de Firebase, ve a la sección "Authentication".
     -   Ve a la pestaña "Sign-in method".
-    -   Habilita los proveedores **"Correo electrónico/Contraseña"** (para el administrador) y **"Google"** (para los clientes).
-    -   Ve a la pestaña "Users" y crea tu usuario administrador con el correo `grupomanso@gmail.com` para tener acceso a todas las funciones.
+    -   Habilita los proveedores **"Correo electrónico/Contraseña"** y **"Google"**.
+    -   Crea tu usuario administrador con el correo `grupomanso@gmail.com`.
 2.  **Firestore**: En la consola de Firebase, ve a la sección "Firestore Database".
-    -   Haz clic en "Crear base de datos".
-    -   Inicia en **modo de prueba** (podrás cambiarlo más tarde).
-    -   Elige una ubicación para tus servidores y haz clic en "Habilitar".
-3.  **Storage**: En la consola de Firebase, ve a la sección "Storage".
-    -   Haz clic en "Comenzar".
-    -   Sigue los pasos de configuración, puedes mantener las opciones por defecto.
-    -   Una vez creado, ve a la pestaña "Reglas" o "Rules".
+    -   Crea una base de datos en **modo de prueba**.
+3.  **Storage**: En la consola de Firebase, ve a la sección "Storage" y habilítalo.
 
-### 3.2. Configuración de Gemini API (para IA)
+### 2.2. Configuración de Gemini y Resend
 
-La aplicación utiliza Genkit para conectarse a la API de Google Gemini.
-1.  Visita [Google AI Studio](https://aistudio.google.com/app/apikey).
-2.  Crea una nueva clave de API.
-3.  Añade la clave a tu archivo `.env.local`:
+1.  Obtén tus claves de API de [Google AI Studio](https://aistudio.google.com/app/apikey) y [Resend](https://resend.com/).
+2.  Añádelas como variables de entorno en la configuración de tu backend de App Hosting:
     ```env
     # Clave de API de Gemini
     GEMINI_API_KEY="TU_CLAVE_DE_GEMINI_API"
-    ```
-
-### 3.3. Configuración de Resend (para Emails)
-
-La aplicación utiliza Resend para enviar correos de notificación de premios.
-1.  Crea una cuenta en [Resend](https://resend.com/).
-2.  Ve a la sección "API Keys" y crea una nueva clave.
-3.  Añade la clave a tu archivo `.env.local`:
-    ```env
     # Clave de API de Resend
     RESEND_API_KEY="re_TU_CLAVE_DE_RESEND"
     ```
-4.  **Dominio de Envío**: Para asegurar que los correos lleguen a la bandeja de entrada, debes verificar tu dominio en Resend y configurar DKIM y DMARC. Sigue las instrucciones de la sección "Domains" en Resend.
-5.  **Actualiza el Remitente**: Una vez verificado tu dominio, cambia la dirección de correo del remitente en el archivo `src/ai/flows/prize-notification-flow.ts` (busca la variable `fromAddress`) a una dirección de tu propio dominio (ej: `noreply@tuempresa.com`).
 
-## 4. Reglas de Seguridad
+## 3. Reglas de Seguridad
 
-Estas reglas son cruciales para proteger tu base de datos y tus archivos.
+Copia y pega estas reglas en las secciones correspondientes de la consola de Firebase ("Firestore Database" -> "Reglas" y "Storage" -> "Reglas").
 
-### 4.1. Reglas de Firestore
-
-1.  En la consola de Firebase, ve a "Firestore Database" y luego a la pestaña "Reglas".
-2.  Copia y pega el siguiente contenido, reemplazando las reglas existentes:
+### 3.1. Reglas de Firestore
 
 ```firestore
 rules_version = '2';
@@ -144,12 +108,8 @@ service cloud.firestore {
   }
 }
 ```
-3.  Haz clic en **"Publicar"**.
 
-### 4.2. Reglas de Storage
-
-1.  En la consola de Firebase, ve a "Storage" y luego a la pestaña "Reglas".
-2.  Copia y pega el siguiente contenido, reemplazando las reglas existentes:
+### 3.2. Reglas de Storage
 
 ```
 rules_version = '2';
@@ -158,39 +118,18 @@ service firebase.storage {
   match /b/{bucket}/o {
     
     // Permite la lectura pública de cualquier archivo.
-    // Esto es necesario para que las imágenes se puedan mostrar en el juego y el editor.
     match /{allPaths=**} {
       allow read;
     }
 
-    // Solo permite la escritura (subida, actualización, eliminación)
-    // a los usuarios que estén autenticados en la aplicación.
-    // Esto previene que usuarios anónimos suban archivos.
+    // Solo permite la escritura a usuarios autenticados.
     match /{allPaths=**} {
       allow write: if request.auth != null;
     }
   }
 }
 ```
-3.  Haz clic en **"Publicar"**.
 
-## 5. Ejecutar la Aplicación
+## 4. Despliegue
 
-### Desarrollo
-Para ejecutar la aplicación en modo de desarrollo en tu máquina local:
-```bash
-npm run dev
-```
-La aplicación estará disponible en `http://localhost:9002`.
-
-### Producción
-Para compilar la aplicación para producción y luego ejecutarla:
-1.  **Compilar el proyecto:**
-    ```bash
-    npm run build
-    ```
-2.  **Iniciar el servidor de producción:**
-    ```bash
-    npm run start
-    ```
-La aplicación se ejecutará optimizada para producción. Deberás configurar un proxy inverso (como Nginx o Apache) si deseas servirla en el puerto 80 (HTTP) o 443 (HTTPS).
+Una vez que tu repositorio de GitHub esté conectado a Firebase App Hosting, cualquier cambio (un "commit") que se haga a la rama principal (`main` o `master`) disparará un nuevo despliegue automáticamente. También puedes iniciar despliegues manualmente desde la consola de App Hosting.
