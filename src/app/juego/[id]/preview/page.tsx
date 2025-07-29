@@ -45,7 +45,8 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
 }
 
 
-export default async function GamePreviewPage({ params }: { params: { id: string } }) {
+export default async function GamePreviewPage(props: Promise<{ params: { id: string } }>) {
+  const { params } = await props;
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 

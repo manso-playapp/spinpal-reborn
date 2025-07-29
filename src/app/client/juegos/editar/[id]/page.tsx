@@ -35,7 +35,8 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
   return serializableData;
 }
 
-export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
+export default async function ClientEditGamePage(props: Promise<{ params: { id: string } }>) {
+  const { params } = await props;
   const gameId = params.id;
   const game = await getGameData(gameId);
 
