@@ -22,8 +22,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
-  const game = await getGameData(params.id);
+export default async function ClientCustomerListPage({ params: { id } }: { params: { id: string } }) {
+  const game = await getGameData(id);
 
   if (!game) {
     notFound();
@@ -44,7 +44,7 @@ export default async function ClientCustomerListPage({ params }: { params: { id:
                         Participantes de: <span className="font-bold">{game.name}</span>
                     </h1>
                 </div>
-                <CustomerList gameId={params.id} gameName={game.name} />
+                <CustomerList gameId={id} gameName={game.name} />
             </main>
       </ClientLayout>
     </AuthWrapper>
