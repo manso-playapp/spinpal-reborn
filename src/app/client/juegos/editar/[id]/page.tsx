@@ -1,4 +1,3 @@
-
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
 import { db } from '@/lib/firebase/config';
@@ -36,8 +35,8 @@ async function getGameData(id: string): Promise<SerializableGame | null> {
   return serializableData;
 }
 
-export default async function ClientEditGamePage({ params: { id } }: { params: { id: string } }) {
-  const game = await getGameData(id);
+export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
+  const game = await getGameData(params.id);
 
   if (!game) {
     notFound();

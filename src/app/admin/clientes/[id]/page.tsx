@@ -1,5 +1,3 @@
-
-
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -22,8 +20,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-export default async function CustomerListPage({ params: { id } }: { params: { id: string } }) {
-  const game = await getGameData(id);
+export default async function CustomerListPage({ params }: { params: { id: string } }) {
+  const game = await getGameData(params.id);
 
   if (!game) {
     notFound();
@@ -44,7 +42,7 @@ export default async function CustomerListPage({ params: { id } }: { params: { i
                         Participantes de: <span className="font-bold">{game.name}</span>
                     </h1>
                 </div>
-                <CustomerList gameId={id} gameName={game.name}/>
+                <CustomerList gameId={params.id} gameName={game.name}/>
             </main>
       </AdminLayout>
     </AuthWrapper>

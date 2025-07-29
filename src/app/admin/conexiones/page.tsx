@@ -1,4 +1,3 @@
-
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import ConnectionsChecker from '@/components/admin/ConnectionsChecker';

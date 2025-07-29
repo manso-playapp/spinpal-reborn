@@ -1,4 +1,3 @@
-
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import { ClientLayout } from '@/components/client/ClientLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
