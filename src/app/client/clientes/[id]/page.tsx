@@ -5,10 +5,10 @@ import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
-import { Button } '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { ClientLayout } from '@/components/client/ClientLayout';
+import { ClientLayout }m '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
   // Verificar si db es null
