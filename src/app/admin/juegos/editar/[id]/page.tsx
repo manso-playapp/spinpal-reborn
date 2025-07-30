@@ -1,4 +1,4 @@
-import PageProps from 'next/types'; 
+import type { PageProps } from 'next/types'; 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
 import { db } from '@/lib/firebase/config';
@@ -7,12 +7,11 @@ import { notFound } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 
 async function getGameData(id: string) {
-  // **INICIO DE LA CORRECCIÓN: Verificar si db es null**
+  // Verificar si db es null
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
   }
-  // **FIN DE LA CORRECCIÓN**
 
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);

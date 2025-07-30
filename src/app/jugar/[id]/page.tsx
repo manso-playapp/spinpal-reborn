@@ -1,4 +1,4 @@
-import PageProps from 'next/types'; 
+import type { PageProps } from 'next/types'; 
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
@@ -6,6 +6,13 @@ import CustomerRegistrationForm from '@/components/game/CustomerRegistrationForm
 import Logo from '@/components/logo';
 
 async function getGameData(id: string) {
+  // **INICIO DE LA CORRECCIÓN: Verificar si db es null**
+  if (!db) {
+    console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
+    return null; // Retorna null si db no está inicializado
+  }
+  // **FIN DE LA CORRECCIÓN**
+
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
 

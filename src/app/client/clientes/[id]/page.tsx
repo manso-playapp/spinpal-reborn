@@ -1,4 +1,4 @@
-import PageProps from 'next/types'; 
+import type { PageProps } from 'next/types'; 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -10,12 +10,11 @@ import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
-  // **INICIO DE LA CORRECCIÓN: Verificar si db es null**
+  // Verificar si db es null
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
   }
-  // **FIN DE LA CORRECCIÓN**
 
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
@@ -28,7 +27,7 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// Usamos PageProps para tipar los props del componente
+// Use PageProps to type the component's props
 export default async function ClientCustomerListPage({ params }: PageProps<{ id: string }>) {
   const gameId = params.id;
   const game = await getGameData(gameId);
