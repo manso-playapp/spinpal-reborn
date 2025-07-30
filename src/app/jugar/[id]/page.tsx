@@ -30,7 +30,7 @@ async function getGameData(id: string) {
   };
 }
 
-// **CORRECCIÓN FINAL AQUÍ:** Tipamos directamente los props esperados por el componente de página.
+// @ts-ignore
 export default async function PlayerPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);

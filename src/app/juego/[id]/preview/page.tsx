@@ -31,7 +31,7 @@ async function getGameData(id: string) {
 }
 
 // @ts-ignore
-export default async function GamePreviewPage({ params }: { params: any }) {
+export default async function GamePreviewPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 

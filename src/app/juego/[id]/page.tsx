@@ -29,11 +29,11 @@ async function getGameData(id: string) {
 }
 
 // @ts-ignore
-export default async function GamePage({ params }: { params: any }) {
-  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
+export default async function GamePage({ params }: { params: { id: string } }) {
+  const gameId = params.id;
   const gameData = await getGameData(gameId);
 
-  if (!game) {
+  if (!gameData) {
     notFound();
   }
 
