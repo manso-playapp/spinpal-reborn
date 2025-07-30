@@ -1,4 +1,4 @@
-import { type PageProps } from 'next/types'; // Import PageProps
+import PageProps from 'next/types'; // Cambiamos 'import { type PageProps }' a 'import PageProps'
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
