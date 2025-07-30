@@ -1,4 +1,12 @@
-import type { PageProps } from 'next/types'; 
+// Eliminamos la importación de PageProps de 'next/types'
+
+// **INICIO DE LA CORRECCIÓN: Definición local de CustomPageProps**
+type CustomPageProps<P = { [key: string]: string | string[] }, S = { [key: string]: string | string[] | undefined }> = {
+  params: P;
+  searchParams?: S;
+};
+// **FIN DE LA CORRECCIÓN**
+
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
 import { db } from '@/lib/firebase/config';
@@ -32,8 +40,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// Usamos PageProps para tipar los props del componente
-export default async function EditGamePage({ params }: PageProps<{ id: string }>) {
+// Usamos CustomPageProps para tipar los props del componente
+export default async function EditGamePage({ params }: CustomPageProps<{ id: string }>) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 

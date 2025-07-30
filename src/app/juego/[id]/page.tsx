@@ -1,10 +1,24 @@
-import PageProps from 'next/types'; 
+// Eliminamos la importación de PageProps de 'next/types'
+
+// **INICIO DE LA CORRECCIÓN: Definición local de CustomPageProps**
+type CustomPageProps<P = { [key: string]: string | string[] }, S = { [key: string]: string | string[] | undefined }> = {
+  params: P;
+  searchParams?: S;
+};
+// **FIN DE LA CORRECCIÓN**
+
 import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 
 async function getGameData(id: string) {
+  // Verificar si db es null
+  if (!db) {
+    console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
+    return null; // Retorna null si db no está inicializado
+  }
+
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
 
@@ -20,8 +34,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// Usamos PageProps para tipar los props del componente
-export default async function GamePage({ params }: PageProps<{ id: string }>) {
+// Usamos CustomPageProps para tipar los props del componente
+export default async function GamePage({ params }: CustomPageProps<{ id: string }>) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 

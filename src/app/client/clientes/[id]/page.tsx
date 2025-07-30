@@ -1,4 +1,12 @@
-import type { PageProps } from 'next/types'; 
+// Eliminamos la importación de PageProps de 'next/types'
+
+// **INICIO DE LA CORRECCIÓN: Definición local de CustomPageProps**
+type CustomPageProps<P = { [key: string]: string | string[] }, S = { [key: string]: string | string[] | undefined }> = {
+  params: P;
+  searchParams?: S;
+};
+// **FIN DE LA CORRECCIÓN**
+
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -27,8 +35,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// Use PageProps to type the component's props
-export default async function ClientCustomerListPage({ params }: PageProps<{ id: string }>) {
+// Usamos CustomPageProps para tipar los props del componente
+export default async function ClientCustomerListPage({ params }: CustomPageProps<{ id: string }>) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
