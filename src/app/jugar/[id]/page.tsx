@@ -1,4 +1,5 @@
-// Eliminamos cualquier importación o definición de PageProps / CustomPageProps
+// Eliminamos CUALQUIER importación o definición de PageProps
+// Eliminamos CUALQUIER definición local de CustomPageProps
 
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
@@ -7,7 +8,7 @@ import CustomerRegistrationForm from '@/components/game/CustomerRegistrationForm
 import Logo from '@/components/logo';
 
 async function getGameData(id: string) {
-  // Verificar si db es null
+  // Verificar si db es null (Mantenemos esta verificación, es crucial)
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
@@ -29,7 +30,7 @@ async function getGameData(id: string) {
   };
 }
 
-// **CORRECCIÓN CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+// **CORRECCIÓN FINAL Y CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
 export default async function PlayerPage({ params }: { params: any }) {
   const gameId = params.id;
   const game = await getGameData(gameId);

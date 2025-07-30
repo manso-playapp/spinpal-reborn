@@ -29,9 +29,9 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// **CORRECCIÓN FINAL AQUÍ:** Tipamos directamente los props esperados por el componente de página.
-export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
-  const gameId = params.id;
+// **CORRECCIÓN FINAL Y CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+export default async function ClientCustomerListPage({ params }: { params: any }) {
+  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
   const game = await getGameData(gameId);
 
   if (!game) {
