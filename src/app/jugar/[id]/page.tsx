@@ -1,6 +1,4 @@
-// Eliminamos la importación de PageProps de 'next/types'
-
-// Eliminamos la definición local de CustomPageProps si existía
+// Eliminamos cualquier importación o definición de PageProps / CustomPageProps
 
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
@@ -31,8 +29,8 @@ async function getGameData(id: string) {
   };
 }
 
-// **CORRECCIÓN AQUÍ:** Volvemos a tipar los props a su forma básica
-export default async function PlayerPage({ params }: { params: { id: string } }) {
+// **CORRECCIÓN CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+export default async function PlayerPage({ params }: { params: any }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 

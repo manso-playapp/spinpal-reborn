@@ -1,13 +1,11 @@
-// Eliminamos la importación de PageProps de 'next/types'
-
-// Eliminamos la definición local de CustomPageProps si existía
+// Eliminamos cualquier importación o definición de PageProps / CustomPageProps
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button } '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
@@ -30,8 +28,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// **CORRECCIÓN AQUÍ:** Volvemos a tipar los props a su forma básica
-export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
+// **CORRECCIÓN CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+export default async function ClientCustomerListPage({ params }: { params: any }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 

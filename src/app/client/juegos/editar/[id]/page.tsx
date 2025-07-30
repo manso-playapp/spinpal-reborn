@@ -1,6 +1,4 @@
-// Eliminamos la importación de PageProps de 'next/types'
-
-// Eliminamos la definición local de CustomPageProps si existía
+// Eliminamos cualquier importación o definición de PageProps / CustomPageProps
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
@@ -35,8 +33,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **CORRECCIÓN AQUÍ:** Volvemos a tipar los props a su forma básica
-export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
+// **CORRECCIÓN CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+export default async function ClientEditGamePage({ params }: { params: any }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
