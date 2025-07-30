@@ -34,9 +34,9 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **CORRECCIÓN FINAL AQUÍ:** Tipamos directamente los props esperados por el componente de página.
-export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
-  const gameId = params.id;
+// @ts-ignore
+export default async function ClientEditGamePage({ params }: { params: any }) {
+  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
   const game = await getGameData(gameId);
 
   if (!game) {

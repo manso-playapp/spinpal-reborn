@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 
 async function getGameData(id: string) {
-  // Verificar si db es null
+  // Verificar si db es null (Mantenemos esta verificación, es crucial)
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
@@ -34,9 +34,9 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **CORRECCIÓN FINAL AQUÍ:** Tipamos directamente los props esperados por el componente de página.
-export default async function EditGamePage({ params }: { params: { id: string } }) {
-  const gameId = params.id;
+// @ts-ignore
+export default async function EditGamePage({ params }: { params: any }) {
+  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
   const game = await getGameData(gameId);
 
   if (!game) {

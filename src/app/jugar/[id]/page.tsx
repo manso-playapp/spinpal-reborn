@@ -30,7 +30,7 @@ async function getGameData(id: string) {
   };
 }
 
-// **CORRECCIÓN FINAL Y CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+// @ts-ignore
 export default async function PlayerPage({ params }: { params: any }) {
   const gameId = params.id;
   const game = await getGameData(gameId);

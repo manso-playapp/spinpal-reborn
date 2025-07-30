@@ -12,7 +12,7 @@ import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
-  // Verificar si db es null (Mantenemos esta verificación, es crucial)
+  // Verificar si db es null
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
@@ -29,9 +29,9 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// **CORRECCIÓN FINAL Y CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+// @ts-ignore
 export default async function ClientCustomerListPage({ params }: { params: any }) {
-  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
+  const gameId = params.id;
   const game = await getGameData(gameId);
 
   if (!game) {

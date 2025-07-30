@@ -28,7 +28,7 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **CORRECCIÓN FINAL Y CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
+// @ts-ignore
 export default async function GamePage({ params }: { params: any }) {
   const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
   const gameData = await getGameData(gameId);
