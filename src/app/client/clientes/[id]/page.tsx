@@ -10,6 +10,13 @@ import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
+  // **INICIO DE LA CORRECCIÓN: Verificar si db es null**
+  if (!db) {
+    console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
+    return null; // Retorna null si db no está inicializado
+  }
+  // **FIN DE LA CORRECCIÓN**
+
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
 
@@ -33,7 +40,7 @@ export default async function ClientCustomerListPage({ params }: PageProps<{ id:
   return (
     <AuthWrapper clientOnly>
         <ClientLayout>
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap{8} md:p{8}">
+            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
                 <div className="flex items-center gap-4 mb-4">
                     <Button variant="outline" size="icon" className="h-7 w-7" asChild>
                         <Link href="/client/dashboard">
