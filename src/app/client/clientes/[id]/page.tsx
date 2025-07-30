@@ -1,4 +1,5 @@
-// Eliminamos CUALQUIER importación o definición de PageProps / CustomPageProps
+// Eliminamos CUALQUIER importación de PageProps
+// Eliminamos CUALQUIER definición local de CustomPageProps
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
@@ -29,7 +30,7 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
 }
 
 // @ts-ignore
-export default async function ClientCustomerListPage({ params }: { params: any }) {
+export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 

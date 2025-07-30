@@ -1,5 +1,5 @@
-// **CORRECCIÓN CLAVE: Eliminamos COMPLETAMENTE cualquier importación o definición de PageProps / CustomPageProps.**
-// La importación de PageProps no debe existir.
+// Eliminamos CUALQUIER importación de PageProps
+// Eliminamos CUALQUIER definición local de CustomPageProps
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
@@ -34,10 +34,9 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **SOLUCIÓN FINAL (HACK): @ts-ignore y params sin tipo explícito en la firma**
 // @ts-ignore
-export default async function EditGamePage({ params }) { // params se inferirá como 'any' o un tipo amplio, y @ts-ignore lo manejará.
-  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
+export default async function EditGamePage({ params }: { params: { id: string } }) {
+  const gameId = params.id;
   const game = await getGameData(gameId);
 
   if (!game) {
