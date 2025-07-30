@@ -48,6 +48,18 @@ const sendTestEmailFlow = ai.defineFlow(
         return { success: false, message };
     }
 
+    // **INICIO DE LA CORRECCIÓN**
+    // Verifica si la instancia de Firestore (db) es null
+    if (!db) {
+        const message = 'Firestore (db) is not initialized. Check Firebase configuration in .env.';
+        console.error(message);
+        return {
+            success: false,
+            message: message,
+        };
+    }
+    // **FIN DE LA CORRECCIÓN**
+
     const resend = new Resend(resendApiKey);
     const fromAddress = 'noreply@playapp.mansoestudiocreativo.com'; 
     const subject = "Correo de Prueba desde SpinPal Reborn";
@@ -67,7 +79,7 @@ const sendTestEmailFlow = ai.defineFlow(
         </div>
     `;
 
-    const emailLogRef = collection(db, 'outbound_emails');
+    const emailLogRef = collection(db, 'outbound_emails'); // 'db' ya está garantizado que no es null
     let logData: any = {
         to: input.email,
         type: 'Test Email',
