@@ -1,4 +1,4 @@
-
+import { type PageProps } from 'next/types'; // Importamos PageProps
 import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
@@ -20,7 +20,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-export default async function GamePage({ params }: { params: { id: string } }) {
+// Usamos PageProps para tipar los props del componente
+export default async function GamePage({ params }: PageProps<{ id: string }>) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 

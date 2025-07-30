@@ -1,4 +1,4 @@
-
+import { type PageProps } from 'next/types'; // Importamos PageProps
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -21,7 +21,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
+// Usamos PageProps para tipar los props del componente
+export default async function ClientCustomerListPage({ params }: PageProps<{ id: string }>) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 

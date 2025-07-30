@@ -1,4 +1,4 @@
-
+import { type PageProps } from 'next/types'; // Importamos PageProps
 // This is a special layout-less page for the iframe preview
 import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';
@@ -22,7 +22,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-export default async function GamePreviewPage({ params }: { params: { id: string } }) {
+// Usamos PageProps para tipar los props del componente
+export default async function GamePreviewPage({ params }: PageProps<{ id: string }>) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 
