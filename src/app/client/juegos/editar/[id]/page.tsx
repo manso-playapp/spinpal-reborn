@@ -1,4 +1,5 @@
-// Eliminamos cualquier importación o definición de PageProps / CustomPageProps
+// Eliminamos CUALQUIER importación de PageProps
+// Eliminamos CUALQUIER definición local de CustomPageProps
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
@@ -33,8 +34,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **CORRECCIÓN CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
-export default async function ClientEditGamePage({ params }: { params: any }) {
+// **CORRECCIÓN FINAL AQUÍ:** Tipamos directamente los props esperados por el componente de página.
+export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 

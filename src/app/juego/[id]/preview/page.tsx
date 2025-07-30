@@ -1,4 +1,5 @@
-// Eliminamos cualquier importación o definición de PageProps / CustomPageProps
+// Eliminamos CUALQUIER importación de PageProps
+// Eliminamos CUALQUIER definición local de CustomPageProps
 
 // This is a special layout-less page for the iframe preview
 import GameClientPage from '@/app/game/GameClientPage';
@@ -8,7 +9,7 @@ import { notFound } from 'next/navigation';
 
 async function getGameData(id: string) {
   if (!id) return null;
-  // Verificar si db es null
+  // Verificar si db es null (Mantenemos esta verificación, es crucial)
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
@@ -29,8 +30,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **CORRECCIÓN CRÍTICA AQUÍ:** Usamos 'any' para 'params' para sortear el error del compilador
-export default async function GamePreviewPage({ params }: { params: any }) {
+// **CORRECCIÓN FINAL AQUÍ:** Tipamos directamente los props esperados por el componente de página.
+export default async function GamePreviewPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 
