@@ -1,7 +1,7 @@
 import PageProps from 'next/types'; 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
-import { db } '@/lib/firebase/config';
+import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import { AdminLayout } from '@/components/admin/AdminLayout';
