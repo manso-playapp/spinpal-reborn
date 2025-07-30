@@ -8,7 +8,7 @@ import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { ClientLayout }m '@/components/client/ClientLayout';
+import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
   // Verificar si db es null
