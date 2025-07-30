@@ -1,11 +1,6 @@
 // Eliminamos la importación de PageProps de 'next/types'
 
-// **INICIO DE LA CORRECCIÓN: Definición local de CustomPageProps**
-type CustomPageProps<P = { [key: string]: string | string[] }, S = { [key: string]: string | string[] | undefined }> = {
-  params: P;
-  searchParams?: S;
-};
-// **FIN DE LA CORRECCIÓN**
+// Eliminamos la definición local de CustomPageProps si existía
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
@@ -40,8 +35,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// Usamos CustomPageProps para tipar los props del componente
-export default async function EditGamePage({ params }: CustomPageProps<{ id: string }>) {
+// **CORRECCIÓN AQUÍ:** Volvemos a tipar los props a su forma básica
+export default async function EditGamePage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
