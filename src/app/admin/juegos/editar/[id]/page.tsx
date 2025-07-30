@@ -1,5 +1,5 @@
-// Eliminamos CUALQUIER importación de PageProps
-// Eliminamos CUALQUIER definición local de CustomPageProps
+// **CORRECCIÓN CLAVE: Eliminamos COMPLETAMENTE la línea de importación de PageProps.**
+// No hay 'import type { PageProps } from "next/types";' ni 'import PageProps from "next/types";' aquí.
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
@@ -34,9 +34,9 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// @ts-ignore
-export default async function EditGamePage({ params }: { params: any }) {
-  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
+// **CORRECCIÓN AQUÍ:** La firma del componente usa directamente el tipado esperado: { params: { id: string } }
+export default async function EditGamePage({ params }: { params: { id: string } }) {
+  const gameId = params.id;
   const game = await getGameData(gameId);
 
   if (!game) {

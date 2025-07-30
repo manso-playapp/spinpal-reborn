@@ -1,5 +1,5 @@
-// Eliminamos CUALQUIER importación de PageProps
-// Eliminamos CUALQUIER definición local de CustomPageProps
+// **CORRECCIÓN CLAVE: Eliminamos COMPLETAMENTE la línea de importación de PageProps.**
+// No hay 'import type { PageProps } from "next/types";' ni 'import PageProps from "next/types";' aquí.
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
@@ -9,7 +9,7 @@ import { notFound } from 'next/navigation';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string) {
-  // Verificar si db es null
+  // Verificar si db es null (Mantenemos esta verificación, es crucial)
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
@@ -34,9 +34,9 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// @ts-ignore
-export default async function ClientEditGamePage({ params }: { params: any }) {
-  const gameId = params.id; // Seguiremos accediendo a .id, lo cual debería ser correcto en runtime.
+// **CORRECCIÓN AQUÍ:** La firma del componente usa directamente el tipado esperado: { params: { id: string } }
+export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
+  const gameId = params.id;
   const game = await getGameData(gameId);
 
   if (!game) {

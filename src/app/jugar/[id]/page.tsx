@@ -1,4 +1,4 @@
-// Eliminamos CUALQUIER importación o definición de PageProps
+// Eliminamos CUALQUIER importación de PageProps
 // Eliminamos CUALQUIER definición local de CustomPageProps
 
 import { db } from '@/lib/firebase/config';
@@ -30,8 +30,8 @@ async function getGameData(id: string) {
   };
 }
 
-// @ts-ignore
-export default async function PlayerPage({ params }: { params: any }) {
+// **CORRECCIÓN FINAL AQUÍ:** Tipamos directamente los props esperados por el componente de página.
+export default async function PlayerPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
