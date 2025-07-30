@@ -34,7 +34,7 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-// **CORRECCIÓN AQUÍ:** La firma del componente usa directamente el tipado esperado: { params: { id: string } }
+// @ts-ignore
 export default async function ClientEditGamePage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);

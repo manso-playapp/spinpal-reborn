@@ -1,4 +1,4 @@
-// Eliminamos CUALQUIER importación de PageProps
+// Eliminamos CUALQUIER importación o definición de PageProps
 // Eliminamos CUALQUIER definición local de CustomPageProps
 
 import { db } from '@/lib/firebase/config';

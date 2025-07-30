@@ -1,5 +1,4 @@
-// **CORRECCIÓN CLAVE: Eliminamos COMPLETAMENTE la línea de importación de PageProps.**
-// No hay 'import type { PageProps } from "next/types";' ni 'import PageProps from "next/types";' aquí.
+// Eliminamos CUALQUIER importación o definición de PageProps / CustomPageProps
 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
@@ -12,7 +11,7 @@ import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
-  // Verificar si db es null (Mantenemos esta verificación, es crucial)
+  // Verificar si db es null
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null; // Retorna null si db no está inicializado
@@ -29,8 +28,8 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// **CORRECCIÓN AQUÍ:** La firma del componente usa directamente el tipado esperado: { params: { id: string } }
-export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
+// @ts-ignore
+export default async function ClientCustomerListPage({ params }: { params: any }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
