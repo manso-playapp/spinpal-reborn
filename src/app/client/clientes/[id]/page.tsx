@@ -1,4 +1,4 @@
-import { type PageProps } from 'next/types'; // Importamos PageProps
+import PageProps from 'next/types'; 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -33,7 +33,7 @@ export default async function ClientCustomerListPage({ params }: PageProps<{ id:
   return (
     <AuthWrapper clientOnly>
         <ClientLayout>
-            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+            <main className="flex flex-1 flex-col gap-4 p-4 md:gap{8} md:p{8}">
                 <div className="flex items-center gap-4 mb-4">
                     <Button variant="outline" size="icon" className="h-7 w-7" asChild>
                         <Link href="/client/dashboard">

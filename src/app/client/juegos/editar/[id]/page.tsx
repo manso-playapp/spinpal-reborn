@@ -1,4 +1,4 @@
-import { type PageProps } from 'next/types'; // Importamos PageProps
+import PageProps from 'next/types'; 
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
 import { db } from '@/lib/firebase/config';
@@ -17,7 +17,7 @@ async function getGameData(id: string) {
   const data = gameSnap.data();
   
   // Convertimos el objeto a una cadena JSON y luego de vuelta a un objeto
-  // Esto elimina cualquier tipo de dato complejo como los Timestamps de Firebase.
+  // Esto elimina cualquier tipo de dato complejo como los Timestamps de Firebase
   const serializableData = JSON.parse(JSON.stringify({ id: gameSnap.id, ...data }));
 
   // Aseguramos que los segmentos sean siempre un array

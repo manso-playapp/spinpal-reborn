@@ -1,4 +1,4 @@
-import { type PageProps } from 'next/types'; // Importamos PageProps
+import PageProps from 'next/types'; 
 // This is a special layout-less page for the iframe preview
 import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';

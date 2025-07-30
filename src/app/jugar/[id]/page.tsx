@@ -1,4 +1,4 @@
-import { type PageProps } from 'next/types'; // Importamos PageProps
+import PageProps from 'next/types'; 
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
