@@ -1,4 +1,4 @@
-
+import { type PageProps } from 'next/types'; // Importamos PageProps
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
 import { db } from '@/lib/firebase/config';
@@ -26,7 +26,8 @@ async function getGameData(id: string) {
   return serializableData;
 }
 
-export default async function EditGamePage({ params }: { params: { id: string } }) {
+// Usamos PageProps para tipar los props del componente
+export default async function EditGamePage({ params }: PageProps<{ id: string }>) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
