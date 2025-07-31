@@ -1,3 +1,4 @@
+
 import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';

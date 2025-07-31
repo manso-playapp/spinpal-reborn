@@ -1,3 +1,4 @@
+
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import EditGameForm from '@/components/admin/EditGameForm';
 import { db } from '@/lib/firebase/config';
