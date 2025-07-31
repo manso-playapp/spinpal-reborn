@@ -1,6 +1,3 @@
-// Eliminamos CUALQUIER importación de PageProps
-// Eliminamos CUALQUIER definición local de CustomPageProps
-
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -12,10 +9,9 @@ import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
-  // Verificar si db es null
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
-    return null; // Retorna null si db no está inicializado
+    return null;
   }
 
   const gameRef = doc(db, 'games', id);
@@ -29,7 +25,6 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// @ts-ignore
 export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
