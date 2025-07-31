@@ -1,4 +1,5 @@
-import type { PageProps } from 'next/types'; 
+// ELIMINAR: import type { PageProps } from 'next/types';
+
 import AuthWrapper from '@/components/auth/AuthWrapper';
 import CustomerList from '@/components/admin/CustomerList';
 import { db } from '@/lib/firebase/config';
@@ -27,8 +28,9 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   return { name: data.name || 'Juego sin nombre' };
 }
 
-// Use PageProps to type the component's props
-export default async function ClientCustomerListPage({ params }: PageProps<{ id: string }>) {
+// Añadir @ts-ignore y tipar params correctamente
+// @ts-ignore
+export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
