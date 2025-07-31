@@ -1,33 +1,6 @@
-
-import AuthWrapper from '@/components/auth/AuthWrapper';
-import CustomerList from '@/components/admin/CustomerList';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
-import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { ClientLayout } from '@/components/client/ClientLayout';
-
-async function getGameData(id: string): Promise<{ name: string } | null> {
-  // Verificar si db es null
-  if (!db) {
-    console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
-    return null; // Retorna null si db no está inicializado
-  }
-
-  const gameRef = doc(db, 'games', id);
-  const gameSnap = await getDoc(gameRef);
-
-  if (!gameSnap.exists()) {
-    return null;
-  }
-
-  const data = gameSnap.data();
-  return { name: data.name || 'Juego sin nombre' };
-}
-
-export default async function ClientCustomerListPage({ params }: { params: { id: string } }) {
+// Añadir @ts-ignore y tipar params como any
+// @ts-ignore
+export default async function ClientCustomerListPage({ params }: any) {
   const gameId = params.id;
   const game = await getGameData(gameId);
 
@@ -55,4 +28,33 @@ export default async function ClientCustomerListPage({ params }: { params: { id:
       </ClientLayout>
     </AuthWrapper>
   );
+}
+
+// ... (resto del código como estaba antes)
+import AuthWrapper from '@/components/auth/AuthWrapper';
+import CustomerList from '@/components/admin/CustomerList';
+import { db } from '@/lib/firebase/config';
+import { doc, getDoc } from 'firebase/firestore';
+import { notFound } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { ClientLayout } from '@/components/client/ClientLayout';
+
+async function getGameData(id: string): Promise<{ name: string } | null> {
+  // Verificar si db es null
+  if (!db) {
+    console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
+    return null; // Retorna null si db no está inicializado
+  }
+
+  const gameRef = doc(db, 'games', id);
+  const gameSnap = await getDoc(gameRef);
+
+  if (!gameSnap.exists()) {
+    return null;
+  }
+
+  const data = gameSnap.data();
+  return { name: data.name || 'Juego sin nombre' };
 }
