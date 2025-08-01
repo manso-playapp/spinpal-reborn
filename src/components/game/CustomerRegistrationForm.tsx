@@ -64,6 +64,11 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     });
 
     useEffect(() => {
+        if (!db) {
+            setErrorMessage('La conexión con la base de datos no está disponible.');
+            setUiState('ERROR');
+            return;
+        }
         const gameRef = doc(db, 'games', gameId);
         const unsubscribe = onSnapshot(gameRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -129,7 +134,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
     // PASO 1: REGISTRO
     const handleRegistration = async (formData: z.infer<typeof dynamicSchema>) => {
-        if (!gameData) return;
+        if (!gameData || !db) return;
         setUiState('SUBMITTING');
         const submittedEmail = formData.email.toLowerCase().trim();
 
@@ -163,7 +168,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     
     // PASO 2 & 3: Iniciar GIRO y mostrar pantalla de SUERTE
     const handleSpin = async () => {
-        if (!gameData || !customerId) return;
+        if (!gameData || !customerId || !db) return;
         setUiState('SPINNING'); // -> Pasa a la pantalla de SUERTE (Paso 3)
 
         try {

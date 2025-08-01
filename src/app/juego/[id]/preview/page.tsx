@@ -1,3 +1,4 @@
+
 // Añadir @ts-ignore y tipar params como any
 // @ts-ignore
 export default async function GamePreviewPage({ params }: any) {

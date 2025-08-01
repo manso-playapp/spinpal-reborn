@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDoc, doc, addDoc, serverTimestamp, deleteDoc, updateDoc, getDocs, FieldValue } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Gamepad2, Edit, Trash2, Copy as CopyIcon, CopyPlus, RotateCcw, Download, Users, Mail, MoreVertical, Link as LinkIcon, User, Eye, Briefcase, ExternalLink, Clipboard } from 'lucide-react';
 import Link from 'next/link';
