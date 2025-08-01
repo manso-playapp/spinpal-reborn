@@ -101,7 +101,14 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
   }, [gameId]);
 
   const handleDeleteCustomers = async (customerIds: string[]) => {
-    if (!db) return;
+    if (!db) {
+        toast({
+            variant: "destructive",
+            title: "Error de Conexión",
+            description: "No se puede eliminar porque no hay conexión con la base de datos.",
+        });
+        return;
+    }
     const batch = writeBatch(db);
     customerIds.forEach(id => {
         const docRef = doc(db, "games", gameId, "customers", id);
