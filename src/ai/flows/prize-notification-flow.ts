@@ -290,5 +290,3 @@ const prizeNotificationFlow = ai.defineFlow(
     }
   }
 );
-
-    

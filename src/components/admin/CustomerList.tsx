@@ -463,5 +463,3 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
     </TooltipProvider>
   );
 }
-
-    

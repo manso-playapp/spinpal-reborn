@@ -46,15 +46,18 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
     return null;
   }
 
-  const gameRef = doc(db, 'games', id);
-  const gameSnap = await getDoc(gameRef);
+  try {
+    const gameRef = doc(db, 'games', id);
+    const gameSnap = await getDoc(gameRef);
 
-  if (!gameSnap.exists()) {
+    if (!gameSnap.exists()) {
+        return null;
+    }
+
+    const data = gameSnap.data();
+    return { name: data.name || 'Juego sin nombre' };
+  } catch (error) {
+    console.error("Error fetching game data:", error);
     return null;
   }
-
-  const data = gameSnap.data();
-  return { name: data.name || 'Juego sin nombre' };
 }
-
-    

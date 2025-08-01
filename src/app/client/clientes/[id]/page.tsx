@@ -44,16 +44,19 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
     return null;
   }
+  
+  try {
+    const gameRef = doc(db, 'games', id);
+    const gameSnap = await getDoc(gameRef);
 
-  const gameRef = doc(db, 'games', id);
-  const gameSnap = await getDoc(gameRef);
+    if (!gameSnap.exists()) {
+        return null;
+    }
 
-  if (!gameSnap.exists()) {
+    const data = gameSnap.data();
+    return { name: data.name || 'Juego sin nombre' };
+  } catch (error) {
+     console.error("Error fetching game data:", error);
     return null;
   }
-
-  const data = gameSnap.data();
-  return { name: data.name || 'Juego sin nombre' };
 }
-
-    
