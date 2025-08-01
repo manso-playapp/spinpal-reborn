@@ -48,6 +48,11 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   const gameId = initialGame.id;
 
   useEffect(() => {
+    if (!db) {
+        console.error("Firestore (db) is not initialized. Real-time updates are disabled.");
+        return;
+    }
+
     const gameRef = doc(db, 'games', gameId);
     const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
         if (docSnap.exists()) {
@@ -110,7 +115,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   }, []);
 
   const handleDemoSpin = async () => {
-    if (game.status !== 'demo' || uiState !== 'IDLE') return;
+    if (game.status !== 'demo' || uiState !== 'IDLE' || !db) return;
   
     const winningIndex = Math.floor(Math.random() * game.segments.length);
     const winningSegment = game.segments[winningIndex];
