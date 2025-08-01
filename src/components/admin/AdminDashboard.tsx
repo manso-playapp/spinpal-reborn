@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -99,7 +100,7 @@ export default function AdminDashboard() {
   };
 
   const handleCopyGameData = async (gameId: string) => {
-    if (!db) return; // **INICIO DE LA CORRECCIÓN**
+    if (!db) return;
     try {
         const gameRef = doc(db, 'games', gameId);
         const gameSnap = await getDoc(gameRef);
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
             title: "Error al copiar",
             description: "No se pudieron copiar los datos del juego.",
         });
-    } // **FIN DE LA CORRECCIÓN**
+    }
   };
 
 
@@ -178,14 +179,14 @@ export default function AdminDashboard() {
   };
 
   const handleDuplicateGame = async (gameId: string) => {
-    if (!db) return; // **INICIO DE LA CORRECCIÓN**
+    if (!db) return;
     try {
         const gameRef = doc(db, 'games', gameId);
         const gameSnap = await getDoc(gameRef);
 
         if (gameSnap.exists()) {
             const gameData = gameSnap.data();
-            const newGameData = {
+            const newGameData: any = {
                 ...gameData,
                 name: `Copia de ${gameData.name}`,
                 plays: 0,
@@ -209,11 +210,11 @@ export default function AdminDashboard() {
             title: "Error al duplicar",
             description: "No se pudo duplicar el juego. Inténtalo de nuevo.",
         });
-    } // **FIN DE LA CORRECCIÓN**
+    }
   };
 
   const handleDeleteGame = async (gameId: string, gameName: string) => {
-    if (!db) return; // **INICIO DE LA CORRECCIÓN**
+    if (!db) return;
      try {
         await deleteDoc(doc(db, "games", gameId));
         toast({
@@ -227,11 +228,11 @@ export default function AdminDashboard() {
             title: "Error al eliminar",
             description: "No se pudo eliminar el juego. Inténtalo de nuevo.",
         });
-    } // **FIN DE LA CORRECCIÓN**
+    }
   };
 
   const handleResetCounters = async (gameId: string, gameName: string) => {
-    if (!db) return; // **INICIO DE LA CORRECCIÓN**
+    if (!db) return;
     try {
       const gameRef = doc(db, 'games', gameId);
       await updateDoc(gameRef, {
@@ -249,11 +250,11 @@ export default function AdminDashboard() {
         title: 'Error al resetear',
         description: 'No se pudieron restablecer los contadores. Inténtalo de nuevo.',
       });
-    } // **FIN DE LA CORRECCIÓN**
+    }
   };
 
   const handleDownloadData = async (gameId: string, gameName: string) => {
-    if (!db) return; // **INICIO DE LA CORRECCIÓN**
+    if (!db) return;
     try {
       const customersRef = collection(db, 'games', gameId, 'customers');
       const querySnapshot = await getDocs(customersRef);
@@ -303,7 +304,7 @@ export default function AdminDashboard() {
         title: 'Error al descargar',
         description: 'No se pudieron descargar los datos. Inténtalo de nuevo.',
       });
-    } // **FIN DE LA CORRECCIÓN**
+    }
   };
   
   const formatDate = (timestamp: any) => {
