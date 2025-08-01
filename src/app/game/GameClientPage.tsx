@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -61,10 +62,12 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
             const spinRequest = data.spinRequest;
             if (spinRequest && spinRequest.customerId && uiState === 'IDLE') {
                 setUiState('SPINNING');
-                const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
-                const customerSnap = await getDoc(customerRef);
-                if (customerSnap.exists()) {
-                    setCurrentPlayer(customerSnap.data().name);
+                if (db) { // Verificación añadida para corregir el error de build
+                    const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
+                    const customerSnap = await getDoc(customerRef);
+                    if (customerSnap.exists()) {
+                        setCurrentPlayer(customerSnap.data().name);
+                    }
                 }
             }
 
