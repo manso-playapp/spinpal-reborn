@@ -73,7 +73,10 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
   const [rowSelection, setRowSelection] = useState({});
 
   useEffect(() => {
-    if (!gameId) return;
+    if (!gameId || !db) {
+        setLoading(false);
+        return;
+    };
 
     const customersRef = collection(db, 'games', gameId, 'customers');
     const q = query(customersRef, orderBy('registeredAt', 'desc'));
@@ -98,6 +101,7 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
   }, [gameId]);
 
   const handleDeleteCustomers = async (customerIds: string[]) => {
+    if (!db) return;
     const batch = writeBatch(db);
     customerIds.forEach(id => {
         const docRef = doc(db, "games", gameId, "customers", id);
