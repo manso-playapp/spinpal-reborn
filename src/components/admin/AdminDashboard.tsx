@@ -67,7 +67,7 @@ export default function AdminDashboard() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user && db) { // **INICIO DE LA CORRECCIÓN**
+    if (user && db) {
       const q = query(collection(db, 'games'), orderBy('createdAt', 'desc'));
       const unsubscribe = onSnapshot(
         q,
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
       );
 
       return () => unsubscribe();
-    } else { // **FIN DE LA CORRECCIÓN**
+    } else {
       setLoading(false);
     }
   }, [user]);
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
 
         if (gameSnap.exists()) {
             const gameData = gameSnap.data();
-            const newGameData: any = {
+            const newGameData: { [key: string]: any } = {
                 ...gameData,
                 name: `Copia de ${gameData.name}`,
                 plays: 0,
