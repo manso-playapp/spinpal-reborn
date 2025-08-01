@@ -1,4 +1,3 @@
-// Añadir @ts-ignore y tipar params como any
 // @ts-ignore
 export default async function ClientCustomerListPage({ params }: any) {
   const gameId = params.id;
@@ -42,13 +41,10 @@ import Link from 'next/link';
 import { ClientLayout } from '@/components/client/ClientLayout';
 
 async function getGameData(id: string): Promise<{ name: string } | null> {
-  // **INICIO DE LA CORRECCIÓN**
-  // Verificar si db es null
   if (!db) {
     console.error("Firestore (db) is not initialized in getGameData. Check Firebase configuration.");
-    return null; // Retorna null si db no está inicializado
+    return null;
   }
-  // **FIN DE LA CORRECCIÓN**
 
   const gameRef = doc(db, 'games', id);
   const gameSnap = await getDoc(gameRef);
@@ -60,3 +56,5 @@ async function getGameData(id: string): Promise<{ name: string } | null> {
   const data = gameSnap.data();
   return { name: data.name || 'Juego sin nombre' };
 }
+
+    

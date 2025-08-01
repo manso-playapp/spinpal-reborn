@@ -134,8 +134,6 @@ const prizeNotificationFlow = ai.defineFlow(
     }
     const fromAddress = 'noreply@playapp.mansoestudiocreativo.com'; 
 
-    // **INICIO DE LA CORRECCIÓN**
-    // Verifica si la instancia de Firestore (db) es null
     if (!db) {
         const message = 'Firestore (db) is not initialized. Check Firebase configuration in .env.';
         console.error(message);
@@ -144,12 +142,9 @@ const prizeNotificationFlow = ai.defineFlow(
             message: message,
         };
     }
-    const resend = new Resend(resendApiKey); // Mueve la inicialización de Resend aquí para que solo se haga si las claves están.
-    // **FIN DE LA CORRECCIÓN**
+    const resend = new Resend(resendApiKey);
 
     try {
-        // 1. Fetch Game and Customer data from Firestore
-        // Ahora 'db' está garantizado que no es null
         const gameRef = doc(db, 'games', input.gameId);
         const customerRef = doc(db, 'games', input.gameId, 'customers', input.customerId);
 
@@ -209,7 +204,7 @@ const prizeNotificationFlow = ai.defineFlow(
 
 
         // 4. Send emails via Resend and log the results to Firestore
-        const emailLogRef = collection(db, 'outbound_emails'); // 'db' ya está validado
+        const emailLogRef = collection(db, 'outbound_emails');
         const sendPromises = [];
 
         // Send and log customer email
@@ -295,3 +290,5 @@ const prizeNotificationFlow = ai.defineFlow(
     }
   }
 );
+
+    

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -42,7 +40,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import Papa from 'papaparse';
 import { useEffect, useState, useMemo } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc, writeBatch } from '@firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, writeBatch, getDocs } from '@firebase/firestore';
 import { Checkbox } from "../ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
@@ -257,38 +255,58 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
     },
   });
 
-  const handleDownloadData = () => {
-    if (customers.length === 0) {
-      toast({
-        title: 'No hay datos para descargar',
-        description: 'Aún no se ha registrado ningún cliente en este juego.',
-      });
-      return;
-    }
-    
-    const customersData = customers.map(customer => ({
-      nombre: customer.name || '',
-      email: customer.email || '',
-      telefono: customer.phone || '',
-      fecha_registro: formatDate(customer.registeredAt),
-      ha_jugado: customer.hasPlayed ? 'Sí' : 'No',
-      premio_ganado: customer.prizeWonName || '-',
-      fecha_premio: formatDate(customer.prizeWonAt),
-    }));
+  const handleDownloadData = async () => {
+    if (!db) return;
+    try {
+      const customersRef = collection(db, 'games', gameId, 'customers');
+      const querySnapshot = await getDocs(customersRef);
 
-    const csv = Papa.unparse(customersData);
-    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `datos_${gameName.replace(/ /g, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      if (querySnapshot.empty) {
+        toast({
+          title: 'No hay datos para descargar',
+          description: 'Aún no se ha registrado ningún cliente en este juego.',
+        });
+        return;
+      }
+      
+      const customersData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        const registeredAt = data.registeredAt;
+        const registrationDate = registeredAt && typeof registeredAt.toDate === 'function'
+          ? registeredAt.toDate().toLocaleString()
+          : (registeredAt ? new Date(registeredAt).toLocaleString() : 'N/A');
+          
+        return {
+          nombre: data.name || '',
+          email: data.email || '',
+          telefono: data.phone || '',
+          fecha_registro: registrationDate,
+          ha_jugado: data.hasPlayed ? 'Sí' : 'No',
+        };
+      });
+
+      const csv = Papa.unparse(customersData);
+      const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `datos_${gameName.replace(/ /g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+       toast({
+          title: '¡Descarga Iniciada!',
+          description: `Se están descargando los datos de "${gameName}".`,
+      });
+
+    } catch (error) {
+      console.error('Error downloading data: ', error);
       toast({
-        title: '¡Descarga Iniciada!',
-        description: `Se están descargando los datos de "${gameName}".`,
-    });
+        variant: 'destructive',
+        title: 'Error al descargar',
+        description: 'No se pudieron descargar los datos. Inténtalo de nuevo.',
+      });
+    }
   };
   
   const selectedRows = table.getFilteredSelectedRowModel().rows;
@@ -445,3 +463,5 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
     </TooltipProvider>
   );
 }
+
+    
