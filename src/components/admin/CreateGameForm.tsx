@@ -88,6 +88,17 @@ export default function CreateGameForm() {
 
   const onSubmit = async (data: GameFormValues) => {
     setLoading(true);
+
+    if (!db) {
+      toast({
+        variant: "destructive",
+        title: "Error de Configuración",
+        description: "La base de datos no está disponible. Revisa tu conexión y la configuración de Firebase.",
+      });
+      setLoading(false);
+      return;
+    }
+
     let segmentsToSave = [
         { id: generateUniqueId(), name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
         { id: generateUniqueId(), name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
