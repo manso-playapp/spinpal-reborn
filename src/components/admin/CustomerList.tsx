@@ -257,7 +257,14 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
   });
 
   const handleDownloadData = async () => {
-    if (!db) return;
+    if (!db) {
+       toast({
+        variant: 'destructive',
+        title: 'Error de Conexión',
+        description: 'No se pudieron descargar los datos. Revisa la configuración de Firebase.',
+      });
+      return;
+    }
     try {
       const customersRef = collection(db, 'games', gameId, 'customers');
       const querySnapshot = await getDocs(customersRef);

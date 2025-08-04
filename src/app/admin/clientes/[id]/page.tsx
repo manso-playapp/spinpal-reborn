@@ -1,4 +1,5 @@
 
+
 // @ts-ignore
 export default async function ClientCustomerListPage({ params }: any) {
   const gameId = params.id;

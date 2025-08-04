@@ -81,13 +81,13 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 backgroundFit: data.backgroundFit || 'cover',
                 qrCodeScale: data.qrCodeScale || 1,
                 rouletteScale: data.rouletteScale || 1,
-                rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
-                qrVerticalOffset: data.qrVerticalOffset || 0,
+                rouletteVerticalOffset: number,
+                qrVerticalOffset: number,
                 config: data.config || {
                     borderImage: data.borderImage || '',
-                    borderScale: data.borderScale || 1,
+                    borderScale: number,
                     centerImage: data.centerImage || '',
-                    centerScale: data.centerScale || 1,
+                    centerScale: number,
                 }
             };
             
