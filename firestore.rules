@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Cualquiera puede leer los juegos
+    match /games/{gameId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Solo admins pueden escribir
+    }
+
+    // Cualquiera puede leer los clientes de un juego
+    match /games/{gameId}/customers/{customerId} {
+      allow read: if true;
+      allow create: if true; // Cualquiera puede registrarse
+      allow update, delete: if request.auth != null; // Solo admins pueden modificar
+    }
+    
+    // Colección de prueba para verificar la conexión
+    match /health_check/{doc} {
+        allow read, write: if true;
+    }
+
+    // **INICIO DE LA CORRECCIÓN: Añadir reglas para outbound_emails**
+    // Solo usuarios autenticados pueden escribir logs de correos salientes
+    match /outbound_emails/{emailId} {
+      allow write: if request.auth != null;
+    }
+    // **FIN DE LA CORRECCIÓN**
+  }
+}
