@@ -1,0 +1,21 @@
+# .continue/config.yaml
+name: Manso Dev Agent
+version: 1
+
+models:
+  - title: OpenAI GPT-5
+    provider: openai
+    model: gpt-5
+    apiKey: ${env:OPENAI_API_KEY}
+    completionOptions:
+      maxTokens: 2048
+
+tabAutocompleteModel:
+  provider: openai
+  model: gpt-5-mini
+
+contextProviders:
+  - codebase
+  - terminal
+  - git
+  - shell
