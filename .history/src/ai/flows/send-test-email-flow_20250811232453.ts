@@ -27,7 +27,11 @@ const TestEmailOutputSchema = z.object({
 export type TestEmailOutput = z.infer<typeof TestEmailOutputSchema>;
 
 
-
+export async function sendTestEmail(
+  input: TestEmailInput
+): Promise<TestEmailOutput> {
+  return sendTestEmailFlow(input);
+}
 
 
 
