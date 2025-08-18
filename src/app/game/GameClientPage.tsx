@@ -49,11 +49,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   const gameId = initialGame.id;
 
   useEffect(() => {
-    if (!db) {
-        console.error("Firestore (db) is not initialized. Real-time updates are disabled.");
-        return;
-    }
-
+    if (!db) return;
     const gameRef = doc(db, 'games', gameId);
     const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
         if (docSnap.exists()) {
@@ -62,12 +58,10 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
             const spinRequest = data.spinRequest;
             if (spinRequest && spinRequest.customerId && uiState === 'IDLE') {
                 setUiState('SPINNING');
-                if (db) { // Verificación añadida para corregir el error de build
-                    const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
-                    const customerSnap = await getDoc(customerRef);
-                    if (customerSnap.exists()) {
-                        setCurrentPlayer(customerSnap.data().name);
-                    }
+                const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
+                const customerSnap = await getDoc(customerRef);
+                if (customerSnap.exists()) {
+                    setCurrentPlayer(customerSnap.data().name);
                 }
             }
 
@@ -110,10 +104,9 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
         setShowConfetti(true);
     }
     
+    // Refresh the page after 15 seconds to return to the initial state
     setTimeout(() => {
-      setUiState('IDLE');
-      setSpinResult(null);
-      setShowConfetti(false);
+      window.location.reload();
     }, 15000);
   }, []);
 
@@ -267,3 +260,5 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
     </div>
   );
 }
+
+    
