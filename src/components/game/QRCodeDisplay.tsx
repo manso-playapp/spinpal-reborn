@@ -11,7 +11,7 @@ export default function QRCodeDisplay({ gameId, scale = 1 }: { gameId: string, s
   useEffect(() => {
     // Nos aseguramos de que este código solo se ejecute en el cliente
     // donde window.location.origin está disponible.
-    const playerUrl = `${window.location.origin}/jugar/${gameId}`;
+    const playerUrl = `${window.location.origin}/j/${gameId}`;
     setUrl(playerUrl);
   }, [gameId]);
 
