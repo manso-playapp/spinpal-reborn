@@ -56,7 +56,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
             const data = docSnap.data();
             
             const spinRequest = data.spinRequest;
-            if (spinRequest && spinRequest.customerId && uiState === 'IDLE') {
+            if (spinRequest && spinRequest.customerId && uiState === 'IDLE' && db) {
                 setUiState('SPINNING');
                 const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
                 const customerSnap = await getDoc(customerRef);
