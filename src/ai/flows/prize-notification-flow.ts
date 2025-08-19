@@ -95,16 +95,21 @@ const createCustomerEmail = (customerName: string, prizeName: string, validation
 };
 
 // Template function for the client notification email
-const createClientEmail = (customerName: string, prizeName: string, validationCode: string, gameName: string) => {
+const createClientEmail = (customerName: string, prizeName: string, validationCode: string, gameName: string, customerEmail: string, customerPhone: string) => {
     const subject = `Notificación de Premio: ${customerName} ha ganado en ${gameName}`;
     const body = `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
             <h1 style="color: #333;">Notificación de Premio</h1>
             <p>Este es un aviso para informarte que un participante ha ganado un premio en tu juego <strong>${gameName}</strong>.</p>
-            <ul>
-                <li><strong>Ganador/a:</strong> ${customerName}</li>
-                <li><strong>Premio:</strong> ${prizeName}</li>
-            </ul>
+            <div style="margin: 20px 0; padding: 20px; background-color: #f8f8f8; border-radius: 8px;">
+                <h2 style="color: #333; margin-top: 0;">Datos del ganador:</h2>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="margin: 10px 0;"><strong>Nombre:</strong> ${customerName}</li>
+                    <li style="margin: 10px 0;"><strong>Email:</strong> ${customerEmail}</li>
+                    <li style="margin: 10px 0;"><strong>Teléfono:</strong> ${customerPhone || 'No proporcionado'}</li>
+                    <li style="margin: 10px 0;"><strong>Premio:</strong> ${prizeName}</li>
+                </ul>
+            </div>
             <p>Cuando el cliente se presente a reclamar su premio, deberá mostrar el siguiente código de validación:</p>
             <div style="text-align: center; background-color: #f0f0f0; padding: 15px; border-radius: 8px; font-size: 1.6em; font-weight: bold; color: #333; margin: 20px 0;">
                 ${validationCode}
@@ -200,7 +205,9 @@ const prizeNotificationFlow = ai.defineFlow(
             customerData.name,
             input.prizeName,
             validationCode,
-            gameData.name
+            gameData.name,
+            customerData.email,
+            customerData.phone || ''
         ) : null;
 
 
