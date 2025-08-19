@@ -10,7 +10,7 @@ const Confetti = () => {
     const newPieces = Array.from({ length: 150 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100, // percentage
-      y: 100 + Math.random() * 100, // start from bottom
+      y: -10 - Math.random() * 100, // start from top
       angle: Math.random() * 360,
       speed: 5 + Math.random() * 5, // vertical speed
       rotationSpeed: (Math.random() - 0.5) * 10,
@@ -39,7 +39,7 @@ const Confetti = () => {
           style={{
             position: 'absolute',
             left: `${piece.x}%`,
-            bottom: 0,
+            top: 0,
             width: `${piece.size}px`,
             height: `${piece.size * 1.5}px`,
             backgroundColor: piece.color,
@@ -52,7 +52,7 @@ const Confetti = () => {
       <style>{`
         @keyframes fall {
           to {
-            transform: translateY(-110vh) rotate(720deg);
+            transform: translateY(110vh) rotate(720deg);
           }
         }
       `}</style>
