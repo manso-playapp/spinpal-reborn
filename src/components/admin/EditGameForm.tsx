@@ -90,6 +90,7 @@ const formSchema = z.object({
   successMessage: z.string().optional(),
   qrCodeScale: z.number().min(0.1).max(2).optional(),
   rouletteScale: z.number().min(0.1).max(2).optional(),
+  wheelScale: z.number().min(0.1).max(2).optional(),
   rouletteVerticalOffset: z.number().min(-500).max(500).optional(),
   qrVerticalOffset: z.number().min(-500).max(500).optional(),
   config: z.object({
@@ -141,6 +142,7 @@ interface Game {
   prizesAwarded?: number;
   qrCodeScale?: number;
   rouletteScale?: number;
+  wheelScale?: number;
   rouletteVerticalOffset?: number;
   qrVerticalOffset?: number;
   config?: {
@@ -211,6 +213,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       successMessage: initialGame.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
       qrCodeScale: initialGame.qrCodeScale || 1,
       rouletteScale: initialGame.rouletteScale || 1,
+      wheelScale: initialGame.wheelScale || 1,
       rouletteVerticalOffset: initialGame.rouletteVerticalOffset || 0,
       qrVerticalOffset: initialGame.qrVerticalOffset || 0,
       config: {
@@ -254,6 +257,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
           successMessage: data.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
           qrCodeScale: data.qrCodeScale || 1,
           rouletteScale: data.rouletteScale || 1,
+          wheelScale: data.wheelScale || 1,
           rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
           qrVerticalOffset: data.qrVerticalOffset || 0,
           config: {
@@ -756,6 +760,31 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                         </FormItem>
                                     )}
                                     />
+                                    
+                                    <FormField
+                                    control={form.control}
+                                    name="wheelScale"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel className="flex items-center gap-2">
+                                            <RefreshCw className="h-4 w-4"/> 
+                                            Escala Global ({field.value?.toFixed(2)})
+                                        </FormLabel>
+                                        <FormControl>
+                                            <Slider
+                                            value={[field.value ?? 1]}
+                                            onValueChange={(val) => field.onChange(val[0])}
+                                            max={2}
+                                            min={0.1}
+                                            step={0.05}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Este control escala toda la ruleta (incluidos borde y puntero) manteniendo las proporciones.
+                                        </FormDescription>
+                                        </FormItem>
+                                    )}
+                                    />
                                 </div>
                                 <div className="space-y-4">
                                   <h4 className="font-semibold opacity-0">.</h4>
@@ -1049,6 +1078,31 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                       <CardContent className="space-y-8">
                          <div className="space-y-4">
                             <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Pantalla de TV/Display</h3>
+                             <FormField
+                                control={form.control}
+                                name="wheelScale"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel className="flex items-center gap-2">
+                                        <RefreshCw className="h-4 w-4"/> 
+                                        Escala Global de la Ruleta ({field.value?.toFixed(2)})
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Slider
+                                        defaultValue={[1]}
+                                        value={[field.value ?? 1]}
+                                        onValueChange={(val) => field.onChange(val[0])}
+                                        max={2}
+                                        min={0.1}
+                                        step={0.05}
+                                        />
+                                    </FormControl>
+                                    <FormDescription>
+                                        Este control escala toda la ruleta (incluidos borde y puntero) manteniendo las proporciones.
+                                    </FormDescription>
+                                    </FormItem>
+                                )}
+                            />
                              <FormField
                                 control={form.control}
                                 name="backgroundImage"
