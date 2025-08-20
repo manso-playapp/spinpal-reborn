@@ -33,6 +33,7 @@ interface SpinningWheelProps {
   gameId: string;
   onSpinEnd: (result: { name: string; isRealPrize: boolean }) => void;
   isDemoMode?: boolean;
+  wheelScale?: number;
   config?: {
     borderImage?: string;
     borderScale?: number;
@@ -52,7 +53,7 @@ const capitalize = (s: string) => {
     return s.charAt(0).toUpperCase() + s.slice(1).replace(/-(\w)/g, (_, c) => c.toUpperCase());
 };
 
-export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, config = {} }: SpinningWheelProps) {
+export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, wheelScale = 1, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -189,7 +190,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
   return (
     <div className="relative flex flex-col items-center justify-center gap-8">
-      <div className="relative w-full max-w-md aspect-square">
+      <div className="relative w-full max-w-md aspect-square" style={{ transform: `scale(${wheelScale})` }}>
         <style>
             {`
             @keyframes blink-winner {

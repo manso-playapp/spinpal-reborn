@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, DocumentData, getDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { DocumentData, doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { QrCode, Gift, ThumbsDown, Loader2 } from 'lucide-react';
 import SpinningWheel from '@/components/game/SpinningWheel';
@@ -22,6 +22,7 @@ interface GameData extends DocumentData {
   backgroundFit: string;
   qrCodeScale: number;
   rouletteScale: number;
+  wheelScale: number;
   rouletteVerticalOffset: number;
   qrVerticalOffset: number;
   config: {
@@ -75,6 +76,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 backgroundFit: data.backgroundFit || 'cover',
                 qrCodeScale: data.qrCodeScale || 1,
                 rouletteScale: data.rouletteScale || 1,
+                wheelScale: data.wheelScale || 1,
                 rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
                 qrVerticalOffset: data.qrVerticalOffset || 0,
                 config: data.config || {
@@ -230,6 +232,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
               gameId={game.id} 
               isDemoMode={game.status === 'demo'}
               config={game.config}
+              wheelScale={game.wheelScale || 1}
               onSpinEnd={handleSpinEnd}
             />
           </div>
