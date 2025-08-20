@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, Firestore, writeBatch } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 interface EmailLog {
@@ -48,12 +60,23 @@ interface GameNames {
   [key: string]: string;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export default function EmailLogList() {
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [gameNames, setGameNames] = useState<GameNames>({});
   const [loading, setLoading] = useState(true);
+  const [selectedLogs, setSelectedLogs] = useState<string[]>([]);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
+    // Recuperar nombres de juegos cacheados
+    const cachedGameNames = localStorage.getItem('gameNames');
+    if (cachedGameNames) {
+      setGameNames(JSON.parse(cachedGameNames));
+    }
+
     if (!db) {
       setLoading(false);
       return;
@@ -69,18 +92,31 @@ export default function EmailLogList() {
           ...doc.data(),
         })) as EmailLog[];
 
+        // Obtener IDs únicos de juegos
+        const uniqueGameIds = [...new Set(logsData.map(log => log.gameId))];
         const newGameNames = { ...gameNames };
-        if (db) {
-          for (const log of logsData) {
-            if (log.gameId && !newGameNames[log.gameId]) {
-              const gameRef = doc(db, 'games', log.gameId);
+
+        if (db && uniqueGameIds.length > 0) {
+          // Crear un array de promesas para obtener los juegos en paralelo
+          const promises = uniqueGameIds.map(async (gameId) => {
+            if (!newGameNames[gameId] && gameId) {
+              const gameRef = doc(db as Firestore, 'games', gameId);
               const gameSnap = await getDoc(gameRef);
               if (gameSnap.exists()) {
-                newGameNames[log.gameId] = gameSnap.data().name || 'Juego Eliminado';
+                newGameNames[gameId] = gameSnap.data().name || 'Juego Eliminado';
+              } else {
+                newGameNames[gameId] = 'Juego Eliminado';
               }
             }
-          }
+          });
+
+          // Esperar a que todas las promesas se resuelvan
+          await Promise.all(promises);
+        
+        // Actualizar caché local
+        localStorage.setItem('gameNames', JSON.stringify(newGameNames));
         }
+
         setGameNames(newGameNames);
         setLogs(logsData);
         setLoading(false);
@@ -120,20 +156,99 @@ export default function EmailLogList() {
             </p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Estado</TableHead>
-                <TableHead>Destinatario</TableHead>
-                <TableHead className="hidden md:table-cell">Juego</TableHead>
-                <TableHead className="hidden md:table-cell">Premio</TableHead>
-                <TableHead className="hidden lg:table-cell">Fecha</TableHead>
-                <TableHead className="text-right">Detalles</TableHead>
-              </TableRow>
-            </TableHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="select-all"
+                  checked={logs.length > 0 && selectedLogs.length === logs.length}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedLogs(logs.map(log => log.id));
+                    } else {
+                      setSelectedLogs([]);
+                    }
+                  }}
+                />
+                <label htmlFor="select-all" className="text-sm text-muted-foreground">
+                  {selectedLogs.length === 0 
+                    ? "Seleccionar todo" 
+                    : `${selectedLogs.length} seleccionado${selectedLogs.length === 1 ? '' : 's'}`}
+                </label>
+              </div>
+              {selectedLogs.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={deleteLoading}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Eliminar {selectedLogs.length} {selectedLogs.length === 1 ? 'registro' : 'registros'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción eliminará permanentemente {selectedLogs.length} {selectedLogs.length === 1 ? 'registro' : 'registros'} de correo.
+                        Esta acción no se puede deshacer.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          setDeleteLoading(true);
+                          try {
+                            if (!db) return;
+                            const batch = writeBatch(db as Firestore);
+                            selectedLogs.forEach((id) => {
+                              const docRef = doc(db as Firestore, 'outbound_emails', id);
+                              batch.delete(docRef);
+                            });
+                            await batch.commit();
+                            setSelectedLogs([]);
+                          } catch (error) {
+                            console.error('Error deleting logs:', error);
+                          } finally {
+                            setDeleteLoading(false);
+                          }
+                        }}
+                        className="bg-destructive hover:bg-destructive/90"
+                      >
+                        Eliminar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12"></TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Destinatario</TableHead>
+                  <TableHead className="hidden md:table-cell">Juego</TableHead>
+                  <TableHead className="hidden md:table-cell">Premio</TableHead>
+                  <TableHead className="hidden lg:table-cell">Fecha</TableHead>
+                  <TableHead className="text-right">Detalles</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
-              {logs.map((log) => (
+              {logs.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE).map((log) => (
                 <TableRow key={log.id}>
+                  <TableCell>
+                    <Checkbox 
+                      checked={selectedLogs.includes(log.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedLogs([...selectedLogs, log.id]);
+                        } else {
+                          setSelectedLogs(selectedLogs.filter(id => id !== log.id));
+                        }
+                      }}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Badge variant={log.status === 'sent' ? 'default' : 'destructive'} className={log.status === 'sent' ? 'bg-green-600' : ''}>
                       {log.status === 'sent' ? <CheckCircle2 className="mr-1 h-3 w-3" /> : <AlertCircle className="mr-1 h-3 w-3" />}
@@ -182,6 +297,30 @@ export default function EmailLogList() {
               ))}
             </TableBody>
           </Table>
+          {logs.length > ITEMS_PER_PAGE && (
+            <div className="flex justify-center gap-2 mt-4">
+              <Button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                variant="outline"
+                size="sm"
+              >
+                Anterior
+              </Button>
+              <span className="px-3 py-1">
+                Página {page} de {Math.ceil(logs.length / ITEMS_PER_PAGE)}
+              </span>
+              <Button
+                onClick={() => setPage(p => Math.min(Math.ceil(logs.length / ITEMS_PER_PAGE), p + 1))}
+                disabled={page === Math.ceil(logs.length / ITEMS_PER_PAGE)}
+                variant="outline"
+                size="sm"
+              >
+                Siguiente
+              </Button>
+            </div>
+          )}
+          </div>
         )}
       </CardContent>
     </Card>

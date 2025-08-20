@@ -221,6 +221,7 @@ const prizeNotificationFlow = ai.defineFlow(
                 to: customerEmail,
                 gameId: input.gameId,
                 customerId: input.customerId,
+                clientId: gameData.clientId, // Add the client ID from the game data
                 prize: input.prizeName,
                 validationCode: validationCode,
                 message: {
@@ -254,6 +255,7 @@ const prizeNotificationFlow = ai.defineFlow(
                     to: clientEmail,
                     gameId: input.gameId,
                     customerId: input.customerId,
+                    clientId: gameData.clientId, // Add the client ID from the game data
                     prize: input.prizeName,
                     validationCode: validationCode,
                     message: {

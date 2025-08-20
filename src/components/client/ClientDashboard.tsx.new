@@ -65,37 +65,31 @@ export default function ClientDashboard() {
   }, [searchParams, isSuperAdmin, user]);
 
   useEffect(() => {
-    let isSubscribed = true;
-    let unsubscribe: (() => void) | undefined;
+    if (!impersonatedEmail) {
+        if (!user) setLoading(true);
+        else setLoading(false);
+        return;
+    }
 
-    const setupSubscription = async () => {
-      if (!impersonatedEmail) {
-          if (!user) setLoading(true);
-          else setLoading(false);
-          return;
-      }
+    setLoading(true);
+    if (!db) {
+        setLoading(false);
+        toast({
+            title: 'Error de conexión',
+            description: 'No se pudo conectar a la base de datos.',
+            variant: 'destructive',
+        });
+        return;
+    }
 
-      if (!db) {
-          setLoading(false);
-          toast({
-              title: 'Error de conexión',
-              description: 'No se pudo conectar a la base de datos.',
-              variant: 'destructive',
-          });
-          return;
-      }
+    const q = query(
+      collection(db, 'games'), 
+      where('clientEmail', '==', impersonatedEmail)
+    );
 
-      setLoading(true);
-
-      const q = query(
-        collection(db, 'games'), 
-        where('clientEmail', '==', impersonatedEmail)
-      );
-
-      unsubscribe = onSnapshot(
-        q,
-        (querySnapshot) => {
-          if (!isSubscribed) return;
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
         const gamesData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -107,29 +101,17 @@ export default function ClientDashboard() {
             setViewTitle('Mis Juegos');
         }
 
-          if (isSubscribed) {
-            setGames(gamesData);
-            setLoading(false);
-          }
-        },
-        (error) => {
-          console.error('Error fetching client games: ', error);
-          if (isSubscribed) {
-            setLoading(false);
-          }
-        }
-      );
-    };
-
-    setupSubscription();
-
-    return () => {
-      isSubscribed = false;
-      if (unsubscribe) {
-        unsubscribe();
+        setGames(gamesData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching client games: ', error);
+        setLoading(false);
       }
-    };
-  }, [impersonatedEmail, user, isSuperAdmin, toast, db]);
+    );
+
+    return () => unsubscribe();
+  }, [impersonatedEmail, user, isSuperAdmin, toast]);
 
   const getGameUrl = (gameId: string) => {
     if (typeof window !== 'undefined') {
