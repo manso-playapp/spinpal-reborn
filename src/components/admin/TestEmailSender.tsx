@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 
 const formSchema = z.object({
@@ -22,6 +23,7 @@ type TestEmailFormValues = z.infer<typeof formSchema>;
 
 export default function TestEmailSender() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<TestEmailFormValues>({
@@ -37,7 +39,10 @@ export default function TestEmailSender() {
       const response = await fetch('/api/send-test-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email }),
+        body: JSON.stringify({ 
+          email: data.email,
+          clientId: user?.uid 
+        }),
       });
       const result = await response.json();
       if (result.success) {
