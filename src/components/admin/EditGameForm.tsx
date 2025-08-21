@@ -1088,8 +1088,8 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                   <FormLabel>Rotación de Pantalla</FormLabel>
                                   <FormControl>
                                     <RadioGroup
-                                      onValueChange={(value) => field.onChange(parseInt(value))}
-                                      value={(field.value ?? 0).toString()}
+                                      onValueChange={(value) => field.onChange(Number(value))}
+                                      value={String(field.value || 0)}
                                       className="flex flex-row space-x-4"
                                     >
                                       <FormItem className="flex items-center space-x-2 space-y-0">
