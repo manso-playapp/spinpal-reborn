@@ -78,6 +78,14 @@ const formSchema = z.object({
   managementType: z.enum(['client', 'playapp']).default('client'),
   exemptedEmails: z.string().optional(),
   instagramProfile: z.string().url({ message: 'Debe ser una URL de Instagram válida.' }).or(z.literal('')).optional(),
+  tvWinMessage: z.string().optional(),
+  tvWinSubtitle: z.string().optional(),
+  tvLoseMessage: z.string().optional(),
+  tvLoseSubtitle: z.string().optional(),
+  mobileWinMessage: z.string().optional(),
+  mobileWinSubtitle: z.string().optional(),
+  mobileLoseMessage: z.string().optional(),
+  mobileLoseSubtitle: z.string().optional(),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios.').max(16, 'No puedes tener más de 16 premios.'),
   segmentsJson: z.string().optional(),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
@@ -215,6 +223,14 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       screenRotation: initialGame.screenRotation || 0,
       qrCodeScale: initialGame.qrCodeScale || 1,
       rouletteScale: initialGame.rouletteScale || 1,
+      tvWinMessage: initialGame.tvWinMessage || '¡Premio!',
+      tvWinSubtitle: initialGame.tvWinSubtitle || 'El ganador recibirá un email con instrucciones.',
+      tvLoseMessage: initialGame.tvLoseMessage || '¡Casi!',
+      tvLoseSubtitle: initialGame.tvLoseSubtitle || '¡Mucha suerte para la próxima!',
+      mobileWinMessage: initialGame.mobileWinMessage || '¡Felicidades!',
+      mobileWinSubtitle: initialGame.mobileWinSubtitle || 'El ganador recibirá un email con instrucciones.',
+      mobileLoseMessage: initialGame.mobileLoseMessage || '¡Casi!',
+      mobileLoseSubtitle: initialGame.mobileLoseSubtitle || '¡Mucha suerte para la próxima!',
       wheelScale: initialGame.wheelScale || 1,
       rouletteVerticalOffset: initialGame.rouletteVerticalOffset || 0,
       qrVerticalOffset: initialGame.qrVerticalOffset || 0,
@@ -372,18 +388,18 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
         ? data.exemptedEmails.split(',').map(email => email.trim().toLowerCase()).filter(email => email)
         : [];
 
-      const dataToSave = JSON.parse(JSON.stringify(data));
-
-      const updateData: Partial<Game> = {
-        ...dataToSave,
-        exemptedEmails: emailList,
-      };
-
-      delete updateData.borderImage;
-      delete updateData.borderScale;
-      delete updateData.centerImage;
-      delete updateData.centerScale;
-      delete (updateData as any).segmentsJson;
+      const formData = JSON.parse(JSON.stringify(data));
+      const dirtyFields = Object.keys(form.formState.dirtyFields);
+      
+      // Solo incluir los campos que realmente han cambiado
+      const updateData: Partial<Game> = {};
+      dirtyFields.forEach(field => {
+        if (field === 'exemptedEmails') {
+          updateData.exemptedEmails = emailList;
+        } else if (field !== 'segmentsJson' && field !== 'borderImage' && field !== 'borderScale' && field !== 'centerImage' && field !== 'centerScale') {
+          updateData[field] = formData[field];
+        }
+      });
 
       await updateDoc(gameRef, updateData);
 
@@ -509,17 +525,23 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
               {/* Columna de Controles */}
               <div className="lg:col-span-2 space-y-4">
                 <Tabs defaultValue="prizes" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 md:grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="data" className={!isSuperAdmin ? "hidden md:flex" : ""}><Settings className="mr-2 h-4 w-4" />Generales</TabsTrigger>
                     <TabsTrigger value="prizes"><Gamepad2 className="mr-2 h-4 w-4" />Ruleta</TabsTrigger>
                     <TabsTrigger value="gameConfig"><Settings className="mr-2 h-4 w-4"/>Pantallas</TabsTrigger>
-                    <TabsTrigger value="json" className={!isSuperAdmin ? "hidden md:flex text-destructive" : "text-destructive"}><FileText className="mr-2 h-4 w-4"/>JSON</TabsTrigger>
+                    <TabsTrigger value="texts"><Type className="mr-2 h-4 w-4"/>Textos</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="data" className={!isSuperAdmin ? "hidden md:block" : ""}>
-                    <Card>
-                      <CardContent className="p-6 space-y-8">
-                        <FormField
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      {/* Card 1: Información Básica */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Información Básica</CardTitle>
+                          <CardDescription>Datos principales del juego</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
                             control={form.control}
                             name="name"
                             render={({ field }) => (
@@ -528,115 +550,6 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormControl>
                                   <Input {...field} disabled={loading || !isSuperAdmin} />
                                 </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="clientName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Nombre del Cliente</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading || !isSuperAdmin} />
-                                </FormControl>
-                                <FormDescription>
-                                  El nombre que identifica al propietario de este juego.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="clientEmail"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email del Cliente (para notificaciones y acceso)</FormLabel>
-                                <FormControl>
-                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} value={field.value || ''} disabled={!isSuperAdmin}/>
-                                </FormControl>
-                                 <FormDescription>
-                                  Dirección donde el dueño del juego recibirá un aviso cuando un premio sea ganado.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                           <FormField
-                            control={form.control}
-                            name="managementType"
-                            render={({ field }) => (
-                                <FormItem className="space-y-3">
-                                <FormLabel>Tipo de Gestión</FormLabel>
-                                <FormControl>
-                                    <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex flex-row space-x-4"
-                                    disabled={loading || !isSuperAdmin}
-                                    >
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                        <RadioGroupItem value="client" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Controlado por Cliente</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                        <RadioGroupItem value="playapp" />
-                                        </FormControl>
-                                        <FormLabel className="font-normal">Controlado por PlayApp</FormLabel>
-                                    </FormItem>
-                                    </RadioGroup>
-                                </FormControl>
-                                 <FormDescription>
-                                    Elige quién se encargará de administrar esta campaña.
-                                 </FormDescription>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="instagramProfile"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="flex items-center gap-2"><Instagram className="h-4 w-4"/> URL de Perfil de Instagram (Opcional)</FormLabel>
-                                    <FormControl>
-                                    <Input
-                                        placeholder="https://www.instagram.com/tu_usuario"
-                                        {...field}
-                                        value={field.value ?? ''}
-                                        disabled={loading}
-                                    />
-                                    </FormControl>
-                                    <FormDescription>
-                                    Si completas esto, se le pedirá al jugador que confirme que sigue esta cuenta para poder jugar.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                           <FormField
-                            control={form.control}
-                            name="exemptedEmails"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="flex items-center gap-2"><Users /> Correos Exentos de Verificación</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    placeholder="un-email@ejemplo.com, otro@ejemplo.com"
-                                    className="min-h-[100px] font-mono text-sm"
-                                    {...field}
-                                    value={field.value ?? ''}
-                                    disabled={loading}
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  Lista de correos (separados por comas) que pueden jugar múltiples veces. Ideal para pruebas.
-                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -666,10 +579,169 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               </FormItem>
                             )}
                           />
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 2: Información del Cliente */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Información del Cliente</CardTitle>
+                          <CardDescription>Datos del propietario del juego</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="clientName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Nombre del Cliente</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading || !isSuperAdmin} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="clientEmail"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Email del Cliente</FormLabel>
+                                <FormControl>
+                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} value={field.value || ''} disabled={!isSuperAdmin}/>
+                                </FormControl>
+                                 <FormDescription>
+                                  Dirección donde recibirá avisos cuando se gane un premio.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="managementType"
+                            render={({ field }) => (
+                              <FormItem className="space-y-3">
+                                <FormLabel>Tipo de Gestión</FormLabel>
+                                <FormControl>
+                                  <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-row space-x-4"
+                                    disabled={loading || !isSuperAdmin}
+                                  >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <RadioGroupItem value="client" />
+                                      </FormControl>
+                                      <FormLabel className="font-normal">Controlado por Cliente</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                      <FormControl>
+                                        <RadioGroupItem value="playapp" />
+                                      </FormControl>
+                                      <FormLabel className="font-normal">Controlado por PlayApp</FormLabel>
+                                    </FormItem>
+                                  </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 3: Configuración de Registro */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Configuración de Registro</CardTitle>
+                          <CardDescription>Opciones para el formulario de registro</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="instagramProfile"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2">
+                                  <Instagram className="h-4 w-4"/> URL de Instagram
+                                </FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="https://www.instagram.com/tu_usuario"
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    disabled={loading}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Si se completa, se pedirá confirmar que sigue esta cuenta.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="isPhoneRequired"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-base">Requerir Teléfono</FormLabel>
+                                  <FormDescription>
+                                    Hacer obligatorio el campo de teléfono.
+                                  </FormDescription>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    disabled={loading}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 4: Configuración Avanzada */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Configuración Avanzada</CardTitle>
+                          <CardDescription>Opciones de desarrollo y pruebas</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="exemptedEmails"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="flex items-center gap-2">
+                                  <Users className="h-4 w-4"/> Correos Exentos
+                                </FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder="un-email@ejemplo.com, otro@ejemplo.com"
+                                    className="min-h-[100px] font-mono text-sm"
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    disabled={loading}
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Emails que pueden jugar múltiples veces (separados por comas).
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+                    </div>
                   </TabsContent>
-                  
+
                   <TabsContent value="prizes">
                     <Card>
                       <CardHeader>
@@ -1071,16 +1143,218 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                     </Card>
                   </TabsContent>
 
+                  <TabsContent value="texts">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      {/* Card 1: Pantalla de Registro */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <QrCode className="h-5 w-5"/>
+                            Pantalla de Registro
+                          </CardTitle>
+                          <CardDescription>Textos mostrados en el formulario inicial</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="registrationSubtitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Subtítulo del Juego</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Ej: Completa tus datos para ganar" value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="successMessage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Mensaje de Confirmación</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio." value={field.value || ''} />
+                                </FormControl>
+                                <FormDescription>El mensaje que ve el jugador después de completar el registro.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 2: Pantalla de TV - Ganar */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Gift className="h-5 w-5"/>
+                            Pantalla TV - Victoria
+                          </CardTitle>
+                          <CardDescription>Textos mostrados en la TV cuando se gana</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="tvWinMessage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Título</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="¡Premio!" value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Título principal que aparece cuando alguien gana un premio real.</FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="tvWinSubtitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Subtítulo</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="El ganador recibirá un email con instrucciones." value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Texto secundario que aparece debajo del título.</FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 3: Pantalla de TV - Perder */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Type className="h-5 w-5"/>
+                            Pantalla TV - No Victoria
+                          </CardTitle>
+                          <CardDescription>Textos mostrados en la TV cuando no se gana</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="tvLoseMessage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Título</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="¡Casi!" value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Título principal que aparece cuando no se gana un premio real.</FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="tvLoseSubtitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Subtítulo</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="¡Mucha suerte para la próxima!" value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Texto secundario que aparece debajo del título.</FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      {/* Card 4: Pantalla Móvil - Mensajes */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Smartphone className="h-5 w-5"/>
+                            Pantalla Móvil - Resultados
+                          </CardTitle>
+                          <CardDescription>Textos mostrados en el móvil tras el giro</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-6">
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-medium">Al Ganar</h4>
+                              <FormField
+                                control={form.control}
+                                name="mobileWinMessage"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Título</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="¡Felicidades!" value={field.value || ''} />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="mobileWinSubtitle"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Descripción</FormLabel>
+                                    <FormControl>
+                                      <Textarea {...field} 
+                                        placeholder="El ganador recibirá un email con instrucciones."
+                                        value={field.value || ''} />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <Separator />
+                            
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-medium">Al No Ganar</h4>
+                              <FormField
+                                control={form.control}
+                                name="mobileLoseMessage"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Título</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="¡Casi!" value={field.value || ''} />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name="mobileLoseSubtitle"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Descripción</FormLabel>
+                                    <FormControl>
+                                      <Textarea {...field} 
+                                        placeholder="¡Mucha suerte para la próxima!"
+                                        value={field.value || ''} />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+                  
                   <TabsContent value="gameConfig">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Configuración de Pantallas de Juego</CardTitle>
-                        <CardDescription>Ajusta los mensajes y elementos que ven los jugadores.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-8">
-                         <div className="space-y-4">
-                            <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Pantalla de TV/Display</h3>
-                            <FormField
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                      {/* Card 1: Configuración de TV */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <ImageIcon className="h-5 w-5"/> 
+                            Pantalla TV
+                          </CardTitle>
+                          <CardDescription>Ajustes generales de la pantalla principal</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
                               control={form.control}
                               name="screenRotation"
                               render={({ field }) => (
@@ -1180,88 +1454,109 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 </FormItem>
                               )}
                             />
-                        </div>
-                        <Separator />
-                        <FormField
-                            control={form.control}
-                            name="rouletteScale"
-                            render={({ field }) => (
+                          </CardContent>
+                        </Card>
+                      
+                        {/* Card 2: Ajustes de la Ruleta */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <RefreshCw className="h-5 w-5"/>
+                              Ajustes de la Ruleta
+                            </CardTitle>
+                            <CardDescription>Configuración de tamaño y posición</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="rouletteScale"
+                              render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Escala de la Ruleta ({field.value?.toFixed(2)})</FormLabel>
-                                <FormControl>
+                                  <FormLabel>Escala de la Ruleta ({field.value?.toFixed(2)})</FormLabel>
+                                  <FormControl>
                                     <Slider
-                                    defaultValue={[1]}
-                                    value={[field.value ?? 1]}
-                                    onValueChange={(val) => field.onChange(val[0])}
-                                    max={2}
-                                    min={0.1}
-                                    step={0.05}
+                                      defaultValue={[1]}
+                                      value={[field.value ?? 1]}
+                                      onValueChange={(val) => field.onChange(val[0])}
+                                      max={2}
+                                      min={0.1}
+                                      step={0.05}
                                     />
-                                </FormControl>
+                                  </FormControl>
                                 </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="rouletteVerticalOffset"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Desplazamiento Vertical Ruleta ({field.value?.toFixed(0)}px)</FormLabel>
-                                <FormControl>
-                                    <Slider
-                                    defaultValue={[0]}
-                                    value={[field.value ?? 0]}
-                                    onValueChange={(val) => field.onChange(val[0])}
-                                    max={500}
-                                    min={-500}
-                                    step={1}
-                                    />
-                                </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="qrVerticalOffset"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Desplazamiento Vertical del QR/TXT ({field.value?.toFixed(0)}px)</FormLabel>
-                                <FormControl>
-                                    <Slider
-                                    defaultValue={[0]}
-                                    value={[field.value ?? 0]}
-                                    onValueChange={(val) => field.onChange(val[0])}
-                                    max={500}
-                                    min={-500}
-                                    step={1}
-                                    />
-                                </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="qrCodeScale"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Escala del Módulo QR ({field.value?.toFixed(2)})</FormLabel>
-                                <FormControl>
-                                    <Slider
-                                    defaultValue={[1]}
-                                    value={[field.value ?? 1]}
-                                    onValueChange={(val) => field.onChange(val[0])}
-                                    max={2}
-                                    min={0.1}
-                                    step={0.05}
-                                    />
-                                </FormControl>
-                                <FormDescription>Ajusta el tamaño del módulo con el código QR en la pantalla de juego.</FormDescription>
-                                </FormItem>
-                            )}
-                        />
-                        <Separator />
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-medium flex items-center gap-2"><Smartphone /> Pantalla de Registro (Móvil)</h3>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="rouletteVerticalOffset"
+                              render={({ field }) => (
+                                  <FormItem>
+                                  <FormLabel>Desplazamiento Vertical Ruleta ({field.value?.toFixed(0)}px)</FormLabel>
+                                  <FormControl>
+                                      <Slider
+                                      defaultValue={[0]}
+                                      value={[field.value ?? 0]}
+                                      onValueChange={(val) => field.onChange(val[0])}
+                                      max={500}
+                                      min={-500}
+                                      step={1}
+                                      />
+                                  </FormControl>
+                                  </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="qrVerticalOffset"
+                              render={({ field }) => (
+                                  <FormItem>
+                                  <FormLabel>Desplazamiento Vertical del QR/TXT ({field.value?.toFixed(0)}px)</FormLabel>
+                                  <FormControl>
+                                      <Slider
+                                      defaultValue={[0]}
+                                      value={[field.value ?? 0]}
+                                      onValueChange={(val) => field.onChange(val[0])}
+                                      max={500}
+                                      min={-500}
+                                      step={1}
+                                      />
+                                  </FormControl>
+                                  </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="qrCodeScale"
+                              render={({ field }) => (
+                                  <FormItem>
+                                  <FormLabel>Escala del Módulo QR ({field.value?.toFixed(2)})</FormLabel>
+                                  <FormControl>
+                                      <Slider
+                                      defaultValue={[1]}
+                                      value={[field.value ?? 1]}
+                                      onValueChange={(val) => field.onChange(val[0])}
+                                      max={2}
+                                      min={0.1}
+                                      step={0.05}
+                                      />
+                                  </FormControl>
+                                  <FormDescription>Ajusta el tamaño del módulo con el código QR en la pantalla de juego.</FormDescription>
+                                  </FormItem>
+                              )}
+                            />
+                          </CardContent>
+                        </Card>
+
+                        {/* Card 3: Pantalla Móvil */}
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <Smartphone className="h-5 w-5"/>
+                              Pantalla de Registro (Móvil)
+                            </CardTitle>
+                            <CardDescription>Ajustes de la pantalla del jugador</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
                             <FormField
                                 control={form.control}
                                 name="mobileBackgroundImage"
@@ -1299,96 +1594,11 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 </FormItem>
                               )}
                             />
-                            <FormField
-                              control={form.control}
-                              name="registrationSubtitle"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Subtítulo en Pantalla de Registro</FormLabel>
-                                  <FormControl>
-                                    <Input {...field} placeholder="Ej: Completa tus datos para ganar" value={field.value || ''}/>
-                                  </FormControl>
-                                  <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="isPhoneRequired"
-                                render={({ field }) => (
-                                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                      <FormLabel className="text-base">Requerir Teléfono</FormLabel>
-                                      <FormDescription>
-                                        Si se activa, el campo de teléfono será obligatorio para poder registrarse.
-                                      </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                      <Switch
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                        disabled={loading}
-                                      />
-                                    </FormControl>
-                                  </FormItem>
-                                )}
-                              />
-                            <FormField
-                              control={form.control}
-                              name="successMessage"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Mensaje de Éxito</FormLabel>
-                                  <FormControl>
-                                    <Textarea {...field} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio." value={field.value || ''} />
-                                  </FormControl>
-                                  <FormDescription>El mensaje que ve el jugador en su móvil después de solicitar el giro.</FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                        </div>
-                      </CardContent>
-                    </Card>
+                          </CardContent>
+                        </Card>
+                    </div>
                   </TabsContent>
-                  <TabsContent value="json" className={!isSuperAdmin ? "hidden md:block" : ""}>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Editor de Premios (JSON)</CardTitle>
-                            <CardDescription>Copia y pega la configuración de los premios para migrar o duplicar ruletas rápidamente.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Alert>
-                                <FileText className="h-4 w-4" />
-                                <AlertTitle>Instrucciones</AlertTitle>
-                                <AlertDescription>
-                                    Puedes copiar el código de abajo (que representa los premios actuales) y pegarlo en el campo JSON de otro juego para clonar la configuración de los premios.
-                                </AlertDescription>
-                            </Alert>
-                             <FormField
-                                control={form.control}
-                                name="segmentsJson"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Configuración de Premios en JSON</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            className="min-h-[400px] font-mono text-xs"
-                                            {...field}
-                                            onChange={(e) => {
-                                                field.onChange(e);
-                                                handleJsonChange(e.target.value);
-                                            }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                     </Card>
-                  </TabsContent>
+
                 </Tabs>
                 <div className="mt-8">
                   <Button type="submit" disabled={loading} size="lg">

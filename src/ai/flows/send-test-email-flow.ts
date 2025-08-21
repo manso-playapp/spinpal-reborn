@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for sending a test email via Resend.
+ * A flow for sending a test email via Resend.
  *
  * - sendTestEmail - A function that handles sending a single test email.
  * - TestEmailInput - The input type for the sendTestEmail function.
@@ -16,6 +16,7 @@ import { db } from '@/lib/firebase/config';
 
 const TestEmailInputSchema = z.object({
   email: z.string().email().describe('The email address to send the test to.'),
+  clientId: z.string().optional().describe('The ID of the client sending the test email.'),
 });
 export type TestEmailInput = z.infer<typeof TestEmailInputSchema>;
 
@@ -74,6 +75,7 @@ export async function sendTestEmail(input: TestEmailInput): Promise<TestEmailOut
     type: 'Test Email',
     message: { subject, html: body },
     createdAt: serverTimestamp(),
+    clientId: input.clientId, // Add clientId to the log
   };
   
   try {

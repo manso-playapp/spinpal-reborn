@@ -186,8 +186,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
              return (
                 <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
                     <CardHeader>
-                    <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
-                        <QrCode />
+                    <CardTitle className="font-headline text-2xl flex items-center justify-center">
                         ¡Escanea para Jugar!
                     </CardTitle>
                     </CardHeader>
@@ -268,11 +267,16 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
               {renderBottomCard()}
             </div>
         </div>
-        <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
-            <a href="https://playapp.mansoestudiocreativo.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/80 hover:text-white transition-colors text-xs">
-                <span className="font-semibold">un producto de</span>
-                <Logo className="h-4 w-auto text-white" />
-            </a>
+        <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50">
+            <div className="flex flex-col items-center gap-1">
+                <div className="text-xs text-gray-300/50">Build: 2508211535</div>
+                <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
+                    <a href="https://playapp.mansoestudiocreativo.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/80 hover:text-white transition-colors text-base">
+                        <span className="font-semibold">un producto de</span>
+                        <Logo className="h-6 w-auto text-white" />
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
   );
