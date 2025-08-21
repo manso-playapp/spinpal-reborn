@@ -202,14 +202,23 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             setSpinResult(result);
 
             // Actualizar Firestore para disparar la animación en la TV
+            console.log('Iniciando giro con los siguientes datos:', {
+                customerId,
+                winningSegment,
+                prizeNameToDisplay
+            });
+
             const gameRef = doc(db, 'games', gameId);
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
             const batch = writeBatch(db);
 
+            // Primero intentemos solo el spinRequest
             const gameUpdateData: { [key: string]: any } = {
-                plays: increment(1),
-                spinRequest: { timestamp: serverTimestamp(), customerId: customerId, winningId: winningSegment.id },
-                lastResult: { name: prizeNameToDisplay, isRealPrize: !!winningSegment.isRealPrize, customerId: customerId, timestamp: serverTimestamp() }
+                spinRequest: { 
+                    timestamp: serverTimestamp(), 
+                    customerId: customerId, 
+                    winningId: winningSegment.id 
+                }
             };
             const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
 
@@ -220,10 +229,22 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 sendPrizeNotification({ gameId, customerId: customerId, prizeName: prizeNameToDisplay });
             }
 
-            batch.update(gameRef, gameUpdateData);
-            batch.update(customerRef, customerUpdateData);
-            
-            await batch.commit();
+            try {
+                console.log('Intentando actualizar el juego con:', gameUpdateData);
+                // Primero intentemos actualizar solo el juego
+                await updateDoc(gameRef, gameUpdateData);
+                console.log('Actualización del juego exitosa');
+
+                // Si lo anterior funciona, actualizamos el cliente
+                console.log('Intentando actualizar el cliente con:', customerUpdateData);
+                await updateDoc(customerRef, customerUpdateData);
+                console.log('Actualización del cliente exitosa');
+            } catch (error: any) {
+                console.error('Error específico al actualizar:', error);
+                setErrorMessage(`Error al actualizar: ${error.message}`);
+                setUiState('ERROR');
+                return; // Salimos de la función en lugar de lanzar el error
+            }
 
             // Esperar un tiempo prudencial para la animación antes de mostrar el resultado
             setTimeout(() => {

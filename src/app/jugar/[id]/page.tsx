@@ -1,8 +1,11 @@
 
-// Añadir @ts-ignore y tipar params como any
-// @ts-ignore
-export default async function PlayerPage({ params }: any) {
-  const gameId = params.id;
+interface PageProps {
+  params: Promise<{ id: string }> | { id: string };
+}
+
+export default async function PlayerPage({ params }: PageProps) {
+  const resolvedParams = await Promise.resolve(params);
+  const gameId = resolvedParams.id;
   const game = await getGameData(gameId);
 
   if (!game) {
