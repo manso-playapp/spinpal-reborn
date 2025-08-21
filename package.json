@@ -70,9 +70,9 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "genkit-cli": "latest",
+    "handlebars-loader": "^1.7.3",
     "postcss": "latest",
     "tailwindcss": "latest",
     "typescript": "latest"
   }
 }
-

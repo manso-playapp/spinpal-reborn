@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack: (config, { isServer }) => {
+    // Agregar regla para manejar handlebars
+    config.module.rules.push({
+      test: /\.handlebars$/,
+      loader: 'handlebars-loader'
+    });
+    return config;
+  },
   images: {
     remotePatterns: [
       {
