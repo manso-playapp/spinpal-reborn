@@ -1089,7 +1089,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                   <FormControl>
                                     <RadioGroup
                                       onValueChange={(value) => field.onChange(parseInt(value))}
-                                      defaultValue={field.value.toString()}
+                                      value={(field.value ?? 0).toString()}
                                       className="flex flex-row space-x-4"
                                     >
                                       <FormItem className="flex items-center space-x-2 space-y-0">
