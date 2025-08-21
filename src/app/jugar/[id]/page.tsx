@@ -1,12 +1,14 @@
 
-interface PageProps {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
+import type { Metadata } from 'next';
 
-export default async function PlayerPage(props: PageProps) {
-  const params = props.params;
-  const gameId = params.id;
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams?: { [key: string]: string | string[] | undefined };
+};
+
+export default async function PlayerPage(props: Props) {
+  const resolvedParams = await props.params;
+  const gameId = resolvedParams.id;
   const game = await getGameData(gameId);
 
   if (!game) {

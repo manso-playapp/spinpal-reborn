@@ -1,11 +1,11 @@
 
-interface PageProps {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
+type PageProps = {
+  params: Promise<{ id: string }>;
+  searchParams?: { [key: string]: string | string[] | undefined };
+};
 
 export default async function GamePage(props: PageProps) {
-  const gameId = props.params.id;
+  const { id: gameId } = await props.params;
   const gameData = await getGameData(gameId);
 
   if (!gameData) {
