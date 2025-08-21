@@ -25,6 +25,7 @@ interface GameData extends DocumentData {
   wheelScale: number;
   rouletteVerticalOffset: number;
   qrVerticalOffset: number;
+  screenRotation?: number;
   config: {
     borderImage: string;
     borderScale: number;
@@ -79,6 +80,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 wheelScale: data.wheelScale || 1,
                 rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
                 qrVerticalOffset: data.qrVerticalOffset || 0,
+                screenRotation: data.screenRotation || 0,
                 config: data.config || {
                     borderImage: data.borderImage || '',
                     borderScale: data.borderScale || 1,
@@ -201,10 +203,22 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
     }
   }
 
+  // Calculamos los estilos del contenedor principal
+  const containerStyles: React.CSSProperties = {
+    ...backgroundStyles,
+    transformOrigin: 'center center',
+    width: game.screenRotation ? '100vh' : '100vw',
+    height: game.screenRotation ? '100vw' : '100vh',
+    position: 'fixed',
+    top: game.screenRotation ? '50%' : '0',
+    left: game.screenRotation ? '50%' : '0',
+    transform: game.screenRotation ? `translate(-50%, -50%) rotate(${game.screenRotation}deg)` : 'none'
+  };
+
   return (
     <div 
-      className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden p-4"
-      style={backgroundStyles}
+      className="relative flex flex-col items-center justify-center overflow-hidden p-4"
+      style={containerStyles}
     >
         {game.status === 'demo' && (
              <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 items-end">
