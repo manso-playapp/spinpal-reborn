@@ -6,17 +6,20 @@ service cloud.firestore {
     // Cualquiera puede leer los juegos
     match /games/{gameId} {
       allow read: if true;
-      // Permitir escrituras de admins y actualizaciones específicas para el giro
-      allow write: if request.auth != null || 
-        (request.method == 'update' && 
-         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['spinning', 'lastSpinTime', 'lastWinner']));
+      allow write: if request.auth != null; // Solo admins pueden escribir
+      allow update: if request.auth != null || 
+        (request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['spinRequest', 'lastResult', 'plays', 'prizesAwarded']));
     }
 
     // Cualquiera puede leer los clientes de un juego
     match /games/{gameId}/customers/{customerId} {
       allow read: if true;
       allow create: if true; // Cualquiera puede registrarse
-      allow update, delete: if request.auth != null; // Solo admins pueden modificar
+      allow update: if request.auth != null || 
+        (request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['hasPlayed', 'prizeWonName', 'prizeWonAt']));
+      allow delete: if request.auth != null;
     }
     
     // Colección de prueba para verificar la conexión
