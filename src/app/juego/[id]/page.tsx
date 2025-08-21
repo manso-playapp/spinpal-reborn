@@ -1,10 +1,10 @@
 
-type PageProps = {
+type Props = {
   params: Promise<{ id: string }>;
-  searchParams?: { [key: string]: string | string[] | undefined };
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export default async function GamePage(props: PageProps) {
+export default async function GamePage(props: Props) {
   const { id: gameId } = await props.params;
   const gameData = await getGameData(gameId);
 
