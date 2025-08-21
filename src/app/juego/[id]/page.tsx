@@ -1,12 +1,5 @@
 
-import { Metadata } from 'next';
-
-interface PageProps {
-  params: { id: string };
-  searchParams?: { [key: string]: string | string[] | undefined };
-}
-
-export default async function GamePage({ params }: PageProps) {
+export default async function GamePage({ params }: any) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 
