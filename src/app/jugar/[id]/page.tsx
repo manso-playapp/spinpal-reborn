@@ -1,11 +1,10 @@
 
-interface PageProps {
-  params: Promise<{ id: string }> | { id: string };
-}
-
-export default async function PlayerPage({ params }: PageProps) {
-  const resolvedParams = await Promise.resolve(params);
-  const gameId = resolvedParams.id;
+export default async function PlayerPage({ 
+  params 
+}: { 
+  params: { id: string } 
+}) {
+  const gameId = params.id;
   const game = await getGameData(gameId);
 
   if (!game) {
