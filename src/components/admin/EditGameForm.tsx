@@ -93,6 +93,7 @@ const formSchema = z.object({
   wheelScale: z.number().min(0.1).max(2).optional(),
   rouletteVerticalOffset: z.number().min(-500).max(500).optional(),
   qrVerticalOffset: z.number().min(-500).max(500).optional(),
+  screenRotation: z.number().default(0),
   config: z.object({
     borderImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
     borderScale: z.number().min(0.1).max(2).optional(),
@@ -211,6 +212,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       registrationSubtitle: initialGame.registrationSubtitle || '',
       isPhoneRequired: initialGame.isPhoneRequired || false,
       successMessage: initialGame.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+      screenRotation: initialGame.screenRotation || 0,
       qrCodeScale: initialGame.qrCodeScale || 1,
       rouletteScale: initialGame.rouletteScale || 1,
       wheelScale: initialGame.wheelScale || 1,
@@ -1078,6 +1080,44 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                       <CardContent className="space-y-8">
                          <div className="space-y-4">
                             <h3 className="text-lg font-medium flex items-center gap-2"><ImageIcon /> Pantalla de TV/Display</h3>
+                            <FormField
+                              control={form.control}
+                              name="screenRotation"
+                              render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                  <FormLabel>Rotación de Pantalla</FormLabel>
+                                  <FormControl>
+                                    <RadioGroup
+                                      onValueChange={(value) => field.onChange(parseInt(value))}
+                                      defaultValue={field.value.toString()}
+                                      className="flex flex-row space-x-4"
+                                    >
+                                      <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                          <RadioGroupItem value="-90" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">-90°</FormLabel>
+                                      </FormItem>
+                                      <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                          <RadioGroupItem value="0" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">0°</FormLabel>
+                                      </FormItem>
+                                      <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                          <RadioGroupItem value="90" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">90°</FormLabel>
+                                      </FormItem>
+                                    </RadioGroup>
+                                  </FormControl>
+                                  <FormDescription>
+                                    Rota la pantalla del juego para adaptarse a TVs verticales.
+                                  </FormDescription>
+                                </FormItem>
+                              )}
+                            />
                              <FormField
                                 control={form.control}
                                 name="wheelScale"
