@@ -1,5 +1,9 @@
 
-export default async function GamePage({ params }: any) {
+export default async function GamePage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const gameId = params.id;
   const gameData = await getGameData(gameId);
 
