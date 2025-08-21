@@ -1,10 +1,11 @@
 
-export default async function GamePage({
-  params,
-}: {
+interface PageProps {
   params: { id: string };
-}) {
-  const gameId = params.id;
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+export default async function GamePage(props: PageProps) {
+  const gameId = props.params.id;
   const gameData = await getGameData(gameId);
 
   if (!gameData) {
