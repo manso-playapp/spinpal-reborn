@@ -27,7 +27,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Only subscribe to auth state changes if Firebase was initialized correctly
     if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // Forzar actualización del token para obtener los claims más recientes
+          await user.getIdToken(true);
+          const idTokenResult = await user.getIdTokenResult();
+          
+          // Verificar los roles/claims
+          const isAdmin = idTokenResult.claims.admin === true || 
+                         idTokenResult.claims.role === 'admin' ||
+                         idTokenResult.claims.role === 'superadmin' ||
+                         idTokenResult.claims.isAdmin === true;
+          
+          if (!isAdmin && user.email !== superAdminEmail) {
+            console.warn('Usuario sin permisos de administrador');
+            if (auth) await firebaseSignOut(auth);
+            setUser(null);
+            setIsSuperAdmin(false);
+            router.push('/login');
+            return;
+          }
+        }
+        
         setUser(user);
         setIsSuperAdmin(user?.email === superAdminEmail);
         setLoading(false);
@@ -39,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setIsSuperAdmin(false);
     }
-  }, []);
+  }, [router]);
 
   const signOut = async () => {
     if (auth) {

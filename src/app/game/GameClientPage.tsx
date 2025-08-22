@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { db } from '@/lib/firebase/config';
 import { DocumentData, doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -146,12 +147,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   };
   
   const backgroundStyles: React.CSSProperties = game.backgroundVideo || game.backgroundImage ? {
-    ...(game.backgroundImage && !game.backgroundVideo ? {
-      backgroundImage: `url(${game.backgroundImage})`,
-      backgroundSize: game.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-    } : {})
+    position: 'relative',
   } : {};
 
   const renderBottomCard = () => {
@@ -222,9 +218,9 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
       className="relative flex flex-col items-center justify-center overflow-hidden p-4"
       style={containerStyles}
     >
-      {game.backgroundVideo && (
+      {game.backgroundVideo ? (
         <video
-          className="absolute inset-0 w-full h-full object-cover z-0"
+          className="absolute inset-0 w-full h-full z-0"
           src={game.backgroundVideo}
           autoPlay
           loop
@@ -233,8 +229,30 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
           style={{
             objectFit: game.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
           }}
+          onError={(e: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+            console.error('Error loading background video:', game.backgroundVideo);
+            e.currentTarget.style.display = 'none';
+          }}
         />
-      )}
+      ) : game.backgroundImage ? (
+        <div className="absolute inset-0 w-full h-full z-0">
+          <Image
+            src={game.backgroundImage}
+            alt="Background"
+            fill
+            priority
+            quality={85}
+            className="transition-opacity duration-300"
+            style={{
+              objectFit: game.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
+            }}
+            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+              console.error('Error loading background image:', game.backgroundImage);
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+      ) : null}
         {game.status === 'demo' && (
              <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 items-end">
                 <div className="bg-yellow-400 text-black px-4 py-1 text-sm font-bold shadow-lg rounded-full">
