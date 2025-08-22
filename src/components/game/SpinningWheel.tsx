@@ -252,14 +252,26 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                         <path d={pathData} fill={segment.color || '#ffffff'} stroke={strokeColor} strokeWidth={strokeWidth} />
                         
                         {segment.iconUrl ? (
-                          <image
-                            href={segment.iconUrl}
+                          <foreignObject
                             x={iconX}
                             y={iconY}
-                            height={iconSize}
                             width={iconSize}
+                            height={iconSize}
                             transform={`rotate(${iconRotation} ${iconX + iconSize/2} ${iconY + iconSize/2})`}
-                          />
+                          >
+                            <Image
+                              src={segment.iconUrl}
+                              alt={`Icon for ${segment.name}`}
+                              width={iconSize}
+                              height={iconSize}
+                              className="object-contain w-full h-full"
+                              quality={85}
+                              onError={(e) => {
+                                console.error('Error loading segment icon:', segment.iconUrl);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          </foreignObject>
                         ) : (
                           IconComponent ? (
                             <foreignObject
@@ -324,7 +336,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                 height={500}
                 className="object-contain"
                 data-ai-hint="roulette border"
-                unoptimized
+                quality={90}
+                priority
+                onError={(e) => {
+                  console.error('Error loading border image:', borderImage);
+                  e.currentTarget.style.display = 'none';
+                }}
             />
             </div>
         )}
@@ -341,7 +358,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                 height={500}
                 className="object-contain"
                 data-ai-hint="roulette pointer"
-                unoptimized
+                quality={90}
+                priority
+                onError={(e) => {
+                  console.error('Error loading center image:', centerImage);
+                  e.currentTarget.style.display = 'none';
+                }}
             />
             </div>
         )}

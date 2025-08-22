@@ -27,7 +27,7 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = (file: File) => {
+  const handleUpload = async (file: File) => {
     if (!storage || !auth) {
       toast({
         variant: 'destructive',
@@ -42,6 +42,23 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
         variant: 'destructive',
         title: 'No autenticado',
         description: 'Debes iniciar sesión para subir imágenes.',
+      });
+      return;
+    }
+
+    // Verificar permisos de administrador
+    const tokenResult = await user.getIdTokenResult();
+    const isAdmin = tokenResult.claims.admin === true || 
+                   tokenResult.claims.role === 'admin' ||
+                   tokenResult.claims.role === 'superadmin' ||
+                   tokenResult.claims.isAdmin === true ||
+                   user.email === 'grupomanso@gmail.com';
+
+    if (!isAdmin) {
+      toast({
+        variant: 'destructive',
+        title: 'Sin permisos',
+        description: 'No tienes permisos para subir archivos.',
       });
       return;
     }
@@ -77,9 +94,15 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
         setUploadProgress(progress);
         setUploadStatus(`Subiendo... ${Math.round(progress)}%`);
       },
-      (error) => {
+      async (error) => {
         setUploadProgress(null);
         let errorMessage = `Hubo un problema al subir la imagen.`;
+        
+        // Log detallado del error
+        console.error('Error completo:', error);
+        console.log('Token actual:', await user.getIdToken());
+        console.log('Claims:', (await user.getIdTokenResult()).claims);
+        
         if(error.code === 'storage/unauthorized') {
             errorMessage = 'Error de permisos. Asegúrate de que las reglas de Storage están bien configuradas.';
         }
@@ -106,10 +129,10 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
     );
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      handleUpload(file);
+      await handleUpload(file);
     }
   };
 
