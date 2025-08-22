@@ -259,18 +259,14 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                             height={iconSize}
                             transform={`rotate(${iconRotation} ${iconX + iconSize/2} ${iconY + iconSize/2})`}
                           >
-                            <Image
-                              src={segment.iconUrl}
-                              alt={`Icon for ${segment.name}`}
-                              width={iconSize}
-                              height={iconSize}
-                              className="object-contain w-full h-full"
-                              quality={85}
-                              onError={(e) => {
-                                console.error('Error loading segment icon:', segment.iconUrl);
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
+                            <div className="w-full h-full" style={{
+                              backgroundImage: `url(${segment.iconUrl})`,
+                              backgroundSize: 'contain',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              imageOrientation: 'from-image',
+                              transform: 'rotate(90deg)'
+                            }} />
                           </foreignObject>
                         ) : (
                           IconComponent ? (
