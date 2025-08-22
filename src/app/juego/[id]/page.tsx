@@ -33,6 +33,7 @@ interface GameData extends DocumentData {
   status: string;
   segments: any[];
   backgroundImage: string;
+  backgroundVideo: string;
   backgroundFit: string;
   qrCodeScale: number;
   rouletteScale: number;
@@ -71,6 +72,7 @@ async function getGameData(id: string): Promise<GameData | null> {
       status: data.status || 'demo',
       segments: data.segments || [],
       backgroundImage: data.backgroundImage || '',
+      backgroundVideo: data.backgroundVideo || '',
       backgroundFit: data.backgroundFit || 'cover',
       qrCodeScale: data.qrCodeScale || 1,
       rouletteScale: data.rouletteScale || 1,

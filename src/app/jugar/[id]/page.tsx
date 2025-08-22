@@ -15,16 +15,31 @@ export default async function PlayerPage(props: Props) {
     notFound();
   }
 
-  const backgroundStyles: React.CSSProperties = game.mobileBackgroundImage ? {
-    backgroundImage: `url(${game.mobileBackgroundImage})`,
-    backgroundSize: game.mobileBackgroundFit as 'cover' | 'contain' | 'fill' | 'none',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
+  const backgroundStyles: React.CSSProperties = game.mobileBackgroundVideo || game.mobileBackgroundImage ? {
+    ...(game.mobileBackgroundImage && !game.mobileBackgroundVideo ? {
+      backgroundImage: `url(${game.mobileBackgroundImage})`,
+      backgroundSize: game.mobileBackgroundFit as 'cover' | 'contain' | 'fill' | 'none',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    } : {})
   } : {};
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 relative" style={backgroundStyles}>
-       {game.mobileBackgroundImage && <div className="absolute inset-0 bg-black/30 z-0"></div>}
+      {game.mobileBackgroundVideo && (
+        <video
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src={game.mobileBackgroundVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            objectFit: game.mobileBackgroundFit as 'cover' | 'contain' | 'fill' | 'none',
+          }}
+        />
+      )}
+       {(game.mobileBackgroundImage || game.mobileBackgroundVideo) && <div className="absolute inset-0 bg-black/30 z-0"></div>}
        <div className="w-full max-w-md z-10 flex flex-col justify-center items-center flex-grow">
          <div className="text-center text-white mb-6">
             <h1 className="font-headline text-3xl font-bold">
@@ -70,6 +85,7 @@ async function getGameData(id: string) {
     name: data.name || "Juego sin nombre",
     registrationSubtitle: data.registrationSubtitle,
     mobileBackgroundImage: data.mobileBackgroundImage || '',
+    mobileBackgroundVideo: data.mobileBackgroundVideo || '',
     mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
   };
 }

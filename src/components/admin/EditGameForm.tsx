@@ -90,8 +90,10 @@ const formSchema = z.object({
   segmentsJson: z.string().optional(),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   backgroundFit: z.enum(['cover', 'contain', 'fill', 'none']),
+  backgroundVideo: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
   mobileBackgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).optional(),
   mobileBackgroundFit: z.enum(['cover', 'contain', 'fill', 'none']).optional(),
+  mobileBackgroundVideo: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).optional(),
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   isPhoneRequired: z.boolean().optional(),
@@ -1417,43 +1419,66 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     </FormItem>
                                 )}
                             />
-                             <FormField
-                                control={form.control}
-                                name="backgroundImage"
-                                render={() => (
-                                    <FormItem>
-                                    <FormLabel>Imagen de Fondo (TV)</FormLabel>
-                                    <ImageUpload fieldName="backgroundImage" gameId={initialGame.id} />
-                                    <FormDescription>
-                                        Sube una imagen para usar de fondo. Déjalo en blanco para no usar ninguna.
-                                    </FormDescription>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
+                             <div className="space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="backgroundImage"
+                                    render={() => (
+                                        <FormItem>
+                                        <FormLabel>Imagen de Fondo (TV)</FormLabel>
+                                        <ImageUpload fieldName="backgroundImage" gameId={initialGame.id} />
+                                        <FormDescription>
+                                            Sube una imagen para usar de fondo. Déjalo en blanco para no usar ninguna.
+                                        </FormDescription>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
-                            <FormField
-                              control={form.control}
-                              name="backgroundFit"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Ajuste de la Imagen</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona cómo se ajustará la imagen" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="cover">Cubrir (Cover)</SelectItem>
-                                      <SelectItem value="contain">Contener (Contain)</SelectItem>
-                                      <SelectItem value="fill">Rellenar (Fill)</SelectItem>
-                                      <SelectItem value="none">Ninguno (None)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                                <FormField
+                                    control={form.control}
+                                    name="backgroundVideo"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Video de Fondo (TV)</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="url" 
+                                                placeholder="https://tu-video.mp4" 
+                                                {...field} 
+                                                value={field.value || ''}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            URL de un video .mp4 para usar como fondo. Si se especifica un video, tendrá prioridad sobre la imagen.
+                                        </FormDescription>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="backgroundFit"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Ajuste del Fondo</FormLabel>
+                                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona cómo se ajustará el fondo" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="cover">Cubrir (Cover)</SelectItem>
+                                          <SelectItem value="contain">Contener (Contain)</SelectItem>
+                                          <SelectItem value="fill">Rellenar (Fill)</SelectItem>
+                                          <SelectItem value="none">Ninguno (None)</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                            </div>
                           </CardContent>
                         </Card>
                       
@@ -1557,43 +1582,66 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                             <CardDescription>Ajustes de la pantalla del jugador</CardDescription>
                           </CardHeader>
                           <CardContent className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="mobileBackgroundImage"
-                                render={() => (
-                                <FormItem>
-                                    <FormLabel>Imagen de Fondo (Móvil)</FormLabel>
-                                    <ImageUpload fieldName="mobileBackgroundImage" gameId={initialGame.id} />
-                                    <FormDescription>
-                                    Fondo para la pantalla de registro en el móvil. Si se deja en blanco, usará el color de fondo por defecto.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <FormField
-                              control={form.control}
-                              name="mobileBackgroundFit"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Ajuste de la Imagen (Móvil)</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value || 'cover'} disabled={loading}>
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona cómo se ajustará la imagen" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="cover">Cubrir (Cover)</SelectItem>
-                                      <SelectItem value="contain">Contener (Contain)</SelectItem>
-                                      <SelectItem value="fill">Rellenar (Fill)</SelectItem>
-                                      <SelectItem value="none">Ninguno (None)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                            <div className="space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="mobileBackgroundImage"
+                                    render={() => (
+                                    <FormItem>
+                                        <FormLabel>Imagen de Fondo (Móvil)</FormLabel>
+                                        <ImageUpload fieldName="mobileBackgroundImage" gameId={initialGame.id} />
+                                        <FormDescription>
+                                        Fondo para la pantalla de registro en el móvil. Si se deja en blanco, usará el color de fondo por defecto.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="mobileBackgroundVideo"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Video de Fondo (Móvil)</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="url" 
+                                                placeholder="https://tu-video.mp4" 
+                                                {...field} 
+                                                value={field.value || ''}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            URL de un video .mp4 para usar como fondo. Si se especifica un video, tendrá prioridad sobre la imagen.
+                                        </FormDescription>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name="mobileBackgroundFit"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Ajuste del Fondo (Móvil)</FormLabel>
+                                      <Select onValueChange={field.onChange} defaultValue={field.value || 'cover'} disabled={loading}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Selecciona cómo se ajustará el fondo" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                          <SelectItem value="cover">Cubrir (Cover)</SelectItem>
+                                          <SelectItem value="contain">Contener (Contain)</SelectItem>
+                                          <SelectItem value="fill">Rellenar (Fill)</SelectItem>
+                                          <SelectItem value="none">Ninguno (None)</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                            </div>
                           </CardContent>
                         </Card>
                     </div>

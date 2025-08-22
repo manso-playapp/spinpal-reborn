@@ -19,6 +19,7 @@ interface GameData extends DocumentData {
   status: string;
   segments: any[];
   backgroundImage: string;
+  backgroundVideo: string;
   backgroundFit: string;
   qrCodeScale: number;
   rouletteScale: number;
@@ -144,11 +145,13 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
     }
   };
   
-  const backgroundStyles: React.CSSProperties = game.backgroundImage ? {
-    backgroundImage: `url(${game.backgroundImage})`,
-    backgroundSize: game.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
+  const backgroundStyles: React.CSSProperties = game.backgroundVideo || game.backgroundImage ? {
+    ...(game.backgroundImage && !game.backgroundVideo ? {
+      backgroundImage: `url(${game.backgroundImage})`,
+      backgroundSize: game.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    } : {})
   } : {};
 
   const renderBottomCard = () => {
@@ -219,6 +222,19 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
       className="relative flex flex-col items-center justify-center overflow-hidden p-4"
       style={containerStyles}
     >
+      {game.backgroundVideo && (
+        <video
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src={game.backgroundVideo}
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            objectFit: game.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
+          }}
+        />
+      )}
         {game.status === 'demo' && (
              <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 items-end">
                 <div className="bg-yellow-400 text-black px-4 py-1 text-sm font-bold shadow-lg rounded-full">
