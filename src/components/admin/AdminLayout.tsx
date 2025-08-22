@@ -22,7 +22,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut, isSuperAdmin } = useAuth();
+  const { user, signOut, userRole } = useAuth();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
@@ -73,7 +73,7 @@ Gracias,
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            {isSuperAdmin && (
+            {userRole.isSuperAdmin && (
               <>
                 <SidebarMenuItem>
                   <SidebarMenuButton

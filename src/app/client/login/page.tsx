@@ -20,15 +20,15 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 
 export default function ClientLoginPage() {
-    const { user, loading, signInWithGoogle, isSuperAdmin } = useAuth();
+    const { user, loading, signInWithGoogle, userRole } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (!loading && user) {
-            const targetRoute = isSuperAdmin ? '/admin' : '/client/dashboard';
+            const targetRoute = userRole.isSuperAdmin ? '/admin' : '/client/dashboard';
             router.replace(targetRoute);
         }
-    }, [user, loading, router, isSuperAdmin]);
+    }, [user, loading, router, userRole.isSuperAdmin]);
 
     if (loading || user) {
         return (
