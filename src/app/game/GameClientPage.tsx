@@ -19,7 +19,7 @@ interface GameData extends DocumentData {
   status: string;
   segments: any[];
   backgroundImage: string;
-  backgroundVideo: string;
+  backgroundVideo?: string;
   backgroundFit: string;
   qrCodeScale: number;
   rouletteScale: number;
