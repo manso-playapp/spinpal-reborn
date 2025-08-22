@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { db } from '@/lib/firebase/config';
+import { db, auth } from '@/lib/firebase/config';
 import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
@@ -35,7 +36,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink, Clipboard, ClipboardPaste } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink, Clipboard, ClipboardPaste, KeyRound, UserPlus, Settings2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -76,6 +77,11 @@ const formSchema = z.object({
   clientName: z.string().optional(),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   managementType: z.enum(['client', 'playapp']).default('client'),
+  accessCredentials: z.object({
+    email: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
+    resetPasswordRequested: z.boolean().optional(),
+    lastPasswordReset: z.date().optional()
+  }).optional(),
   exemptedEmails: z.string().optional(),
   instagramProfile: z.string().url({ message: 'Debe ser una URL de Instagram válida.' }).or(z.literal('')).optional(),
   tvWinMessage: z.string().optional(),
@@ -126,6 +132,33 @@ const formSchema = z.object({
     }
 });
 
+
+type FormData = z.infer<typeof formSchema> & {
+  prizes?: Prize[];
+  qr?: string;
+  wheel?: WheelConfig;
+  client?: string;
+  accessCredentials?: {
+    email: string;
+    resetPasswordRequested?: boolean;
+    lastPasswordReset?: Date;
+  };
+};
+
+interface Prize {
+  id: string;
+  name: string;
+  // Añade otros campos necesarios para Prize
+}
+
+interface WheelConfig {
+  borderImage?: string;
+  borderScale?: number;
+  centerImage?: string;
+  centerScale?: number;
+  strokeWidth?: number;
+  strokeColor?: string;
+}
 
 type GameFormValues = z.infer<typeof formSchema>;
 type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName'>;
@@ -195,12 +228,71 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
 export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { isSuperAdmin } = useAuth();
+  const { userRole } = useAuth();
   const [loading, setLoading] = useState(false);
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
   const [copiedStyle, setCopiedStyle] = useState<SegmentStyle | null>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleCreateClientAccess = async () => {
+    const email = form.watch('accessCredentials.email');
+    if (!email || !auth) return;
+
+    try {
+      setLoading(true);
+      // Crear el usuario
+      const userCredential = await createUserWithEmailAndPassword(auth, email, Math.random().toString(36).slice(-8));
+      // Enviar email de reset de contraseña
+      await sendPasswordResetEmail(auth, email);
+      
+      // Actualizar el estado del formulario
+      form.setValue('accessCredentials.resetPasswordRequested', true);
+      form.setValue('accessCredentials.lastPasswordReset', new Date());
+      
+      toast({
+        title: "Usuario Creado",
+        description: "Se ha enviado un email con instrucciones para establecer la contraseña.",
+      });
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo crear el usuario.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const email = form.watch('accessCredentials.email');
+    if (!email || !auth) return;
+
+    try {
+      setLoading(true);
+      await sendPasswordResetEmail(auth, email);
+      
+      // Actualizar el estado del formulario
+      form.setValue('accessCredentials.resetPasswordRequested', true);
+      form.setValue('accessCredentials.lastPasswordReset', new Date());
+
+      toast({
+        title: "Email Enviado",
+        description: "Se han enviado las instrucciones de reseteo de contraseña.",
+      });
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo enviar el email de reseteo.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -505,7 +597,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     });
   };
 
-  const backUrl = isSuperAdmin ? '/admin' : '/client/dashboard';
+  const backUrl = userRole.isSuperAdmin ? '/admin' : '/client/dashboard';
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -532,13 +624,13 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
               <div className="lg:col-span-2 space-y-4">
                 <Tabs defaultValue="prizes" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="data" className={!isSuperAdmin ? "hidden md:flex" : ""}><Settings className="mr-2 h-4 w-4" />Generales</TabsTrigger>
+                    <TabsTrigger value="data" className={!userRole.isSuperAdmin ? "hidden md:flex" : ""}><Settings className="mr-2 h-4 w-4" />Generales</TabsTrigger>
                     <TabsTrigger value="prizes"><Gamepad2 className="mr-2 h-4 w-4" />Ruleta</TabsTrigger>
                     <TabsTrigger value="gameConfig"><Settings className="mr-2 h-4 w-4"/>Pantallas</TabsTrigger>
                     <TabsTrigger value="texts"><Type className="mr-2 h-4 w-4"/>Textos</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="data" className={!isSuperAdmin ? "hidden md:block" : ""}>
+                  <TabsContent value="data" className={!userRole.isSuperAdmin ? "hidden md:block" : ""}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                       {/* Card 1: Información Básica */}
                       <Card>
@@ -554,7 +646,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Nombre del Juego</FormLabel>
                                 <FormControl>
-                                  <Input {...field} disabled={loading || !isSuperAdmin} />
+                                  <Input {...field} disabled={loading || !userRole.isSuperAdmin} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -591,7 +683,10 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                       {/* Card 2: Información del Cliente */}
                       <Card>
                         <CardHeader>
-                          <CardTitle>Información del Cliente</CardTitle>
+                          <CardTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5"/>
+                            Información del Cliente
+                          </CardTitle>
                           <CardDescription>Datos del propietario del juego</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -602,7 +697,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Nombre del Cliente</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading || !isSuperAdmin} />
+                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading || !userRole.isSuperAdmin} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -613,9 +708,9 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                             name="clientEmail"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Email del Cliente</FormLabel>
+                                <FormLabel>Email de Notificaciones</FormLabel>
                                 <FormControl>
-                                  <Input type="email" placeholder="dueño.tienda@ejemplo.com" {...field} value={field.value || ''} disabled={!isSuperAdmin}/>
+                                  <Input type="email" placeholder="notificaciones@ejemplo.com" {...field} value={field.value || ''} disabled={!userRole.isSuperAdmin}/>
                                 </FormControl>
                                  <FormDescription>
                                   Dirección donde recibirá avisos cuando se gane un premio.
@@ -624,18 +719,111 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               </FormItem>
                             )}
                           />
+                        </CardContent>
+                      </Card>
+
+                      {/* Card: Gestión de Acceso */}
+                      {userRole.isSuperAdmin && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <KeyRound className="h-5 w-5"/>
+                              Gestión de Acceso
+                            </CardTitle>
+                            <CardDescription>Credenciales de acceso para el cliente</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <FormField
+                              control={form.control}
+                              name="accessCredentials.email"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Email de Acceso</FormLabel>
+                                  <FormControl>
+                                    <div className="flex gap-2">
+                                      <Input 
+                                        type="email" 
+                                        placeholder="acceso@ejemplo.com" 
+                                        {...field} 
+                                        value={field.value || ''} 
+                                      />
+                                      <Button 
+                                        type="button" 
+                                        variant="outline"
+                                        onClick={() => handleCreateClientAccess()}
+                                        disabled={!field.value || loading}
+                                      >
+                                        <UserPlus className="h-4 w-4 mr-2"/>
+                                        Crear Acceso
+                                      </Button>
+                                    </div>
+                                  </FormControl>
+                                  <FormDescription>
+                                    Email que usará el cliente para iniciar sesión.
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            {form.watch('accessCredentials.email') && (
+                              <div className="rounded-lg border p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h4 className="font-medium">Estado de la Cuenta</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      {form.watch('accessCredentials.lastPasswordReset') 
+                                        ? `Última actualización: ${form.watch('accessCredentials.lastPasswordReset')?.toLocaleDateString()}`
+                                        : 'Cuenta pendiente de activación'}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => handleResetPassword()}
+                                    disabled={loading}
+                                  >
+                                    <RefreshCw className="h-4 w-4 mr-2"/>
+                                    Resetear Contraseña
+                                  </Button>
+                                </div>
+                                
+                                {form.watch('accessCredentials.resetPasswordRequested') && (
+                                  <Alert>
+                                    <AlertCircle className="h-4 w-4" />
+                                    <AlertTitle>Reseteo de Contraseña Pendiente</AlertTitle>
+                                    <AlertDescription>
+                                      Se ha enviado un email al cliente con instrucciones para establecer su contraseña.
+                                    </AlertDescription>
+                                  </Alert>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Card: Tipo de Gestión */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Settings2 className="h-5 w-5"/>
+                            Tipo de Gestión
+                          </CardTitle>
+                          <CardDescription>Define quién gestiona esta ruleta</CardDescription>
+                        </CardHeader>
+                        <CardContent>
                           <FormField
                             control={form.control}
                             name="managementType"
                             render={({ field }) => (
                               <FormItem className="space-y-3">
-                                <FormLabel>Tipo de Gestión</FormLabel>
                                 <FormControl>
                                   <RadioGroup
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
                                     className="flex flex-row space-x-4"
-                                    disabled={loading || !isSuperAdmin}
+                                    disabled={loading || !userRole.isSuperAdmin}
                                   >
                                     <FormItem className="flex items-center space-x-2 space-y-0">
                                       <FormControl>
@@ -651,6 +839,9 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     </FormItem>
                                   </RadioGroup>
                                 </FormControl>
+                                <FormDescription>
+                                  Determina quién puede modificar la configuración de esta ruleta.
+                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}

@@ -42,7 +42,7 @@ interface Game {
 }
 
 export default function ClientDashboard() {
-  const { user, isSuperAdmin } = useAuth();
+  const { user, userRole } = useAuth();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   
@@ -55,14 +55,14 @@ export default function ClientDashboard() {
     const clientEmailParam = searchParams.get('clientEmail');
     const clientNameParam = searchParams.get('clientName');
 
-    if (clientEmailParam && isSuperAdmin) {
+    if (clientEmailParam && userRole.isSuperAdmin) {
         setImpersonatedEmail(clientEmailParam);
         const title = clientNameParam ? `Juegos de: ${clientNameParam}` : `Juegos de: ${clientEmailParam}`;
         setViewTitle(title);
     } else if (user) {
         setImpersonatedEmail(user.email);
     }
-  }, [searchParams, isSuperAdmin, user]);
+  }, [searchParams, userRole.isSuperAdmin, user]);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -101,9 +101,9 @@ export default function ClientDashboard() {
           ...doc.data(),
         })) as Game[];
         
-        if (!isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
+        if (!userRole.isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
             setViewTitle(`Panel de: ${gamesData[0].clientName}`);
-        } else if (!isSuperAdmin) {
+        } else if (!userRole.isSuperAdmin) {
             setViewTitle('Mis Juegos');
         }
 
@@ -129,7 +129,7 @@ export default function ClientDashboard() {
         unsubscribe();
       }
     };
-  }, [impersonatedEmail, user, isSuperAdmin, toast, db]);
+  }, [impersonatedEmail, user, userRole.isSuperAdmin, toast, db]);
 
   const getGameUrl = (gameId: string) => {
     if (typeof window !== 'undefined') {
@@ -153,7 +153,7 @@ export default function ClientDashboard() {
                 <h1 className="font-headline text-3xl font-semibold tracking-tight">{viewTitle}</h1>
                 <p className="text-muted-foreground mt-1">Panel de control de tus campañas activas</p>
             </div>
-            {isSuperAdmin && impersonatedEmail && (
+            {userRole.isSuperAdmin && impersonatedEmail && (
                 <Button variant="outline" asChild>
                     <Link href="/admin">Volver al Panel de Admin</Link>
                 </Button>

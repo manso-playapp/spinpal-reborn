@@ -12,7 +12,7 @@ interface AuthWrapperProps {
 }
 
 export default function AuthWrapper({ children, adminOnly = false, clientOnly = false }: AuthWrapperProps) {
-  const { user, loading, isSuperAdmin } = useAuth();
+  const { user, loading, userRole } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -26,21 +26,21 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
       return;
     }
 
-    if (adminOnly && !isSuperAdmin) {
+    if (adminOnly && !userRole.isSuperAdmin) {
         // A non-admin user is trying to access an admin-only page
         router.replace('/client/dashboard');
     }
 
-    if (clientOnly && isSuperAdmin) {
+    if (clientOnly && userRole.isSuperAdmin) {
         // An admin is trying to access a client-only page.
         // We allow this for impersonation purposes. 
         // The page component will handle the specific logic.
-    } else if (clientOnly && !isSuperAdmin && !pathname.startsWith('/client/dashboard')) {
+    } else if (clientOnly && !userRole.isSuperAdmin && !pathname.startsWith('/client/dashboard')) {
         // A client is somewhere they shouldn't be, other than their dashboard.
         router.replace('/client/dashboard');
     }
 
-  }, [user, loading, router, isSuperAdmin, adminOnly, clientOnly, pathname]);
+  }, [user, loading, router, userRole.isSuperAdmin, adminOnly, clientOnly, pathname]);
 
   if (loading) {
     return (
@@ -62,7 +62,7 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
     return null; // Don't render anything if not logged in and page requires auth
   }
   
-  if (adminOnly && !isSuperAdmin) {
+  if (adminOnly && !userRole.isSuperAdmin) {
      return null; // Or a specific loading/unauthorized component
   }
 

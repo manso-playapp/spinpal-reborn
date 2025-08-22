@@ -2,31 +2,165 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;  // Temporalmente permitimos todo para testing local
-    }
+    function isAdmin() {
+      return request.auth != null && 
+        (request.auth.token.role == 'admin' || 
+         request.auth.token.admin == true || 
+         request.auth.token.email == 'grupomanso@gmail.com');
     }
 
-    // Cualquiera puede leer los clientes de un juego
-    match /games/{gameId}/customers/{customerId} {
+    function isClient() {
+      return request.auth != null && 
+        (request.auth.token.clientId != null || 
+         request.auth.token.allowedGameIds != null);
+    }
+
+    function canAccessGame(gameId) {
+      return isAdmin() || 
+        (isClient() && 
+          (request.auth.token.clientId == gameId || 
+           request.auth.token.allowedGameIds.hasAny([gameId])));
+    }
+
+    // Juegos
+    match /games/{gameId} {
+      // Lectura pública para el juego actual
       allow read: if true;
-      allow create: if true; // Cualquiera puede registrarse
-      allow update: if request.auth != null || 
-        (request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['hasPlayed', 'prizeWonName', 'prizeWonAt']));
-      allow delete: if request.auth != null;
+      
+      // Escritura solo por admin o el cliente dueño del juego
+      allow write: if canAccessGame(gameId);
+
+      // Subcollección de participantes
+      match /customers/{customerId} {
+        allow read: if true;  // Lectura pública
+        allow create: if true; // Cualquiera puede registrarse
+        allow update: if request.auth != null || 
+          (request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['hasPlayed', 'prizeWonName', 'prizeWonAt']));
+        allow delete: if canAccessGame(gameId);
+      }
+    }
+
+    // Clientes (nueva colección)
+    match /clients/{clientId} {
+      allow read: if isAdmin() || 
+        (isClient() && request.auth.token.clientId == clientId);
+      allow write: if isAdmin();
+
+      // Subcollección de juegos del cliente
+      match /games/{gameId} {
+        allow read: if isAdmin() || 
+          (isClient() && request.auth.token.clientId == clientId);
+        allow write: if isAdmin();
+      }
     }
     
     // Colección de prueba para verificar la conexión
     match /health_check/{doc} {
-        allow read, write: if true;
+      allow read, write: if true;
     }
 
-    // **INICIO DE LA CORRECCIÓN: Añadir reglas para outbound_emails**
-    // Solo usuarios autenticados pueden escribir logs de correos salientes
-    match /outbound_emails/{emailId} {
-      allow write: if request.auth != null;
+    rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Funciones de ayuda
+    function isAuthenticated() {
+      return request.auth != null;
     }
-    // **FIN DE LA CORRECCIÓN**
+
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+        request.auth.token.email == 'grupomanso@gmail.com';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        isSuperAdmin() ||
+        request.auth.token.role == 'admin' ||
+        request.auth.token.isAdmin == true
+      );
+    }
+
+    function isClient() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'client' || 
+        request.auth.token.isClient == true
+      );
+    }
+
+    function isOwnerOfGame(gameId) {
+      return isAuthenticated() && (
+        isAdmin() ||
+        (isClient() && (
+          request.auth.token.clientId == resource.data.clientId ||
+          request.auth.token.allowedGameIds.hasAny([gameId])
+        ))
+      );
+    }
+
+    function isImpersonating() {
+      return isAuthenticated() && 
+        request.auth.token.impersonatingClientId != null;
+    }
+
+    // Reglas para la colección de juegos
+    match /games/{gameId} {
+      allow create: if isAdmin();
+      allow read: if true; // Lectura pública para poder jugar
+      allow update: if isOwnerOfGame(gameId) || isImpersonating();
+      allow delete: if isAdmin();
+
+      // Subcollección de participantes del juego
+      match /customers/{customerId} {
+        allow create: if true; // Cualquiera puede registrarse para jugar
+        allow read: if true;
+        allow update: if isAuthenticated() && (
+          isOwnerOfGame(gameId) ||
+          // Permitir actualizar solo los campos relacionados con el juego
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['hasPlayed', 'prizeWonName', 'prizeWonAt'])
+        );
+        allow delete: if isOwnerOfGame(gameId);
+      }
+    }
+
+    // Reglas para la colección de clientes
+    match /clients/{clientId} {
+      allow create: if isAdmin();
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.token.clientId == clientId ||
+        isImpersonating()
+      );
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+
+      // Subcollección de juegos del cliente
+      match /games/{gameId} {
+        allow read: if isAuthenticated() && (
+          isAdmin() ||
+          request.auth.token.clientId == clientId ||
+          isImpersonating()
+        );
+        allow write: if isAdmin();
+      }
+    }
+
+    // Reglas para los correos salientes
+    match /outbound_emails/{emailId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.clientId == request.auth.token.clientId
+      );
+      allow create: if isAdmin();
+    }
+
+    // Reglas para verificar la conexión (solo para diagnóstico)
+    match /health_check/{doc} {
+      allow read, write: if true;
+    }
+  }
+}
   }
 }

@@ -34,6 +34,13 @@ interface GameData extends DocumentData {
     centerImage: string;
     centerScale: number;
   };
+  clientEmail?: string;
+  clientId?: string;
+  accessCredentials?: {
+    email: string;
+    resetPasswordRequested?: boolean;
+    lastPasswordReset?: Date;
+  };
 }
 
 interface SpinResult {

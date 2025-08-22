@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user, signOut, isSuperAdmin } = useAuth();
+  const { user, signOut, userRole } = useAuth();
 
   return (
     <TooltipProvider>
@@ -18,7 +18,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
        <header className="sticky top-0 z-40 w-full border-b bg-background">
         <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0">
           <div className="flex gap-6 md:gap-10">
-             <Link href={isSuperAdmin ? "/admin" : "/client/dashboard"}>
+             <Link href={userRole.isSuperAdmin ? "/admin" : "/client/dashboard"}>
                 <Logo className="h-10 w-auto text-primary" />
             </Link>
           </div>
