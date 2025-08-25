@@ -1,0 +1,164 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Gamepad2, Gift, Users, BarChart3, ArrowRight } from 'lucide-react';
+import Logo from '@/components/logo';
+import { useToast } from '@/hooks/use-toast';
+
+export default function Landing() {
+  const [code, setCode] = useState('');
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const goToGame = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed) {
+      toast({
+        variant: 'destructive',
+        title: 'Código requerido',
+        description: 'Ingresa el código de tu ruleta para continuar.',
+      });
+      return;
+    }
+    router.push(`/jugar/${encodeURIComponent(trimmed)}`);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/60">
+      {/* Header */}
+      <header className="sticky top-0 z-40 w-full backdrop-blur bg-background/70 border-b">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Logo className="h-7 w-auto text-primary" />
+            <span className="sr-only">SpinPal</span>
+          </Link>
+          <nav className="flex items-center gap-2">
+            <Button variant="ghost" asChild>
+              <Link href="/client/login">Acceso Cliente</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/login">Acceso Administrador</Link>
+            </Button>
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="relative">
+        <div className="mx-auto max-w-6xl px-4 py-16 md:py-24 grid md:grid-cols-2 gap-8 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground mb-4">
+              <Gamepad2 className="h-4 w-4 text-primary" />
+              Ruleta de premios en vivo
+            </div>
+            <h1 className="font-headline text-4xl md:text-5xl leading-tight">
+              Convierte a tus visitantes en participantes con una ruleta moderna
+            </h1>
+            <p className="mt-4 text-muted-foreground">
+              Lanza campañas interactivas, capta leads y entrega premios al instante. Todo en un solo lugar.
+            </p>
+
+            {/* CTA: Jugar con código */}
+            <Card className="mt-6">
+              <form onSubmit={goToGame}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl">Jugar ahora</CardTitle>
+                  <CardDescription>Ingresa el código de tu ruleta para participar.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row gap-3">
+                  <Input
+                    placeholder="Ej: PROMO2025"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="h-11"
+                    aria-label="Código de ruleta"
+                  />
+                  <Button type="submit" className="h-11">
+                    Continuar
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardContent>
+              </form>
+            </Card>
+
+            {/* CTA secundarias */}
+            <div className="mt-4 flex gap-3">
+              <Button variant="outline" asChild>
+                <Link href="/client/login">Soy Cliente</Link>
+              </Button>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Soy Administrador</Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* Visual de ruleta simple */}
+          <div className="relative mx-auto mt-8 md:mt-0">
+            <div className="aspect-square w-full max-w-md mx-auto rounded-full bg-gradient-to-br from-primary to-secondary p-1 shadow-xl">
+              <div className="w-full h-full rounded-full bg-background grid place-items-center">
+                <div className="w-64 h-64 rounded-full border-8 border-muted relative grid place-items-center">
+                  <span className="text-xl font-headline text-foreground">Ruleta</span>
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 h-6 w-2 rounded bg-foreground" />
+                </div>
+              </div>
+            </div>
+            <p className="text-center text-sm text-muted-foreground mt-3">
+              Experiencia enfocada solo en Ruleta de premios.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features (solo ruleta) */}
+      <section className="mx-auto max-w-6xl px-4 pb-20">
+        <div className="grid md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <div className="h-10 w-10 rounded-md bg-primary/10 text-primary grid place-items-center">
+                <Gift className="h-5 w-5" />
+              </div>
+              <CardTitle>Premios configurables</CardTitle>
+              <CardDescription>Define segmentos, probabilidades y stock por premio.</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <div className="h-10 w-10 rounded-md bg-secondary/10 text-secondary grid place-items-center">
+                <Users className="h-5 w-5" />
+              </div>
+              <CardTitle>Captación de leads</CardTitle>
+              <CardDescription>Registra participantes y limita intentos por usuario.</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <div className="h-10 w-10 rounded-md bg-muted/40 text-foreground grid place-items-center">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <CardTitle>Métricas en tiempo real</CardTitle>
+              <CardDescription>Seguimiento de conversiones y resultados en tu panel.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t">
+        <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-muted-foreground flex items-center justify-between">
+          <span>SpinPal Reborn — Ruleta de premios</span>
+          <div className="flex items-center gap-3">
+            <Link href="/client/login" className="hover:text-foreground">Acceso Cliente</Link>
+            <span className="opacity-30">•</span>
+            <Link href="/login" className="hover:text-foreground">Acceso Administrador</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

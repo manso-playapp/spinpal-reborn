@@ -17,30 +17,30 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
   const pathname = usePathname();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) return; // Wait until loading is finished
 
+    // If no user, redirect to login, unless they are already there or on the home page.
     if (!user) {
       if (pathname !== '/login' && pathname !== '/') {
-        router.replace('/');
+        router.replace('/login');
       }
       return;
     }
 
-    if (adminOnly && !userRole.isSuperAdmin) {
-        // A non-admin user is trying to access an admin-only page
-        router.replace('/client/dashboard');
+    // If user is logged in, but trying to access a page they shouldn't
+    if (adminOnly && !userRole.isAdmin) {
+        console.log('Redirecting non-admin from admin page');
+        router.replace('/client/dashboard'); // or a generic dashboard
     }
 
-    if (clientOnly && userRole.isSuperAdmin) {
-        // An admin is trying to access a client-only page.
-        // We allow this for impersonation purposes. 
-        // The page component will handle the specific logic.
-    } else if (clientOnly && !userRole.isSuperAdmin && !pathname.startsWith('/client/dashboard')) {
-        // A client is somewhere they shouldn't be, other than their dashboard.
-        router.replace('/client/dashboard');
+    if (clientOnly && userRole.isAdmin) {
+        // For now, redirect admins away from client-only pages
+        // TODO: Re-implement impersonation logic here if needed
+        console.log('Redirecting admin from client page');
+        router.replace('/admin/dashboard');
     }
 
-  }, [user, loading, router, userRole.isSuperAdmin, adminOnly, clientOnly, pathname]);
+  }, [user, loading, router, userRole.isAdmin, adminOnly, clientOnly, pathname]);
 
   if (loading) {
     return (
@@ -57,13 +57,17 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
     );
   }
 
-  // Final check to prevent flashing content for unauthorized users
+  // Prevent flashing content for unauthorized users
   if (!user && (adminOnly || clientOnly)) {
-    return null; // Don't render anything if not logged in and page requires auth
+    return null; 
   }
   
-  if (adminOnly && !userRole.isSuperAdmin) {
-     return null; // Or a specific loading/unauthorized component
+  if (adminOnly && !userRole.isAdmin) {
+     return null; 
+  }
+
+  if (clientOnly && userRole.isAdmin) {
+    return null;
   }
 
 

@@ -1,11 +1,11 @@
 'use client';
 
-import type { User } from 'firebase/auth';
 import { createContext, useEffect, useState, type ReactNode } from 'react';
-import { onAuthStateChanged, signOut as firebaseSignOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import type { User, Session } from '@supabase/supabase-js';
 
+// TODO: Re-implement role management using Supabase (e.g., a 'profiles' table)
 const superAdminEmail = 'grupomanso@gmail.com';
 
 interface UserRole {
@@ -21,9 +21,8 @@ interface AuthContextType {
   loading: boolean;
   userRole: UserRole;
   signOut: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
-  impersonateClient: (clientId: string) => Promise<void>;
-  stopImpersonating: () => Promise<void>;
+  signInWithPassword: (credentials: { email: string, password: string }) => Promise<any>;
+  // signInWithGoogle: () => Promise<void>; // TODO: Re-implement if needed
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,144 +35,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSuperAdmin: false,
     isClient: false
   });
-  const [impersonatedClientId, setImpersonatedClientId] = useState<string | null>(null);
   const router = useRouter();
 
-  const updateUserRole = async (user: User | null) => {
+  const updateUserRole = (user: User | null) => {
     if (!user) {
-      setUserRole({
-        isAdmin: false,
-        isSuperAdmin: false,
-        isClient: false
-      });
+      setUserRole({ isAdmin: false, isSuperAdmin: false, isClient: false });
       return;
     }
 
-    await user.getIdToken(true);
-    const idTokenResult = await user.getIdTokenResult();
-    
+    // Temporary role logic: only checks for super admin
+    // TODO: Fetch roles from a 'profiles' table in Supabase
     const isSuperAdmin = user.email === superAdminEmail;
-    const isAdmin = isSuperAdmin || 
-                   idTokenResult.claims.admin === true || 
-                   idTokenResult.claims.role === 'admin';
-    
-    const clientId = idTokenResult.claims.clientId as string;
-    const allowedGameIds = idTokenResult.claims.allowedGameIds as string[] || [];
-    const isClient = !!clientId || allowedGameIds.length > 0;
+    const isAdmin = isSuperAdmin; // Simplified for now
+    const isClient = !isAdmin; // Simplified for now
 
-    // Establecer roles primero
     setUserRole({
-      isAdmin,
       isSuperAdmin,
+      isAdmin,
       isClient,
-      clientId,
-      allowedGameIds
     });
-
-    // Verificar permisos después de establecer roles
-    if (!isAdmin && !isClient) {
-      console.warn('Usuario sin permisos');
-      if (auth) {
-        await firebaseSignOut(auth);
-        setUser(null);
-        router.push('/login');
-      }
-      return;
-    }
-
-    // No necesitamos otro setUserRole aquí ya que ya lo hicimos arriba
-    console.log('Roles actualizados:', { isAdmin, isSuperAdmin, isClient });
   };
 
   useEffect(() => {
-    if (!auth) {
+    const getSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+        updateUserRole(session?.user ?? null);
+        setLoading(false);
+    };
+    
+    getSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Supabase auth event:', event);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      updateUserRole(currentUser);
       setLoading(false);
-      setUser(null);
-      return;
-    }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('Estado de autenticación cambiado:', user?.email);
-      
-      if (!user) {
-        setUser(null);
-        setUserRole({
-          isAdmin: false,
-          isSuperAdmin: false,
-          isClient: false
-        });
-        setLoading(false);
-        if (window.location.pathname !== '/') {
-          router.push('/login');
-        }
-        return;
-      }
-
-      try {
-        setUser(user);
-        await updateUserRole(user);
-        
-        // Redirigir al usuario a la página correcta después de actualizar los roles
-        const currentPath = window.location.pathname;
-        if (currentPath === '/login') {
-          const newRole = await user.getIdTokenResult();
-          const isSuperAdminOrAdmin = user.email === superAdminEmail || 
-                                    newRole.claims.admin === true || 
-                                    newRole.claims.role === 'admin';
-          
-          if (isSuperAdminOrAdmin) {
+      if (event === 'SIGNED_IN') {
+        // Simplified redirection logic
+        // TODO: Re-implement proper role-based redirection
+        if (currentUser?.email === superAdminEmail) {
             router.push('/admin/dashboard');
-          } else if (newRole.claims.clientId || (newRole.claims.allowedGameIds as string[])?.length > 0) {
+        } else {
             router.push('/client/dashboard');
-          }
         }
-      } catch (error) {
-        console.error('Error al actualizar roles:', error);
-        if (auth) {
-          await firebaseSignOut(auth);
-          router.push('/login');
-        }
-      } finally {
-        setLoading(false);
+      } else if (event === 'SIGNED_OUT') {
+        router.push('/login');
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      authListener?.unsubscribe();
+    };
   }, [router]);
 
+  const signInWithPassword = async ({ email, password }: { email: string, password: string }) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
+  };
+
   const signOut = async () => {
-    if (auth) {
-      await firebaseSignOut(auth);
-    }
+    await supabase.auth.signOut();
     router.push('/login');
-  };
-
-  const signInWithGoogle = async () => {
-    if (auth) {
-      const provider = new GoogleAuthProvider();
-      try {
-        const result = await signInWithPopup(auth, provider);
-        console.log('Login exitoso:', result.user.email);
-        // onAuthStateChanged se encargará del resto
-      } catch (error) {
-        console.error('Error al iniciar sesión con Google:', error);
-        throw error;
-      }
-    }
-  };
-
-  const impersonateClient = async (clientId: string) => {
-    if (!userRole.isAdmin) {
-      throw new Error('Solo los administradores pueden impersonar clientes');
-    }
-    setImpersonatedClientId(clientId);
-    // Aquí podrías actualizar los claims temporalmente o manejar la impersonación como prefieras
-    router.push('/client/dashboard');
-  };
-
-  const stopImpersonating = async () => {
-    setImpersonatedClientId(null);
-    router.push('/admin/dashboard');
   };
 
   const value = {
@@ -181,9 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     userRole,
     signOut,
-    signInWithGoogle,
-    impersonateClient,
-    stopImpersonating
+    signInWithPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
