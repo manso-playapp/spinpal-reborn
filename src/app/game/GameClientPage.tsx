@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { db } from '@/lib/firebase/config';
+import { useFirebasePublic } from '@/context/FirebasePublicContext';
 import { DocumentData, doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { QrCode, Gift, ThumbsDown, Loader2 } from 'lucide-react';
@@ -51,6 +51,7 @@ interface SpinResult {
 type UiState = 'IDLE' | 'SPINNING' | 'SHOW_RESULT';
 
 export default function GameClientPage({ initialGame }: { initialGame: GameData }) {
+  const { db } = useFirebasePublic();
   // Función para validar y normalizar URLs
   const validateUrl = (url: string | undefined) => {
     if (!url) return '';

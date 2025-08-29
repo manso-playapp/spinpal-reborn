@@ -3,7 +3,7 @@
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function PublicProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
       attribute="class"
