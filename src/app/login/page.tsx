@@ -52,7 +52,12 @@ export default function LoginPage() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const token = await result.user.getIdToken();
+      
+      // Guardar el token en una cookie
+      document.cookie = `session=${token}; path=/;`;
+      
       router.push('/admin');
     } catch (err: any) {
       const errorCode = err.code;

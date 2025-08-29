@@ -20,6 +20,12 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
     if (loading) return;
 
     if (!user) {
+      // Permitir acceso público a las rutas /juego/[id]
+      if (pathname.startsWith('/juego/')) {
+        return;
+      }
+      
+      // Redirigir a la página principal si no es una ruta pública
       if (pathname !== '/login' && pathname !== '/') {
         router.replace('/');
       }
