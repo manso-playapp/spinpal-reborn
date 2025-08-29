@@ -23,8 +23,8 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Rutas que requieren autenticación
-    '/admin/:path*',
-    '/client/:path*',
+    '/(protected)/admin/:path*',
+    '/(protected)/client/:path*',
     // Rutas públicas que queremos procesar
     '/juego/:path*'
   ]

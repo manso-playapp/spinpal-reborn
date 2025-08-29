@@ -602,7 +602,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     });
   };
 
-  const backUrl = userRole.isSuperAdmin ? '/admin' : '/client/dashboard';
+  const backUrl = userRole.isSuperAdmin ? '/(protected)/admin' : '/(protected)/client/dashboard';
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
