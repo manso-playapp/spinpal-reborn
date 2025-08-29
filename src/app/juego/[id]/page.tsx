@@ -56,15 +56,39 @@ async function getGameData(id: string): Promise<GameData | null> {
       return null;
     }
 
+    console.log(`Fetching game data for ID: ${id}`);
     const gameRef = doc(db, 'games', id);
     const gameSnap = await getDoc(gameRef);
 
     if (!gameSnap.exists()) {
+      console.error(`Game with ID ${id} not found`);
       return null;
     }
 
     const data = gameSnap.data();
     
+    // Asegurarnos de que las URLs son absolutas y completas
+    const ensureAbsoluteUrl = (url: string) => {
+      if (!url) return '';
+      if (url.startsWith('http://') || url.startsWith('https://')) return url;
+      if (url.startsWith('/')) return `${process.env.NEXT_PUBLIC_BASE_URL || ''}${url}`;
+      return url;
+    };
+
+    // Pre-cargar y validar las URLs de las imágenes
+    const config = {
+      borderImage: ensureAbsoluteUrl(data.config?.borderImage || ''),
+      borderScale: data.config?.borderScale || 1,
+      centerImage: ensureAbsoluteUrl(data.config?.centerImage || ''),
+      centerScale: data.config?.centerScale || 1
+    };
+
+    console.log('Raw game data:', {
+      config,
+      backgroundImage: data.backgroundImage,
+      backgroundVideo: data.backgroundVideo
+    });
+
     // Convert Firestore timestamps to ISO strings and ensure all required fields exist
     const sanitizedData: GameData = {
       id: gameSnap.id,

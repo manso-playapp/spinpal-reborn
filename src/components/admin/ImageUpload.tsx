@@ -1,188 +1,94 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-import { storage, auth } from '@/lib/firebase/config';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { X, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import NextImage from 'next/image';
 
 interface ImageUploadProps {
   fieldName: string;
-  gameId: string;
 }
 
-export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
+export function ImageUpload({ fieldName }: ImageUploadProps) {
   const { watch, setValue } = useFormContext();
-  const { user } = useAuth();
-  const imageUrl = watch(fieldName);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageUrl = watch(fieldName);
+  const [isValidating, setIsValidating] = useState(false);
 
-  const handleUpload = async (file: File) => {
-    if (!storage || !auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Error de Configuración',
-        description: 'Firebase Storage o Auth no están configurados.',
-      });
-      return;
-    }
-    
-    if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'No autenticado',
-        description: 'Debes iniciar sesión para subir imágenes.',
-      });
+  const validateAndSetImage = async (url: string) => {
+    // Si la URL está vacía, simplemente limpiamos el campo sin mostrar error
+    if (!url || url.trim() === '') {
+      setValue(fieldName, '', { shouldDirty: true, shouldValidate: true });
       return;
     }
 
-    // Verificar permisos de administrador
-    const tokenResult = await user.getIdTokenResult();
-    const isAdmin = tokenResult.claims.admin === true || 
-                   tokenResult.claims.role === 'admin' ||
-                   tokenResult.claims.role === 'superadmin' ||
-                   tokenResult.claims.isAdmin === true ||
-                   user.email === 'grupomanso@gmail.com';
-
-    if (!isAdmin) {
-      toast({
-        variant: 'destructive',
-        title: 'Sin permisos',
-        description: 'No tienes permisos para subir archivos.',
+    try {
+      setIsValidating(true);
+      // Validar que es una URL válida
+      new URL(url);
+      
+      // Intentar cargar la imagen
+      await new Promise((resolve, reject) => {
+        const img = document.createElement('img');
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+        img.src = url;
       });
-      return;
-    }
 
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Archivo no válido",
-        description: "Por favor, selecciona un archivo de imagen.",
-      });
-      return;
-    }
-
-    if (!gameId) {
+      setValue(fieldName, url, { shouldDirty: true, shouldValidate: true });
+    } catch (error) {
+      // Solo mostrar el error si había una URL ingresada
+      if (url.trim() !== '') {
+        console.error('Error validando la imagen:', error instanceof Error ? error.message : 'URL inválida');
         toast({
-            variant: "destructive",
-            title: "Error Interno",
-            description: "No se ha podido identificar el juego para la subida. Por favor, recarga la página.",
-        });
-        return;
-    }
-
-    setUploadStatus('Iniciando subida...');
-    setUploadProgress(0);
-    
-    const storageRef = ref(storage, `games/${gameId}/${fieldName}-${Date.now()}-${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
-        setUploadStatus(`Subiendo... ${Math.round(progress)}%`);
-      },
-      async (error) => {
-        setUploadProgress(null);
-        let errorMessage = `Hubo un problema al subir la imagen.`;
-        
-        // Log detallado del error
-        console.error('Error completo:', error);
-        console.log('Token actual:', await user.getIdToken());
-        console.log('Claims:', (await user.getIdTokenResult()).claims);
-        
-        if(error.code === 'storage/unauthorized') {
-            errorMessage = 'Error de permisos. Asegúrate de que las reglas de Storage están bien configuradas.';
-        }
-        setUploadStatus(`Error: ${errorMessage}`);
-        toast({
-          variant: 'destructive',
-          title: 'Error al subir',
-          description: `${errorMessage} (Código: ${error.code})`,
-        });
-      },
-      () => {
-        setUploadStatus('Procesando...');
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          setValue(fieldName, downloadURL, { shouldDirty: true, shouldValidate: true });
-          setUploadProgress(null);
-          setUploadStatus('¡Completado!');
-          toast({
-            title: '¡Imagen Subida!',
-            description: 'La URL de la imagen se ha actualizado.',
-          });
-          setTimeout(() => setUploadStatus(null), 3000);
+          variant: "destructive",
+          title: "URL no válida",
+          description: "Por favor, introduce una URL de imagen válida o deja el campo vacío.",
         });
       }
-    );
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      await handleUpload(file);
+      setValue(fieldName, '', { shouldDirty: true, shouldValidate: true });
+    } finally {
+      setIsValidating(false);
     }
   };
 
   const clearImage = () => {
     setValue(fieldName, '', { shouldDirty: true, shouldValidate: true });
-  }
+  };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Input
           value={imageUrl || ''}
-          onChange={(e) => setValue(fieldName, e.target.value, { shouldDirty: true, shouldValidate: true })}
-          placeholder="Pega una URL o sube una imagen"
-          disabled={uploadProgress !== null}
-        />
-        <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadProgress !== null || !user}
-            aria-label="Subir imagen"
-            >
-            <Upload className="h-4 w-4" />
-        </Button>
-         <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            className="hidden"
+          onChange={(e) => validateAndSetImage(e.target.value)}
+          placeholder="Pega una URL externa de imagen"
+          disabled={isValidating}
         />
       </div>
-      {uploadProgress !== null && (
-        <div className="space-y-1">
-            <Progress value={uploadProgress} className="w-full h-2" />
-            {uploadStatus && <p className="text-xs text-muted-foreground">{uploadStatus}</p>}
-        </div>
-      )}
-      {imageUrl && !uploadStatus &&(
+      {imageUrl && (
         <div className="relative group w-48 h-48 border rounded-md p-2 bg-muted/50 flex items-center justify-center">
-            <NextImage
-                src={imageUrl}
-                alt="Vista previa"
-                width={192}
-                height={192}
-                className="object-contain w-full h-full rounded-sm"
-                unoptimized
-            />
+            <div className="relative w-full h-full">
+              <Image
+                  src={imageUrl}
+                  alt="Vista previa"
+                  fill
+                  className="object-contain rounded-sm"
+                  unoptimized
+                  onError={() => {
+                      console.warn('Error al cargar la imagen:', imageUrl);
+                      toast({
+                          variant: "destructive",
+                          title: "Error de imagen",
+                          description: "No se puede cargar la imagen. Verifica que la URL sea correcta.",
+                      });
+                  }}
+              />
+            </div>
             <Button
                 type="button"
                 variant="destructive"
@@ -194,7 +100,7 @@ export function ImageUpload({ fieldName, gameId }: ImageUploadProps) {
             </Button>
         </div>
       )}
-       {!imageUrl && !uploadStatus &&(
+      {!imageUrl && (
         <div className="w-48 h-48 border border-dashed rounded-md p-2 bg-muted/20 flex flex-col items-center justify-center text-muted-foreground text-sm">
             <ImageIcon className="h-8 w-8 mb-2" />
             <span>Sin imagen</span>

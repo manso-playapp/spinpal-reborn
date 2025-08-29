@@ -51,7 +51,36 @@ interface SpinResult {
 type UiState = 'IDLE' | 'SPINNING' | 'SHOW_RESULT';
 
 export default function GameClientPage({ initialGame }: { initialGame: GameData }) {
-  const [game, setGame] = useState<GameData>(initialGame);
+  // Función para validar y normalizar URLs
+  const validateUrl = (url: string | undefined) => {
+    if (!url) return '';
+    try {
+      // Si la URL ya es absoluta, la devolvemos tal cual
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      // Si es relativa, asumimos que es relativa al dominio actual
+      // No usamos window.location.origin porque no está disponible en SSR
+      return url.startsWith('/') ? url : `/${url}`;
+    } catch (e) {
+      console.error('Invalid URL:', url, e);
+      return url; // Devolvemos la URL original si hay error
+    }
+  };
+
+  // Validar URLs en los datos iniciales
+  const validatedInitialGame = {
+    ...initialGame,
+    backgroundImage: validateUrl(initialGame.backgroundImage),
+    backgroundVideo: validateUrl(initialGame.backgroundVideo),
+    config: {
+      ...initialGame.config,
+      borderImage: validateUrl(initialGame.config.borderImage),
+      centerImage: validateUrl(initialGame.config.centerImage),
+    }
+  };
+
+  const [game, setGame] = useState<GameData>(validatedInitialGame);
   const [uiState, setUiState] = useState<UiState>('IDLE');
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<string | null>(null);
@@ -60,11 +89,56 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   const gameId = initialGame.id;
 
   useEffect(() => {
-    if (!db) return;
+    // Intentar cargar las imágenes de manera anticipada
+    const preloadImages = async () => {
+      const imagesToPreload = [
+        game.config.borderImage,
+        game.config.centerImage,
+        game.backgroundImage
+      ].filter(Boolean);
+
+      for (const src of imagesToPreload) {
+        const img = document.createElement('img');
+        img.src = src;
+      }
+    };
+
+    preloadImages();
+
+    if (!db) {
+      console.warn('Firebase DB no está inicializada, funcionando en modo offline');
+      return;
+    }
+    
+    // Log inicial del estado del juego
+    console.log('Estado inicial del juego:', {
+      id: gameId,
+      config: game.config,
+      backgroundImage: game.backgroundImage,
+      backgroundVideo: game.backgroundVideo
+    });
+    
     const gameRef = doc(db, 'games', gameId);
+    
     const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
+            
+            // Log detallado de las URLs de las imágenes
+            console.log('URLs de imágenes del juego:', {
+              borderImage: {
+                url: data.config?.borderImage,
+                isValid: Boolean(data.config?.borderImage && data.config.borderImage.startsWith('http'))
+              },
+              centerImage: {
+                url: data.config?.centerImage,
+                isValid: Boolean(data.config?.centerImage && data.config.centerImage.startsWith('http'))
+              },
+              backgroundImage: {
+                url: data.backgroundImage,
+                isValid: Boolean(data.backgroundImage && data.backgroundImage.startsWith('http'))
+              }
+            });
             
             const spinRequest = data.spinRequest;
             if (spinRequest && spinRequest.customerId && uiState === 'IDLE' && db) {
@@ -82,7 +156,8 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 name: data.name || 'Juego sin nombre',
                 status: data.status || 'demo',
                 segments: data.segments || [],
-                backgroundImage: data.backgroundImage || '',
+                backgroundImage: validateUrl(data.backgroundImage) || '',
+                backgroundVideo: validateUrl(data.backgroundVideo) || '',
                 backgroundFit: data.backgroundFit || 'cover',
                 qrCodeScale: data.qrCodeScale || 1,
                 rouletteScale: data.rouletteScale || 1,
@@ -90,11 +165,11 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
                 qrVerticalOffset: data.qrVerticalOffset || 0,
                 screenRotation: data.screenRotation || 0,
-                config: data.config || {
-                    borderImage: data.borderImage || '',
-                    borderScale: data.borderScale || 1,
-                    centerImage: data.centerImage || '',
-                    centerScale: data.centerScale || 1,
+                config: {
+                    borderImage: validateUrl(data.config?.borderImage) || '',
+                    borderScale: data.config?.borderScale || 1,
+                    centerImage: validateUrl(data.config?.centerImage) || '',
+                    centerScale: data.config?.centerScale || 1,
                 }
             };
             
@@ -248,7 +323,6 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
             alt="Background"
             fill
             priority
-            quality={85}
             className="transition-opacity duration-300"
             style={{
               objectFit: game.backgroundFit as 'cover' | 'contain' | 'fill' | 'none',
