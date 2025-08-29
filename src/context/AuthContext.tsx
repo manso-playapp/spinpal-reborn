@@ -122,9 +122,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                     newRole.claims.role === 'admin';
           
           if (isSuperAdminOrAdmin) {
-            router.push('/admin/dashboard');
+            router.push('/(protected)/admin/dashboard');
           } else if (newRole.claims.clientId || (newRole.claims.allowedGameIds as string[])?.length > 0) {
-            router.push('/client/dashboard');
+            router.push('/(protected)/client/dashboard');
           }
         }
       } catch (error) {

@@ -3,7 +3,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { History, GitCommit, UploadCloud, ShieldCheck, Timer } from 'lucide-react';
-import packageJson from '../../../../package.json';
+import packageJson from '../../../../../package.json';
 
 const changelogData = [
     {

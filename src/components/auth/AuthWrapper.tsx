@@ -32,16 +32,16 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
 
     if (adminOnly && !userRole.isSuperAdmin) {
         // A non-admin user is trying to access an admin-only page
-        router.replace('/client/dashboard');
+        router.replace('/(protected)/client/dashboard');
     }
 
     if (clientOnly && userRole.isSuperAdmin) {
         // An admin is trying to access a client-only page.
         // We allow this for impersonation purposes. 
         // The page component will handle the specific logic.
-    } else if (clientOnly && !userRole.isSuperAdmin && !pathname.startsWith('/client/dashboard')) {
+    } else if (clientOnly && !userRole.isSuperAdmin && !pathname.startsWith('/(protected)/client/dashboard')) {
         // A client is somewhere they shouldn't be, other than their dashboard.
-        router.replace('/client/dashboard');
+        router.replace('/(protected)/client/dashboard');
     }
 
   }, [user, loading, router, userRole.isSuperAdmin, adminOnly, clientOnly, pathname]);
