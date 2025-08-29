@@ -16,13 +16,13 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
   const router = useRouter();
   const pathname = usePathname();
 
+  // Rutas públicas que no usan AuthWrapper
+  if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login') {
+    return <>{children}</>;
+  }
+
   useEffect(() => {
     if (loading) return;
-
-    // Rutas públicas que no requieren autenticación
-    if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login') {
-      return;
-    }
 
     // Para rutas protegidas, verificar autenticación
     if (!user) {
