@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, updateDoc, deleteField } from 'firebase/firestore';
-import Image from 'next/image';
+// import { OptimizedImage } from './OptimizedImage';
 import * as LucideIcons from 'lucide-react';
 
 type IconName = keyof typeof LucideIcons;
@@ -147,7 +147,12 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   }, [spinTheWheel]);
   
   useEffect(() => {
-    if (!db) return;
+    // Si no hay db, seguimos mostrando la ruleta en modo estático
+    if (!db) {
+      console.warn('Firebase DB no disponible, ruleta en modo estático');
+      return;
+    }
+
     const gameRef = doc(db, 'games', gameId);
 
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
@@ -200,12 +205,29 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
             .blinking-winner {
                 animation: blink-winner 0.5s infinite;
             }
+            .wheel-image {
+              position: absolute;
+              inset: 0;
+              width: 100%;
+              height: 100%;
+              background-position: center;
+              background-repeat: no-repeat;
+              background-size: contain;
+              image-rendering: -webkit-optimize-contrast;
+              image-rendering: crisp-edges;
+              transform: translate3d(0, 0, 0);
+              pointer-events: none;
+            }
             `}
         </style>
         
         <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 z-0" style={wheelStyle}>
-              <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ transformOrigin: 'center center' }}>
+              <svg viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`} className="w-full h-full" style={{ 
+                transformOrigin: 'center center',
+                shapeRendering: 'geometricPrecision',
+                textRendering: 'geometricPrecision'
+              }}>
                 <g style={{ transformOrigin: 'center center' }}>
                   {segments.map((segment, index) => {
                     if (!segment.name || typeof segment.name !== 'string') return null;
@@ -293,6 +315,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
                           style={{
                             lineHeight: segment.lineHeight || 1,
                             letterSpacing: segment.letterSpacing || 0.5,
+                            paintOrder: 'stroke',
+                            stroke: 'none',
+                            fontSmooth: 'always',
+                            textRendering: 'geometricPrecision'
                           }}
                           transform={`rotate(${textAngle + 90} ${straightTextX} ${straightTextY})`}
                           x={straightTextX}
@@ -322,46 +348,22 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
         
         {borderImage && (
             <div 
-            className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
-            style={{ transform: `scale(${borderScale})`}}
-            >
-            <Image
-                src={borderImage}
-                alt="Roulette Border"
-                width={500}
-                height={500}
-                className="object-contain"
-                data-ai-hint="roulette border"
-                quality={90}
-                priority
-                onError={(e) => {
-                  console.error('Error loading border image:', borderImage);
-                  e.currentTarget.style.display = 'none';
-                }}
+              className="wheel-image z-10"
+              style={{ 
+                transform: `scale(${borderScale})`,
+                backgroundImage: `url(${borderImage})`
+              }}
             />
-            </div>
         )}
         
         {centerImage && (
             <div 
-            className="absolute inset-0 z-20 pointer-events-none flex items-center justify-center"
-            style={{ transform: `scale(${centerScale})`}}
-            >
-            <Image
-                src={centerImage}
-                alt="Roulette Pointer and Center"
-                width={500}
-                height={500}
-                className="object-contain"
-                data-ai-hint="roulette pointer"
-                quality={90}
-                priority
-                onError={(e) => {
-                  console.error('Error loading center image:', centerImage);
-                  e.currentTarget.style.display = 'none';
-                }}
+              className="wheel-image z-20"
+              style={{ 
+                transform: `scale(${centerScale})`,
+                backgroundImage: `url(${centerImage})`
+              }}
             />
-            </div>
         )}
       </div>
     </div>
