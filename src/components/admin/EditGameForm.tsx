@@ -494,8 +494,13 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       dirtyFields.forEach(field => {
         if (field === 'exemptedEmails') {
           updateData.exemptedEmails = emailList;
-        } else if (field !== 'segmentsJson' && field !== 'borderImage' && field !== 'borderScale' && field !== 'centerImage' && field !== 'centerScale') {
-          updateData[field] = formData[field];
+        } else if (field !== 'segmentsJson') {
+          if (field === 'config') {
+            // Asegurarnos de que las imágenes y escalas se guardan correctamente
+            updateData.config = formData.config;
+          } else {
+            updateData[field] = formData[field];
+          }
         }
       });
 
@@ -954,7 +959,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                         render={() => (
                                             <FormItem>
                                                 <FormLabel>Imagen del Borde</FormLabel>
-                                                <ImageUpload fieldName="config.borderImage" gameId={initialGame.id} />
+                                                <ImageUpload fieldName="config.borderImage" />
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -986,7 +991,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                         render={() => (
                                             <FormItem>
                                                 <FormLabel>Imagen del Centro/Puntero</FormLabel>
-                                                <ImageUpload fieldName="config.centerImage" gameId={initialGame.id} />
+                                                <ImageUpload fieldName="config.centerImage" />
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -1312,7 +1317,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                         render={() => (
                                                           <FormItem>
                                                             <FormLabel>O usa una URL de imagen personalizada</FormLabel>
-                                                            <ImageUpload fieldName={`segments.${index}.iconUrl`} gameId={initialGame.id} />
+                                                            <ImageUpload fieldName={`segments.${index}.iconUrl`} />
                                                              <FormDescription>Si rellenas este campo, se usará esta imagen en lugar del icono de Lucide.</FormDescription>
                                                             <FormMessage/>
                                                           </FormItem>
@@ -1621,7 +1626,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     render={() => (
                                         <FormItem>
                                         <FormLabel>Imagen de Fondo (TV)</FormLabel>
-                                        <ImageUpload fieldName="backgroundImage" gameId={initialGame.id} />
+                                        <ImageUpload fieldName="backgroundImage" />
                                         <FormDescription>
                                             Sube una imagen para usar de fondo. Déjalo en blanco para no usar ninguna.
                                         </FormDescription>
@@ -1784,7 +1789,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                     render={() => (
                                     <FormItem>
                                         <FormLabel>Imagen de Fondo (Móvil)</FormLabel>
-                                        <ImageUpload fieldName="mobileBackgroundImage" gameId={initialGame.id} />
+                                        <ImageUpload fieldName="mobileBackgroundImage" />
                                         <FormDescription>
                                         Fondo para la pantalla de registro en el móvil. Si se deja en blanco, usará el color de fondo por defecto.
                                         </FormDescription>
