@@ -49,7 +49,7 @@ export default function ClientDashboard() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [impersonatedEmail, setImpersonatedEmail] = useState<string | null>(null);
-  const [viewTitle, setViewTitle] = useState('Mis Juegos');
+  const [viewTitle, setViewTitle] = useState('Dashboard');
 
   useEffect(() => {
     const clientEmailParam = searchParams.get('clientEmail');
@@ -104,7 +104,7 @@ export default function ClientDashboard() {
         if (!userRole.isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
             setViewTitle(`Panel de: ${gamesData[0].clientName}`);
         } else if (!userRole.isSuperAdmin) {
-            setViewTitle('Mis Juegos');
+            setViewTitle('Dashboard');
         }
 
           if (isSubscribed) {
@@ -155,7 +155,7 @@ export default function ClientDashboard() {
             </div>
             {userRole.isSuperAdmin && impersonatedEmail && (
                 <Button variant="outline" asChild>
-                    <Link href="/admin">Volver al Panel de Admin</Link>
+                    <Link href="/admin/dashboard">Volver al Panel de Admin</Link>
                 </Button>
             )}
         </div>
@@ -228,14 +228,14 @@ export default function ClientDashboard() {
                                         <Link href={`/client/juegos/editar/${game.id}`} className="flex flex-col items-center gap-1">
                                             <Settings className="h-5 w-5"/>
                                             <span>Configurar</span>
-                                            <span className="text-xs text-muted-foreground">Ajustes del juego</span>
+                                            <span className="text-xs text-white">Ajustes del juego</span>
                                         </Link>
                                     </Button>
                                     <Button asChild size="lg" variant="secondary" className="h-auto py-4">
                                         <Link href={`/client/clientes/${game.id}`} className="flex flex-col items-center gap-1">
                                             <Users className="h-5 w-5" />
                                             <span>Participantes</span>
-                                            <span className="text-xs text-muted-foreground">Ver listado</span>
+                                            <span className="text-xs text-white">Ver listado</span>
                                         </Link>
                                     </Button>
                                 </div>

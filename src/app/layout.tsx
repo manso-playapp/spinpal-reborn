@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { format } from 'date-fns';
+import VersionBadge from '@/components/VersionBadge';
 import { Providers } from './providers';
 import { Poppins, PT_Sans, Bebas_Neue } from 'next/font/google';
 const bebas = Bebas_Neue({
@@ -45,9 +46,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
-        <div className="fixed bottom-2 right-2 bg-background/80 text-muted-foreground text-xs px-2 py-1 rounded-md shadow z-50">
-          {displayVersion}
-        </div>
+        <VersionBadge text={displayVersion} />
       </body>
     </html>
   );

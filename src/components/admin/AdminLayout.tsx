@@ -64,11 +64,11 @@ Gracias,
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/admin' || pathname === '/admin/dashboard'}
-                tooltip={{ children: 'Mis Juegos' }}
+                tooltip={{ children: 'Dashboard' }}
               >
                 <Link href="/admin">
                     <Gamepad />
-                    <span>Mis Juegos</span>
+                    <span>Dashboard</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

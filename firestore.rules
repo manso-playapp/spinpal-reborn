@@ -65,12 +65,25 @@ service cloud.firestore {
     }
 
     // Reglas para los correos salientes
+    // Permite que el superadmin lea todo.
+    // Permite a un cliente leer si:
+    //  - El log incluye su clientId, o
+    //  - El log incluye un gameId que pertenece a su email (cliente dueño del juego).
+    // Permite crear logs desde cliente/servidor sin auth estricta (los envíos ocurren desde front/server sin Admin SDK).
+    function isGameOwnerByGameId(gameId) {
+      return request.auth != null &&
+             get(/databases/$(database)/documents/games/$(gameId)).data.clientEmail == request.auth.token.email;
+    }
     match /outbound_emails/{emailId} {
       allow read: if isAuthenticated() && (
         isAdmin() ||
-        resource.data.clientId == request.auth.token.clientId
+        // Caso 1: el UID del usuario coincide con el clientId del log
+        resource.data.clientId == request.auth.uid ||
+        // Caso 2: el email del usuario coincide con el clientEmail del juego del log
+        (resource.data.gameId != null && isGameOwnerByGameId(resource.data.gameId))
       );
-      allow create: if isAdmin();
+      // Opcionalmente puedes endurecer a `request.auth != null`
+      allow create: if true;
     }
   }
 }

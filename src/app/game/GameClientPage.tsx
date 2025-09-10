@@ -237,11 +237,11 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
     switch(uiState) {
         case 'SPINNING':
             return (
-                <Card className="shadow-lg bg-black/70 backdrop-blur-md border-primary/50 text-white animate-in fade-in">
+                <Card className="shadow-lg bg-black/70 backdrop-blur-md border-white/40 text-white animate-in fade-in">
                     <CardContent className="p-6 flex flex-col items-center justify-center gap-4">
-                         <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                         <Loader2 className="h-12 w-12 text-white animate-spin" />
                          <p className="font-headline text-3xl">¡Mucha suerte...!</p>
-                         <p className="font-bold text-4xl text-primary">{currentPlayer || ''}</p>
+                         <p className="font-bold text-4xl text-white">{currentPlayer || ''}</p>
                     </CardContent>
                 </Card>
             );
@@ -251,7 +251,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                     className="text-center text-white p-4 rounded-lg animate-in fade-in zoom-in-95"
                     style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
                 >
-                    <h2 className="font-headline text-6xl md:text-7xl font-bold flex items-center justify-center gap-4 text-primary">
+                    <h2 className="font-headline text-6xl md:text-7xl font-bold flex items-center justify-center gap-4 text-white">
                         {spinResult?.isRealPrize ? <Gift className="h-16 w-16 md:h-20 md:w-20" /> : <ThumbsDown className="text-red-400 h-16 w-16 md:h-20 md:w-20" />}
                         {spinResult?.isRealPrize ? '¡Premio!' : '¡Casi!'}
                     </h2>

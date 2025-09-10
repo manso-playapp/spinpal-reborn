@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // Si es una ruta pública, permitir acceso sin verificación
-  if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login') {
+  if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login' || pathname === '/client/login') {
     return NextResponse.next()
   }
 
@@ -23,8 +23,8 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Rutas que requieren autenticación
-    '/(protected)/admin/:path*',
-    '/(protected)/client/:path*',
+    '/admin/:path*',
+    '/client/:path*',
     // Rutas públicas que queremos procesar
     '/juego/:path*'
   ]

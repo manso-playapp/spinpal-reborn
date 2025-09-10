@@ -319,7 +319,7 @@ export default function AdminDashboard() {
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="font-headline text-2xl font-semibold">Mis Juegos</h1>
+            <h1 className="font-headline text-2xl font-semibold">Dashboard</h1>
                 <p className="text-muted-foreground">Crea, edita y gestiona tus campañas de ruletas interactivas.</p>
             </div>
             <div className="flex items-center gap-2">

@@ -1,11 +1,12 @@
-import { collection, doc, getDoc, getDocs, onSnapshot, orderBy, query, where, Firestore, DocumentData } from 'firebase/firestore';
-import { useEffect, useState, useCallback } from 'react';
+import { collection, doc, getDoc, onSnapshot, orderBy, query, where, Firestore } from 'firebase/firestore';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { db } from '@/lib/firebase/config';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useAuth';
+import { useSearchParams } from 'next/navigation';
 
 interface EmailLog {
   id: string;
@@ -28,6 +29,11 @@ export function ClientEmailList() {
   const [page, setPage] = useState(1);
   const [gameNames, setGameNames] = useState<Record<string, string>>({});
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const impersonatedEmail = searchParams.get('clientEmail');
+
+  // We'll target either the impersonated client (if provided) or the current user's email
+  const targetClientEmail = useMemo(() => impersonatedEmail || user?.email || null, [impersonatedEmail, user?.email]);
 
   const fetchGameNames = useCallback(async (gameIds: string[], isSubscribed: boolean) => {
     if (!db || !isSubscribed || gameIds.length === 0) return {};
@@ -58,8 +64,7 @@ export function ClientEmailList() {
   }, [db]);
 
   useEffect(() => {
-    console.log('Current user:', user?.uid);
-    if (!user) {
+    if (!user || !targetClientEmail) {
       console.log('No user authenticated');
       setLoading(false);
       return;
@@ -71,7 +76,9 @@ export function ClientEmailList() {
     }
 
     let isSubscribed = true;
-    let unsubscribe: (() => void) | undefined;
+    let unsubscribeEmails: (() => void) | undefined;
+    let unsubscribeGames: (() => void) | undefined;
+    let perGameUnsubs: Array<() => void> = [];
 
     // Recuperar nombres de juegos cacheados
     const cachedGameNames = localStorage.getItem('gameNames');
@@ -80,36 +87,91 @@ export function ClientEmailList() {
     }
 
     const setupSubscription = async () => {
-      if (!user || !db) return;
+      if (!user || !db || !targetClientEmail) return;
 
       try {
-        console.log('Setting up query for emails');
-        
-        // Consulta directa de emails
-        const q = query(
-          collection(db as Firestore, 'outbound_emails'),
-          orderBy('createdAt', 'desc')
+        // 1) Subscribe to games owned by this client (by clientEmail)
+        const gamesQuery = query(
+          collection(db as Firestore, 'games'),
+          where('clientEmail', '==', targetClientEmail)
         );
 
-        // Suscribirse a los cambios
-        unsubscribe = onSnapshot(q, async (querySnapshot) => {
-          if (!isSubscribed) return;
-          
-          const logsData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as EmailLog[];
+        const ownedGameIds: Set<string> = new Set();
+        let ownedClientId: string | undefined = undefined;
 
-          // Obtener los IDs de juegos únicos
-          const gameIds = [...new Set(logsData.filter(log => log.gameId).map(log => log.gameId as string))];
-          
-          // Obtener los nombres de los juegos
-          const names = await fetchGameNames(gameIds, isSubscribed);
-          
-          if (isSubscribed) {
-            setGameNames(names);
-            setLogs(logsData);
-            setLoading(false);
+        unsubscribeGames = onSnapshot(gamesQuery, async (gamesSnap) => {
+          if (!isSubscribed) return;
+
+          const docs = gamesSnap.docs;
+          ownedGameIds.clear();
+          docs.forEach((d) => {
+            ownedGameIds.add(d.id);
+            const data: any = d.data();
+            if (!ownedClientId && data?.clientId) ownedClientId = data.clientId as string;
+          });
+
+          // 2) Subscribe to outbound_emails with secure, allowed queries only
+          if (unsubscribeEmails) { unsubscribeEmails = undefined; }
+          perGameUnsubs.forEach((u) => u());
+          perGameUnsubs = [];
+
+          if (ownedClientId) {
+            // Single query filtered by clientId (sort on client)
+            const emailsByClient = query(
+              collection(db as Firestore, 'outbound_emails'),
+              where('clientId', '==', ownedClientId)
+            );
+            unsubscribeEmails = onSnapshot(emailsByClient, async (snap) => {
+              if (!isSubscribed) return;
+              const clientLogs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as EmailLog[];
+              clientLogs.sort((a, b) => {
+                const sa = (a.createdAt as any)?.seconds || 0;
+                const sb = (b.createdAt as any)?.seconds || 0;
+                return sb - sa;
+              });
+              const gameIds = [...new Set(clientLogs.filter(l => l.gameId).map(l => l.gameId as string))];
+              const names = await fetchGameNames(gameIds, isSubscribed);
+              if (isSubscribed) {
+                setGameNames(names);
+                setLogs(clientLogs);
+                setLoading(false);
+              }
+            });
+          } else {
+            // Fallback: subscribe per each owned gameId
+            const ids = Array.from(ownedGameIds);
+            if (ids.length === 0) {
+              setLogs([]);
+              setLoading(false);
+              return;
+            }
+            const allLogsMap = new Map<string, EmailLog>();
+            ids.forEach((gid) => {
+              const qEmails = query(
+                collection(db as Firestore, 'outbound_emails'),
+                where('gameId', '==', gid)
+              );
+              const unsub = onSnapshot(qEmails, async (snap) => {
+                if (!isSubscribed) return;
+                // Update map with latest docs for this game
+                snap.docs.forEach((d) => {
+                  const log = { id: d.id, ...(d.data() as any) } as EmailLog;
+                  allLogsMap.set(d.id, log);
+                });
+                const merged = Array.from(allLogsMap.values()).sort((a, b) => {
+                  const sa = (a.createdAt as any)?.seconds || 0;
+                  const sb = (b.createdAt as any)?.seconds || 0;
+                  return sb - sa;
+                });
+                const names = await fetchGameNames(ids, isSubscribed);
+                if (isSubscribed) {
+                  setGameNames(names);
+                  setLogs(merged);
+                  setLoading(false);
+                }
+              });
+              perGameUnsubs.push(unsub);
+            });
           }
         });
       } catch (error) {
@@ -122,11 +184,10 @@ export function ClientEmailList() {
 
     return () => {
       isSubscribed = false;
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribeEmails) unsubscribeEmails();
+      if (unsubscribeGames) unsubscribeGames();
     };
-  }, [user, db, fetchGameNames]);
+  }, [user, db, fetchGameNames, targetClientEmail]);
 
   const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE);
   const paginatedLogs = logs.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
