@@ -13,7 +13,8 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/admin') || pathname.startsWith('/client')) {
     const session = request.cookies.get('session')
     if (!session?.value) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      const redirectTo = pathname.startsWith('/client') ? '/client/login' : '/login'
+      return NextResponse.redirect(new URL(redirectTo, request.url))
     }
   }
 
