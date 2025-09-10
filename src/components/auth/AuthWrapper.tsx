@@ -17,7 +17,7 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
   const pathname = usePathname();
 
   // Rutas públicas que no usan AuthWrapper
-  if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login') {
+  if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login' || pathname === '/client/login') {
     return <>{children}</>;
   }
 
@@ -26,7 +26,8 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
 
     // Para rutas protegidas, verificar autenticación
     if (!user) {
-      router.replace('/login');
+      const target = pathname.startsWith('/client') ? '/client/login' : '/login';
+      router.replace(target);
       return;
     }
 
