@@ -158,16 +158,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    if (auth) {
-      const provider = new GoogleAuthProvider();
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
+    try {
+      const result = await signInWithPopup(auth, provider);
+      console.log('Login exitoso:', result.user.email);
+      // Refuerzo: setear cookie de sesión inmediatamente para que el middleware la vea en el próximo request
       try {
-        const result = await signInWithPopup(auth, provider);
-        console.log('Login exitoso:', result.user.email);
-        // onAuthStateChanged se encargará del resto
-      } catch (error) {
-        console.error('Error al iniciar sesión con Google:', error);
-        throw error;
+        const token = await result.user.getIdToken();
+        const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+        const cookie = `session=${token}; path=/; SameSite=Lax; ${isHttps ? 'Secure; ' : ''}Max-Age=3600`;
+        document.cookie = cookie;
+      } catch (e) {
+        console.warn('No se pudo setear la cookie de sesión inmediatamente:', e);
       }
+      // Navegar al dashboard del cliente si estamos en login de cliente
+      try {
+        const path = typeof window !== 'undefined' ? window.location.pathname : '';
+        if (path.startsWith('/client')) {
+          router.replace('/client/dashboard');
+        }
+      } catch (_) {}
+      // onAuthStateChanged seguirá actualizando roles y estados
+    } catch (error) {
+      console.error('Error al iniciar sesión con Google:', error);
+      throw error;
     }
   };
 

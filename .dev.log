@@ -5516,3 +5516,16 @@ Raw game data: {
   backgroundVideo: undefined
 }
  GET /juego/B0n8kDkv5WjGvbm5au45 200 in 298ms
+ ✓ Compiled in 2.6s (5385 modules)
+Fetching game data for ID: B0n8kDkv5WjGvbm5au45
+Raw game data: {
+  config: {
+    borderImage: 'https://mansoestudiocreativo.com/wp-content/uploads/2025/08/borde_plata.png',
+    borderScale: 1.3,
+    centerImage: 'https://mansoestudiocreativo.com/wp-content/uploads/2025/08/puntero_celeste.png',
+    centerScale: 1.4
+  },
+  backgroundImage: 'https://mansoestudiocreativo.com/wp-content/uploads/2025/08/fondo-tv-vertical-1.jpg',
+  backgroundVideo: undefined
+}
+ GET /juego/B0n8kDkv5WjGvbm5au45 200 in 1605ms
