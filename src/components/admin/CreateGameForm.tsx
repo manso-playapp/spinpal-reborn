@@ -167,7 +167,7 @@ export default function CreateGameForm() {
         <CardHeader>
             <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" className="h-7 w-7" asChild>
-                <Link href="/admin">
+                <Link href="/admin/dashboard">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="sr-only">Volver</span>
                 </Link>

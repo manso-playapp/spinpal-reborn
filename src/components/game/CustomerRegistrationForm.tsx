@@ -16,7 +16,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle, Bug, Instagram, PlayCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
-import { sendPrizeNotification } from '@/ai/flows/prize-notification-flow';
 import { Checkbox } from '../ui/checkbox';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
@@ -218,7 +217,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     timestamp: serverTimestamp(), 
                     customerId: customerId, 
                     winningId: winningSegment.id 
-                }
+                },
+                // Incrementar el contador de jugadas totales del juego
+                plays: increment(1),
             };
             const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
 
@@ -226,7 +227,16 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 gameUpdateData.prizesAwarded = increment(1);
                 customerUpdateData.prizeWonName = prizeNameToDisplay;
                 customerUpdateData.prizeWonAt = serverTimestamp();
-                sendPrizeNotification({ gameId, customerId: customerId, prizeName: prizeNameToDisplay });
+                // Disparar notificación de premio vía API (server-side)
+                try {
+                    fetch('/api/notify-prize', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ gameId, customerId, prizeName: prizeNameToDisplay })
+                    }).catch(() => {});
+                } catch (_) {
+                    // No bloquear el flujo por errores de red
+                }
             }
 
             try {
@@ -318,7 +328,10 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                                     </FormControl>
                                                     <div className="space-y-1 leading-none">
                                                         <FormLabel>
-                                                             Confirmo que sigo a <Link href={gameData.instagramProfile!} target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-1">@{gameData.instagramProfile!.split('/').pop()}<Instagram className="h-4 w-4"/></Link> en Instagram.
+                                                            Para participar debes seguirnos en instagram{' '}
+                                                            <Link href={gameData.instagramProfile!} target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-1">
+                                                                @{gameData.instagramProfile!.split('/').pop()}<Instagram className="h-4 w-4"/>
+                                                            </Link>
                                                         </FormLabel>
                                                         <FormMessage />
                                                     </div>

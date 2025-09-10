@@ -7,7 +7,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db, auth } from '@/lib/firebase/config';
-import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -245,6 +245,27 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, Math.random().toString(36).slice(-8));
       // Enviar email de reset de contraseña
       await sendPasswordResetEmail(auth, email);
+
+      // Registrar el envío en el log de correos
+      try {
+        if (db) {
+          await addDoc(collection(db, 'outbound_emails'), {
+            to: email,
+            gameId: initialGame.id,
+            clientId: (initialGame as any).clientId || undefined,
+            type: 'Password Reset',
+            status: 'sent',
+            message: {
+              subject: 'Establecer contraseña de acceso',
+              html: '<p>Se envió un correo de Firebase Auth para establecer la contraseña del cliente.</p>',
+            },
+            createdAt: serverTimestamp(),
+          });
+        }
+      } catch (e) {
+        // No bloquear el flujo por errores de logging
+        console.warn('No se pudo registrar el email de acceso en outbound_emails:', e);
+      }
       
       // Actualizar el estado del formulario
       form.setValue('accessCredentials.resetPasswordRequested', true);
@@ -273,6 +294,26 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     try {
       setLoading(true);
       await sendPasswordResetEmail(auth, email);
+
+      // Registrar el envío en el log de correos
+      try {
+        if (db) {
+          await addDoc(collection(db, 'outbound_emails'), {
+            to: email,
+            gameId: initialGame.id,
+            clientId: (initialGame as any).clientId || undefined,
+            type: 'Password Reset',
+            status: 'sent',
+            message: {
+              subject: 'Reseteo de contraseña',
+              html: '<p>Se envió un correo de Firebase Auth con instrucciones para resetear la contraseña.</p>',
+            },
+            createdAt: serverTimestamp(),
+          });
+        }
+      } catch (e) {
+        console.warn('No se pudo registrar el email de reseteo en outbound_emails:', e);
+      }
       
       // Actualizar el estado del formulario
       form.setValue('accessCredentials.resetPasswordRequested', true);
@@ -602,7 +643,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     });
   };
 
-  const backUrl = userRole.isSuperAdmin ? '/(protected)/admin' : '/(protected)/client/dashboard';
+  const backUrl = userRole.isSuperAdmin ? '/admin/dashboard' : '/client/dashboard';
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">

@@ -7,6 +7,21 @@ import packageJson from '../../../../../package.json';
 
 const changelogData = [
     {
+        version: "0.2.2",
+        date: "9 de Septiembre de 2025",
+        changes: [
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Rutas corregidas: eliminación de los grupos '(protected)' en URLs, ajustes en AuthWrapper y middleware para acceso correcto a /admin y /client." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Unificación de navegación: renombrado 'Mis Juegos' a 'Dashboard' y enlaces de 'Volver' al Dashboard según rol." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Contador de jugadas: se incrementa 'plays' por cada giro real." },
+            { icon: <UploadCloud className="h-4 w-4 text-primary" />, text: "Nuevo endpoint /api/notify-prize para enviar correos de premio desde el servidor y registrarlos en Firestore." },
+            { icon: <ShieldCheck className="h-4 w-4 text-primary" />, text: "Logs de correo: se registran envíos de acceso/reset de contraseña y se normaliza clientId/clientEmail en los documentos." },
+            { icon: <ShieldCheck className="h-4 w-4 text-primary" />, text: "Reglas Firestore: lectura segura de 'outbound_emails' (admin o dueño por clientId/gameId); creación permitida para logging." },
+            { icon: <Timer className="h-4 w-4 text-primary" />, text: "Listado de correos (cliente): consultas filtradas por clientId/gameId, sin índices compuestos; ordenamiento en memoria." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "TV y jugar: textos e indicadores en blanco; copy de Instagram actualizado en el formulario de registro." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Dashboard de cliente: header a ancho completo y subtítulos en blanco; botón 'Reportar un problema' junto a Cerrar Sesión (mailto)." },
+        ]
+    },
+    {
         version: "0.2.0",
         date: "29 de Julio de 2024",
         changes: [

@@ -221,7 +221,10 @@ const prizeNotificationFlow = ai.defineFlow(
                 to: customerEmail,
                 gameId: input.gameId,
                 customerId: input.customerId,
-                clientId: gameData.clientId, // Add the client ID from the game data
+                // Only include clientId if present (undefined is not allowed)
+                ...(gameData.clientId ? { clientId: gameData.clientId } : {}),
+                // Optionally include clientEmail to aid filtering
+                ...(gameData.clientEmail ? { clientEmail: gameData.clientEmail } : {}),
                 prize: input.prizeName,
                 validationCode: validationCode,
                 message: {
@@ -255,7 +258,8 @@ const prizeNotificationFlow = ai.defineFlow(
                     to: clientEmail,
                     gameId: input.gameId,
                     customerId: input.customerId,
-                    clientId: gameData.clientId, // Add the client ID from the game data
+                    ...(gameData.clientId ? { clientId: gameData.clientId } : {}),
+                    ...(gameData.clientEmail ? { clientEmail: gameData.clientEmail } : {}),
                     prize: input.prizeName,
                     validationCode: validationCode,
                     message: {

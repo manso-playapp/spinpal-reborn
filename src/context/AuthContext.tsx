@@ -112,6 +112,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         setUser(user);
         await updateUserRole(user);
+        // Persist session token for middleware checks
+        try {
+          const token = await user.getIdToken();
+          document.cookie = `session=${token}; path=/;`;
+        } catch (_) {
+          // ignore token errors on client
+        }
         
         // Redirigir al usuario a la página correcta después de actualizar los roles
         const currentPath = window.location.pathname;
@@ -122,9 +129,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                                     newRole.claims.role === 'admin';
           
           if (isSuperAdminOrAdmin) {
-            router.push('/(protected)/admin/dashboard');
+            router.push('/admin/dashboard');
           } else if (newRole.claims.clientId || (newRole.claims.allowedGameIds as string[])?.length > 0) {
-            router.push('/(protected)/client/dashboard');
+            router.push('/client/dashboard');
           }
         }
       } catch (error) {

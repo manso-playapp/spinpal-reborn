@@ -75,7 +75,7 @@ export async function sendTestEmail(input: TestEmailInput): Promise<TestEmailOut
     type: 'Test Email',
     message: { subject, html: body },
     createdAt: serverTimestamp(),
-    clientId: input.clientId, // Add clientId to the log
+    ...(input.clientId ? { clientId: input.clientId } : {}),
   };
   
   try {
