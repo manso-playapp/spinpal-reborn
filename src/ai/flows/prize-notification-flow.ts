@@ -94,8 +94,16 @@ const createCustomerEmail = (customerName: string, prizeName: string, validation
     return { subject, body };
 };
 
-// Template function for the client notification email
-const createClientEmail = (customerName: string, prizeName: string, validationCode: string, gameName: string, customerEmail: string, customerPhone: string) => {
+// Template function for the client (admin) notification email
+const createClientEmail = (
+    customerName: string,
+    prizeName: string,
+    validationCode: string,
+    gameName: string,
+    customerEmail: string,
+    customerPhone: string,
+    customerBirthdate?: string
+) => {
     const subject = `Notificación de Premio: ${customerName} ha ganado en ${gameName}`;
     const body = `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 600px; margin: auto;">
@@ -107,6 +115,7 @@ const createClientEmail = (customerName: string, prizeName: string, validationCo
                     <li style="margin: 10px 0;"><strong>Nombre:</strong> ${customerName}</li>
                     <li style="margin: 10px 0;"><strong>Email:</strong> ${customerEmail}</li>
                     <li style="margin: 10px 0;"><strong>Teléfono:</strong> ${customerPhone || 'No proporcionado'}</li>
+                    <li style="margin: 10px 0;"><strong>Fecha de nacimiento:</strong> ${customerBirthdate || 'No proporcionada'}</li>
                     <li style="margin: 10px 0;"><strong>Premio:</strong> ${prizeName}</li>
                 </ul>
             </div>
@@ -207,7 +216,8 @@ const prizeNotificationFlow = ai.defineFlow(
             validationCode,
             gameData.name,
             customerData.email,
-            customerData.phone || ''
+            customerData.phone || '',
+            customerData.birthdate
         ) : null;
 
 

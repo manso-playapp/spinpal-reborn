@@ -27,6 +27,8 @@ const baseFormSchema = z.object({
     name: z.string().min(2, { message: 'Tu nombre debe tener al menos 2 caracteres.' }),
     email: z.string().email({ message: 'Por favor, introduce un correo electrónico válido.' }),
     phone: z.string().optional(),
+    // Guardamos la fecha como string YYYY-MM-DD; ahora obligatorio
+    birthdate: z.string().min(1, { message: 'La fecha de nacimiento es obligatoria.' }),
     confirmFollow: z.boolean().optional(),
 });
 
@@ -62,7 +64,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
     const form = useForm<z.infer<typeof baseFormSchema>>({
         resolver: zodResolver(dynamicSchema),
-        defaultValues: { name: '', email: '', phone: '', confirmFollow: false },
+        defaultValues: { name: '', email: '', phone: '', birthdate: '', confirmFollow: false },
     });
 
             useEffect(() => {
@@ -152,6 +154,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 name: formData.name,
                 email: submittedEmail,
                 phone: formData.phone || '',
+                birthdate: formData.birthdate || '',
                 registeredAt: serverTimestamp(),
                 hasPlayed: false,
             });
@@ -308,6 +311,15 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     )} />
                                     <FormField control={form.control} name="email" render={({ field }) => (
                                         <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="tu@correo.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="birthdate" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Fecha de nacimiento</FormLabel>
+                                            <FormControl>
+                                                <Input type="date" placeholder="AAAA-MM-DD" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
                                     )} />
                                     {gameData?.isPhoneRequired && (
                                         <FormField control={form.control} name="phone" render={({ field }) => (

@@ -278,6 +278,7 @@ export default function AdminDashboard() {
           nombre: data.name || '',
           email: data.email || '',
           telefono: data.phone || '',
+          cumpleaños: data.birthdate || '',
           fecha_registro: registrationDate,
           ha_jugado: data.hasPlayed ? 'Sí' : 'No',
         };
