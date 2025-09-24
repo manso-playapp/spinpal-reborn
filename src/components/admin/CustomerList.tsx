@@ -50,6 +50,7 @@ interface Customer {
   name: string;
   email: string;
   phone?: string;
+  birthdate?: string;
   hasPlayed: boolean;
   registeredAt: any;
   prizeWonName?: string;
@@ -178,6 +179,11 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
         cell: ({ row }) => <div>{row.original.phone || '-'}</div>,
     },
     {
+        accessorKey: "birthdate",
+        header: "Cumpleaños",
+        cell: ({ row }) => <div>{row.original.birthdate || '-'}</div>,
+    },
+    {
         accessorKey: "registeredAt",
         header: ({ column }) => (
              <Button
@@ -289,6 +295,7 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
           nombre: data.name || '',
           email: data.email || '',
           telefono: data.phone || '',
+          cumpleaños: data.birthdate || '',
           fecha_registro: registrationDate,
           ha_jugado: data.hasPlayed ? 'Sí' : 'No',
         };
