@@ -5,7 +5,6 @@ import { cookies } from 'next/headers';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 import { Resend } from 'resend';
 import { FieldValue } from 'firebase-admin/firestore';
-import { Resend } from 'resend';
 
 const SITE_URL =
   (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')) || '';
@@ -33,7 +32,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
     }
 
-    const adminAuth = getAdminAuth();
+    const adminAuth = await getAdminAuth();
     const decoded = await adminAuth.verifyIdToken(sessionCookie, true);
 
     const isAdmin =
@@ -61,7 +60,7 @@ export async function POST(request: Request) {
       throw new Error('No se pudo obtener el UID del usuario.');
     }
 
-    const adminDb = getAdminDb();
+    const adminDb = await getAdminDb();
 
     let clientId: string | null = null;
     try {

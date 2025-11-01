@@ -1,10 +1,10 @@
-'use server';
+import 'server-only';
 
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
-let appInitialized = false;
+let appsInitialized = false;
 
 const getServiceAccount = () => {
   if (
@@ -12,7 +12,9 @@ const getServiceAccount = () => {
     !process.env.SERVICE_ACCOUNT_CLIENT_EMAIL ||
     !process.env.SERVICE_ACCOUNT_PRIVATE_KEY
   ) {
-    throw new Error('Firebase Admin credentials are not set. Please configure SERVICE_ACCOUNT_* env vars.');
+    throw new Error(
+      'Firebase Admin credentials are not set. Please configure SERVICE_ACCOUNT_* env vars.',
+    );
   }
 
   return {
@@ -23,24 +25,23 @@ const getServiceAccount = () => {
 };
 
 const ensureInitialized = () => {
-  if (!appInitialized) {
+  if (!appsInitialized) {
     const serviceAccount = getServiceAccount();
     if (getApps().length === 0) {
       initializeApp({
         credential: cert(serviceAccount),
       });
     }
-    appInitialized = true;
+    appsInitialized = true;
   }
 };
 
-export const getAdminAuth = () => {
+export const getAdminAuth = async () => {
   ensureInitialized();
-
   return getAuth();
 };
 
-export const getAdminDb = () => {
+export const getAdminDb = async () => {
   ensureInitialized();
   return getFirestore();
 };
