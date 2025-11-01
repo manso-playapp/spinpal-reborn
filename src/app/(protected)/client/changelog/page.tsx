@@ -7,6 +7,30 @@ import packageJson from '../../../../../package.json';
 
 const changelogData = [
     {
+        version: "0.2.5",
+        date: "25 de Octubre de 2025",
+        changes: [
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Acceso de clientes con enlace mágico enviado al correo registrado; puedes seguir usando Google como respaldo." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Nueva pantalla de confirmación que completa el acceso sin cerrar sesiones existentes." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Los administradores ahora generan y envían el enlace automáticamente: sólo revisa tu correo y accede." },
+        ]
+    },
+    {
+        version: "0.2.4",
+        date: "25 de Octubre de 2025",
+        changes: [
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Formulario de registro: switch para exigir la fecha de nacimiento o dejarla opcional." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Actualización de versión: el paquete sube a 0.2.4 y el historial refleja el cambio." },
+        ]
+    },
+    {
+        version: "0.2.3",
+        date: "25 de Octubre de 2025",
+        changes: [
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Premios reales: nuevo switch para activar el control de stock; premios ilimitados siguen disponibles sin restar unidades." },
+        ]
+    },
+    {
         version: "0.2.2",
         date: "9 de Septiembre de 2025",
         changes: [

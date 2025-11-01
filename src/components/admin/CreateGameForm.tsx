@@ -41,6 +41,8 @@ const segmentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
+  useStockControl: z.boolean().default(false).optional(),
+  quantity: z.number().int().min(0, 'La cantidad no puede ser negativa.').nullable().optional(),
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
   fontFamily: z.string().default('DM Sans'),
   fontSize: z.number().min(4).max(40).default(16),
@@ -99,8 +101,8 @@ export default function CreateGameForm() {
     }
 
     let segmentsToSave = [
-        { id: generateUniqueId(), name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
-        { id: generateUniqueId(), name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+        { id: generateUniqueId(), name: 'Premio 1', color: '#FFC107', isRealPrize: true, probability: 10, useStockControl: false, quantity: null, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
+        { id: generateUniqueId(), name: 'No Ganas', color: '#E0E0E0', isRealPrize: false, useStockControl: false, quantity: null, textColor: '#000000', fontFamily: 'PT Sans', fontSize: 16, lineHeight: 1, letterSpacing: 0.5, distanceFromCenter: 0.7, iconUrl: '', iconScale: 1 },
     ];
 
     if (data.importJson) {
@@ -134,6 +136,7 @@ export default function CreateGameForm() {
         clientEmail: data.clientEmail,
         status: data.status,
         managementType: data.managementType,
+        isBirthdateRequired: true,
         plays: 0,
         prizesAwarded: 0,
         createdAt: serverTimestamp(),

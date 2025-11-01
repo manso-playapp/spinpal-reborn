@@ -16,6 +16,8 @@ interface Segment {
   color?: string;
   isRealPrize?: boolean;
   probability?: number;
+  useStockControl?: boolean;
+  quantity?: number | null;
   textColor?: string;
   fontFamily?: string;
   fontSize?: number;

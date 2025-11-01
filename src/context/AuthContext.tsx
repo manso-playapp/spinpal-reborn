@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await user.getIdToken(true);
     const idTokenResult = await user.getIdTokenResult();
+    console.log('Claims recibidos:', idTokenResult.claims);
     
     const isSuperAdmin = user.email === superAdminEmail;
     const isAdmin = isSuperAdmin || 
@@ -76,7 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (auth) {
         await firebaseSignOut(auth);
         setUser(null);
-        router.push('/login');
+        const target = window.location.pathname.startsWith('/client') ? '/client/login' : '/login';
+        router.push(target);
       }
       return;
     }
@@ -103,7 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isClient: false
         });
         setLoading(false);
-        if (window.location.pathname !== '/') {
+        const publicPaths = ['/', '/login', '/client/login', '/client/complete'];
+        if (!publicPaths.includes(window.location.pathname)) {
           router.push('/login');
         }
         return;
