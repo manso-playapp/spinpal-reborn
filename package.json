@@ -1,6 +1,6 @@
 {
   "name": "nextn",
-  "version": "0.2.2",
+  "version": "0.2.5",
   "private": true,
   "scripts": {
     "dev": "next dev -p 9002",
@@ -48,6 +48,7 @@
     "date-fns": "latest",
     "embla-carousel-react": "latest",
     "firebase": "latest",
+    "firebase-admin": "^13.5.0",
     "genkit": "latest",
     "lucide-react": "latest",
     "next": "latest",
@@ -69,6 +70,8 @@
     "@types/papaparse": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "eslint": "9.38.0",
+    "eslint-config-next": "16.0.0",
     "genkit-cli": "latest",
     "handlebars-loader": "^1.7.3",
     "postcss": "latest",

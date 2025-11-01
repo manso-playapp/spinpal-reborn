@@ -5,7 +5,13 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // Si es una ruta pública, permitir acceso sin verificación
-  if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login' || pathname === '/client/login') {
+  if (
+    pathname.startsWith('/juego/') ||
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/client/login' ||
+    pathname === '/client/complete'
+  ) {
     return NextResponse.next()
   }
 
