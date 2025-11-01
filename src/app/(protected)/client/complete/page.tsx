@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmailLink, isSignInWithEmailLink } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Logo from '@/components/logo';
 
-export default function ClientMagicLinkCompletePage() {
+function ClientMagicLinkCompleteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
@@ -25,7 +25,26 @@ export default function ClientMagicLinkCompletePage() {
     if (user) {
       router.replace('/client/dashboard');
     }
-  }, [user, loading, router]);
+  }, [loading, router, user]);
+
+  const completeSignIn = useCallback(
+    async (emailToUse: string) => {
+      if (typeof window === 'undefined' || !auth) return;
+
+      try {
+        setStatus('signingIn');
+        await signInWithEmailLink(auth, emailToUse, window.location.href);
+        window.localStorage.removeItem('clientEmailForSignIn');
+        setStatus('completed');
+        router.replace('/client/dashboard');
+      } catch (error: any) {
+        console.error('Error completando enlace mágico:', error);
+        setErrorMessage(error?.message || 'No se pudo completar el acceso. Solicita un nuevo enlace.');
+        setStatus('error');
+      }
+    },
+    [router]
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined' || !auth) {
@@ -49,23 +68,7 @@ export default function ClientMagicLinkCompletePage() {
 
     setEmail(emailToUse);
     void completeSignIn(emailToUse);
-  }, [searchParams]);
-
-  const completeSignIn = async (emailToUse: string) => {
-    if (typeof window === 'undefined' || !auth) return;
-
-    try {
-      setStatus('signingIn');
-      await signInWithEmailLink(auth, emailToUse, window.location.href);
-      window.localStorage.removeItem('clientEmailForSignIn');
-      setStatus('completed');
-      router.replace('/client/dashboard');
-    } catch (error: any) {
-      console.error('Error completando enlace mágico:', error);
-      setErrorMessage(error?.message || 'No se pudo completar el acceso. Solicita un nuevo enlace.');
-      setStatus('error');
-    }
-  };
+  }, [searchParams, completeSignIn]);
 
   const handleSubmitEmail = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -79,7 +82,7 @@ export default function ClientMagicLinkCompletePage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-lg">
+      <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-3">
           <div className="mx-auto mb-1">
             <Logo className="h-14 w-auto text-primary" />
@@ -132,5 +135,13 @@ export default function ClientMagicLinkCompletePage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ClientMagicLinkCompletePage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Cargando…</div>}>
+      <ClientMagicLinkCompleteContent />
+    </Suspense>
   );
 }
