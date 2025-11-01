@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { sendSignInLinkToEmail, isSignInWithEmailLink } from 'firebase/auth';
@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Logo from '@/components/logo';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function ClientLoginPage() {
+function ClientLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading, signInWithGoogle, userRole } = useAuth();
@@ -53,7 +53,7 @@ export default function ClientLoginPage() {
     }
   }, [prefillingEmail]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!auth) {
       setErrorMessage('La autenticación no está configurada. Revisa las credenciales de Firebase.');
@@ -95,7 +95,7 @@ export default function ClientLoginPage() {
       setErrorMessage(error?.message || 'No se pudo enviar el enlace de acceso. Intenta nuevamente.');
       setStatus('error');
     }
-  };
+  }, [email]);
 
   if (loading || user) {
     return (
@@ -175,5 +175,30 @@ export default function ClientLoginPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function ClientLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-sm shadow-lg">
+            <CardHeader>
+              <Skeleton className="h-8 w-3/4 mx-auto" />
+              <Skeleton className="h-4 w-1/2 mx-auto" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-12 w-full" />
+            </CardContent>
+            <CardFooter>
+              <Skeleton className="h-4 w-1/3 mx-auto" />
+            </CardFooter>
+          </Card>
+        </div>
+      }
+    >
+      <ClientLoginContent />
+    </Suspense>
   );
 }
