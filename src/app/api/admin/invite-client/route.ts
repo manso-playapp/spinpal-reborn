@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('session')?.value;
     if (!sessionCookie) {
       return NextResponse.json({ error: 'No autorizado.' }, { status: 401 });
