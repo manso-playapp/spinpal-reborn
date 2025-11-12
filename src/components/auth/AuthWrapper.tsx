@@ -16,12 +16,15 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
   const router = useRouter();
   const pathname = usePathname();
 
-  // Rutas públicas que no usan AuthWrapper
-  if (pathname.startsWith('/juego/') || pathname === '/' || pathname === '/login' || pathname === '/client/login') {
-    return <>{children}</>;
-  }
+  const isPublicRoute =
+    pathname.startsWith('/juego/') ||
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/client/login' ||
+    pathname === '/client/complete';
 
   useEffect(() => {
+    if (isPublicRoute) return;
     if (loading) return;
 
     // Para rutas protegidas, verificar autenticación
@@ -45,7 +48,11 @@ export default function AuthWrapper({ children, adminOnly = false, clientOnly = 
         router.replace('/client/dashboard');
     }
 
-  }, [user, loading, router, userRole.isSuperAdmin, adminOnly, clientOnly, pathname]);
+  }, [user, loading, router, userRole.isSuperAdmin, adminOnly, clientOnly, pathname, isPublicRoute]);
+
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
