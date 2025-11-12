@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db, auth } from '@/lib/firebase/config';
 import { doc, updateDoc, onSnapshot, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
@@ -59,6 +59,8 @@ const segmentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
+  useStockControl: z.boolean().default(false).optional(),
+  quantity: z.number().int().min(0, 'La cantidad no puede ser negativa.').nullable().optional(),
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
   fontFamily: z.string().default('DM Sans'),
   fontSize: z.number().min(4).max(40).default(16),
@@ -103,6 +105,7 @@ const formSchema = z.object({
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
   isPhoneRequired: z.boolean().optional(),
+  isBirthdateRequired: z.boolean().optional(),
   successMessage: z.string().optional(),
   qrCodeScale: z.number().min(0.1).max(2).optional(),
   rouletteScale: z.number().min(0.1).max(2).optional(),
@@ -161,7 +164,7 @@ interface WheelConfig {
 }
 
 type GameFormValues = z.infer<typeof formSchema>;
-type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName'>;
+type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName' | 'quantity' | 'useStockControl'>;
 
 
 interface Game {
@@ -181,6 +184,7 @@ interface Game {
   registrationTitle?: string;
   registrationSubtitle?: string;
   isPhoneRequired?: boolean;
+  isBirthdateRequired?: boolean;
   successMessage?: string;
   plays?: number;
   prizesAwarded?: number;
@@ -212,6 +216,8 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   color: getRandomColor(),
   isRealPrize: false,
   probability: 0,
+  useStockControl: false,
+  quantity: null,
   textColor: '#FFFFFF',
   fontFamily: 'Bebas Neue',
   fontSize: 16,
@@ -237,50 +243,34 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
 
   const handleCreateClientAccess = async () => {
     const email = form.watch('accessCredentials.email');
-    if (!email || !auth) return;
+    if (!email) return;
 
     try {
       setLoading(true);
-      // Crear el usuario
-      const userCredential = await createUserWithEmailAndPassword(auth, email, Math.random().toString(36).slice(-8));
-      // Enviar email de reset de contraseña
-      await sendPasswordResetEmail(auth, email);
+      const response = await fetch('/api/admin/invite-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, gameId: initialGame.id }),
+      });
 
-      // Registrar el envío en el log de correos
-      try {
-        if (db) {
-          await addDoc(collection(db, 'outbound_emails'), {
-            to: email,
-            gameId: initialGame.id,
-            clientId: (initialGame as any).clientId || undefined,
-            type: 'Password Reset',
-            status: 'sent',
-            message: {
-              subject: 'Establecer contraseña de acceso',
-              html: '<p>Se envió un correo de Firebase Auth para establecer la contraseña del cliente.</p>',
-            },
-            createdAt: serverTimestamp(),
-          });
-        }
-      } catch (e) {
-        // No bloquear el flujo por errores de logging
-        console.warn('No se pudo registrar el email de acceso en outbound_emails:', e);
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.error || 'No se pudo crear o invitar al cliente.');
       }
-      
-      // Actualizar el estado del formulario
+
       form.setValue('accessCredentials.resetPasswordRequested', true);
       form.setValue('accessCredentials.lastPasswordReset', new Date());
-      
+
       toast({
-        title: "Usuario Creado",
-        description: "Se ha enviado un email con instrucciones para establecer la contraseña.",
+        title: "Invitación enviada",
+        description: "El cliente recibirá un enlace mágico para acceder a su panel.",
       });
     } catch (error: any) {
-      console.error('Error creating user:', error);
+      console.error('Error creando acceso del cliente:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "No se pudo crear el usuario.",
+        description: error.message || "No se pudo invitar al cliente.",
       });
     } finally {
       setLoading(false);
@@ -345,7 +335,18 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       managementType: initialGame.managementType || 'client',
       exemptedEmails: (initialGame.exemptedEmails || []).join(', '),
       instagramProfile: initialGame.instagramProfile || '',
-      segments: initialGame.segments && initialGame.segments.length > 0 ? initialGame.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
+      segments: initialGame.segments && initialGame.segments.length > 0
+        ? initialGame.segments.map(s => {
+            const merged = { ...getDefaultSegment(''), ...s, id: s.id || generateUniqueId() };
+            if (typeof merged.quantity === 'number') {
+              merged.useStockControl = s.useStockControl ?? true;
+            }
+            if (!merged.useStockControl) {
+              merged.quantity = null;
+            }
+            return merged;
+          })
+        : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       segmentsJson: JSON.stringify(initialGame.segments, null, 2),
       backgroundImage: initialGame.backgroundImage || '',
       backgroundVideo: initialGame.backgroundVideo || '',
@@ -355,6 +356,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       mobileBackgroundFit: initialGame.mobileBackgroundFit || 'cover',
       registrationTitle: initialGame.registrationTitle || '',
       registrationSubtitle: initialGame.registrationSubtitle || '',
+      isBirthdateRequired: initialGame.isBirthdateRequired !== false,
       isPhoneRequired: initialGame.isPhoneRequired || false,
       successMessage: initialGame.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
       screenRotation: initialGame.screenRotation || 0,
@@ -391,7 +393,18 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as Game;
-        const segmentsData = data.segments && data.segments.length > 0 ? data.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')];
+        const segmentsData = data.segments && data.segments.length > 0
+          ? data.segments.map(s => {
+              const merged = { ...getDefaultSegment(''), ...s, id: s.id || generateUniqueId() };
+              if (typeof merged.quantity === 'number') {
+                merged.useStockControl = s.useStockControl ?? true;
+              }
+              if (!merged.useStockControl) {
+                merged.quantity = null;
+              }
+              return merged;
+            })
+          : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')];
         const formValues = {
           name: data.name || '',
           status: data.status || 'demo',
@@ -408,9 +421,10 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
           mobileBackgroundImage: data.mobileBackgroundImage || '',
           mobileBackgroundVideo: data.mobileBackgroundVideo || '',
           mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
-          registrationTitle: data.registrationTitle || '',
-          registrationSubtitle: data.registrationSubtitle || '',
-          isPhoneRequired: data.isPhoneRequired || false,
+        registrationTitle: data.registrationTitle || '',
+        registrationSubtitle: data.registrationSubtitle || '',
+        isBirthdateRequired: data.isBirthdateRequired !== false,
+        isPhoneRequired: data.isPhoneRequired || false,
           successMessage: data.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
           qrCodeScale: data.qrCodeScale || 1,
           rouletteScale: data.rouletteScale || 1,
@@ -946,6 +960,27 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               </FormItem>
                             )}
                           />
+                          <FormField
+                            control={form.control}
+                            name="isBirthdateRequired"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-base">Requerir Fecha de Nacimiento</FormLabel>
+                                  <FormDescription>
+                                    Al activarlo, el campo de cumpleaños será obligatorio en el registro.
+                                  </FormDescription>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    disabled={loading}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
                         </CardContent>
                       </Card>
 
@@ -1226,11 +1261,80 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                                   <FormDescription>Define si este premio cuenta para las estadísticas y consume probabilidad.</FormDescription>
                                                               </div>
                                                               <FormControl>
-                                                                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                                                  <Checkbox
+                                                                    checked={!!field.value}
+                                                                    onCheckedChange={(checked) => {
+                                                                      field.onChange(checked);
+                                                                      if (!checked) {
+                                                                        form.setValue(`segments.${index}.useStockControl`, false, { shouldDirty: true, shouldValidate: true });
+                                                                        form.setValue(`segments.${index}.quantity`, null, { shouldDirty: true, shouldValidate: true });
+                                                                      }
+                                                                    }}
+                                                                  />
                                                               </FormControl>
                                                           </FormItem>
                                                       )}
                                                   />
+                                                  {watchedSegments[index]?.isRealPrize && (
+                                                    <FormField
+                                                      control={form.control}
+                                                      name={`segments.${index}.useStockControl`}
+                                                      render={({ field }) => (
+                                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                                          <div className="space-y-0.5">
+                                                            <FormLabel>Controlar stock</FormLabel>
+                                                            <FormDescription>Activa esta opción si este premio tiene unidades limitadas.</FormDescription>
+                                                          </div>
+                                                          <FormControl>
+                                                            <Switch
+                                                              checked={!!field.value}
+                                                              onCheckedChange={(checked) => {
+                                                                field.onChange(checked);
+                                                                if (!checked) {
+                                                                  form.setValue(`segments.${index}.quantity`, null, { shouldDirty: true, shouldValidate: true });
+                                                                }
+                                                              }}
+                                                            />
+                                                          </FormControl>
+                                                        </FormItem>
+                                                      )}
+                                                    />
+                                                  )}
+                                                  {watchedSegments[index]?.isRealPrize && watchedSegments[index]?.useStockControl && (
+                                                    <FormField
+                                                      control={form.control}
+                                                      name={`segments.${index}.quantity`}
+                                                      render={({ field }) => (
+                                                        <FormItem>
+                                                          <FormLabel>Cantidad disponible</FormLabel>
+                                                          <FormControl>
+                                                            <Input
+                                                              type="number"
+                                                              min={0}
+                                                              value={typeof field.value === 'number' ? field.value.toString() : ''}
+                                                              onChange={(event) => {
+                                                                const value = event.target.value;
+                                                                if (value === '') {
+                                                                  field.onChange(null);
+                                                                  return;
+                                                                }
+                                                                const parsed = Math.max(0, Math.floor(Number(value)));
+                                                                if (Number.isNaN(parsed)) {
+                                                                  field.onChange(null);
+                                                                } else {
+                                                                  field.onChange(parsed);
+                                                                }
+                                                              }}
+                                                            />
+                                                          </FormControl>
+                                                          <FormDescription>
+                                                            Al llegar a 0 este premio dejará de entregarse automáticamente.
+                                                          </FormDescription>
+                                                          <FormMessage />
+                                                        </FormItem>
+                                                      )}
+                                                    />
+                                                  )}
                                                   <FormField
                                                       control={form.control}
                                                       name={`segments.${index}.probability`}

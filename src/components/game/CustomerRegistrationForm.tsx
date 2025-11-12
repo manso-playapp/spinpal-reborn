@@ -6,11 +6,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc, onSnapshot, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, onSnapshot, getDoc, runTransaction } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Send, PartyPopper, AlertCircle, Loader2, RotateCw, Gift, ThumbsDown, CheckCircle, Bug, Instagram, PlayCircle } from 'lucide-react';
@@ -27,8 +27,8 @@ const baseFormSchema = z.object({
     name: z.string().min(2, { message: 'Tu nombre debe tener al menos 2 caracteres.' }),
     email: z.string().email({ message: 'Por favor, introduce un correo electrónico válido.' }),
     phone: z.string().optional(),
-    // Guardamos la fecha como string YYYY-MM-DD; ahora obligatorio
-    birthdate: z.string().min(1, { message: 'La fecha de nacimiento es obligatoria.' }),
+    // Guardamos la fecha como string YYYY-MM-DD
+    birthdate: z.string().optional(),
     confirmFollow: z.boolean().optional(),
 });
 
@@ -36,6 +36,7 @@ interface GameData {
     isDemoMode: boolean;
     exemptedEmails: string[];
     isPhoneRequired: boolean;
+    isBirthdateRequired: boolean;
     successMessage: string;
     segments: any[];
     instagramProfile?: string;
@@ -78,6 +79,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                             if (docSnap.exists()) {
                                     const data = docSnap.data();
                                     const isPhoneRequired = !!data.isPhoneRequired;
+                                    const isBirthdateRequired = data.isBirthdateRequired !== false;
                                     const segments = data.segments || [];
                                     const instagramProfile = data.instagramProfile || '';
 
@@ -91,6 +93,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                             isDemoMode: data.status === 'demo',
                                             exemptedEmails: data.exemptedEmails || [],
                                             isPhoneRequired: isPhoneRequired,
+                                            isBirthdateRequired,
                                             successMessage: data.successMessage || '¡Mucha suerte! Revisa la pantalla grande.',
                                             segments: segments,
                                             instagramProfile: instagramProfile,
@@ -99,6 +102,13 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
                                     // Always use the same shape, but add conditional validation
                                     const conditionalSchema = baseFormSchema.superRefine((values, ctx) => {
+                                        if (isBirthdateRequired && (!values.birthdate || values.birthdate.length < 1)) {
+                                            ctx.addIssue({
+                                                code: z.ZodIssueCode.custom,
+                                                path: ['birthdate'],
+                                                message: 'Por favor, introduce tu fecha de nacimiento.'
+                                            });
+                                        }
                                         if (isPhoneRequired && (!values.phone || values.phone.length < 6)) {
                                             ctx.addIssue({
                                                 code: z.ZodIssueCode.custom,
@@ -178,12 +188,38 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             // Lógica para determinar el premio
             const validSegments = gameData.segments.filter(s => s && typeof s.id === 'string');
             if (validSegments.length < 2) throw new Error('El juego no tiene suficientes premios válidos configurados.');
+
+            const usesStockControl = (segment: any) => {
+                if (!segment?.isRealPrize) return false;
+                if (typeof segment?.useStockControl === 'boolean') {
+                    return segment.useStockControl;
+                }
+                return typeof segment?.quantity === 'number';
+            };
+            const hasStockAvailable = (segment: any) => {
+                if (!segment?.isRealPrize) return true;
+                if (!usesStockControl(segment)) return true;
+                return typeof segment?.quantity === 'number' && segment.quantity > 0;
+            };
+
             const realPrizeSegments = validSegments.filter(s => s.isRealPrize);
             const nonRealPrizeSegments = validSegments.filter(s => !s.isRealPrize);
-            const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
-            const nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? Math.max(0, 100 - realPrizeTotalProbability) / nonRealPrizeSegments.length : 0;
-            const finalProbabilities = validSegments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
-            
+            const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => {
+                return acc + (hasStockAvailable(seg) ? (seg.probability || 0) : 0);
+            }, 0);
+            const nonRealPrizeProb = nonRealPrizeSegments.length > 0
+                ? Math.max(0, 100 - realPrizeTotalProbability) / nonRealPrizeSegments.length
+                : 0;
+            const finalProbabilities = validSegments.map(seg => {
+                if (seg.isRealPrize) {
+                    if (!usesStockControl(seg)) {
+                        return seg.probability || 0;
+                    }
+                    return typeof seg.quantity === 'number' && seg.quantity > 0 ? (seg.probability || 0) : 0;
+                }
+                return nonRealPrizeProb;
+            });
+
             const random = Math.random() * 100;
             let accumulatedProb = 0;
             let winningIndex = -1;
@@ -194,12 +230,29 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     break;
                 }
             }
-            if (winningIndex === -1) winningIndex = validSegments.length - 1;
+            if (winningIndex === -1) {
+                const fallbackIndex = finalProbabilities.findIndex(prob => prob > 0);
+                winningIndex = fallbackIndex !== -1 ? fallbackIndex : validSegments.length - 1;
+            }
             
-            const winningSegment = validSegments[winningIndex];
+            let winningSegment: any = validSegments[winningIndex];
+            if (winningSegment?.isRealPrize && usesStockControl(winningSegment) && !hasStockAvailable(winningSegment)) {
+                const alternativeIndex = finalProbabilities.findIndex((prob, idx) => {
+                    if (idx === winningIndex || prob <= 0) return false;
+                    const alternative = validSegments[idx];
+                    if (!alternative) return false;
+                    if (!alternative.isRealPrize) return true;
+                    return hasStockAvailable(alternative);
+                });
+                if (alternativeIndex !== -1) {
+                    winningIndex = alternativeIndex;
+                    winningSegment = validSegments[winningIndex];
+                }
+            }
+
             if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
 
-            const prizeNameToDisplay = (winningSegment && (winningSegment.formalName || winningSegment.name)) || '';
+            const prizeNameToDisplay = (winningSegment.formalName || winningSegment.name) || '';
             const result = { name: prizeNameToDisplay, isRealPrize: !!winningSegment.isRealPrize };
             setSpinResult(result);
 
@@ -212,7 +265,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
             const gameRef = doc(db, 'games', gameId);
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
-            const batch = writeBatch(db);
 
             // Primero intentemos solo el spinRequest
             const gameUpdateData: { [key: string]: any } = {
@@ -226,11 +278,64 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             };
             const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
 
+            let shouldNotifyPrize = false;
+
             if (winningSegment.isRealPrize) {
+                if (usesStockControl(winningSegment) && !hasStockAvailable(winningSegment)) {
+                    throw new Error('El premio seleccionado ya no tiene stock disponible.');
+                }
                 gameUpdateData.prizesAwarded = increment(1);
                 customerUpdateData.prizeWonName = prizeNameToDisplay;
                 customerUpdateData.prizeWonAt = serverTimestamp();
-                // Disparar notificación de premio vía API (server-side)
+                shouldNotifyPrize = true;
+            }
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const gameSnapshot = await transaction.get(gameRef);
+                    if (!gameSnapshot.exists()) {
+                        throw new Error('El juego ya no existe.');
+                    }
+                    const currentSegments = Array.isArray(gameSnapshot.data().segments) ? gameSnapshot.data().segments : [];
+                    let updatedSegmentsPayload: any[] | null = null;
+
+                    const segmentIndexInDoc = currentSegments.findIndex((segment: any) => segment && segment.id === winningSegment.id);
+                    if (segmentIndexInDoc === -1) {
+                        throw new Error('No se pudo actualizar el stock del premio.');
+                    }
+
+                    const segmentFromDoc = currentSegments[segmentIndexInDoc];
+                    const segmentUsesStockFromDoc = !!(segmentFromDoc?.isRealPrize && (typeof segmentFromDoc?.useStockControl === 'boolean' ? segmentFromDoc.useStockControl : typeof segmentFromDoc?.quantity === 'number'));
+
+                    if (winningSegment.isRealPrize && segmentUsesStockFromDoc) {
+                        const currentQuantity = typeof segmentFromDoc?.quantity === 'number' ? segmentFromDoc.quantity : 0;
+                        if (currentQuantity <= 0) {
+                            throw new Error('El premio seleccionado ya no tiene stock disponible.');
+                        }
+                        updatedSegmentsPayload = currentSegments.map((segment: any, idx: number) => (
+                            idx === segmentIndexInDoc
+                                ? { ...segment, quantity: Math.max(0, currentQuantity - 1) }
+                                : segment
+                        ));
+                    }
+
+                    const payloadForGame: Record<string, any> = { ...gameUpdateData };
+                    if (updatedSegmentsPayload) {
+                        payloadForGame.segments = updatedSegmentsPayload;
+                    }
+
+                    transaction.update(gameRef, payloadForGame);
+                    transaction.update(customerRef, customerUpdateData);
+                });
+                console.log('Actualización del juego y del cliente completada correctamente.');
+            } catch (error: any) {
+                console.error('Error específico al actualizar:', error);
+                setErrorMessage(`Error al actualizar: ${error.message}`);
+                setUiState('ERROR');
+                return; // Salimos de la función en lugar de lanzar el error
+            }
+
+            if (shouldNotifyPrize) {
                 try {
                     fetch('/api/notify-prize', {
                         method: 'POST',
@@ -240,23 +345,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 } catch (_) {
                     // No bloquear el flujo por errores de red
                 }
-            }
-
-            try {
-                console.log('Intentando actualizar el juego con:', gameUpdateData);
-                // Primero intentemos actualizar solo el juego
-                await updateDoc(gameRef, gameUpdateData);
-                console.log('Actualización del juego exitosa');
-
-                // Si lo anterior funciona, actualizamos el cliente
-                console.log('Intentando actualizar el cliente con:', customerUpdateData);
-                await updateDoc(customerRef, customerUpdateData);
-                console.log('Actualización del cliente exitosa');
-            } catch (error: any) {
-                console.error('Error específico al actualizar:', error);
-                setErrorMessage(`Error al actualizar: ${error.message}`);
-                setUiState('ERROR');
-                return; // Salimos de la función en lugar de lanzar el error
             }
 
             // Esperar un tiempo prudencial para la animación antes de mostrar el resultado
@@ -312,15 +400,28 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     <FormField control={form.control} name="email" render={({ field }) => (
                                         <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="tu@correo.com" {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
-                                    <FormField control={form.control} name="birthdate" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Fecha de nacimiento</FormLabel>
-                                            <FormControl>
-                                                <Input type="date" placeholder="AAAA-MM-DD" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
+                                    <FormField control={form.control} name="birthdate" render={({ field }) => {
+                                        const birthdateRequired = gameData?.isBirthdateRequired ?? true;
+                                        return (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    {birthdateRequired ? 'Fecha de nacimiento' : 'Fecha de nacimiento (opcional)'}
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="date"
+                                                        placeholder="AAAA-MM-DD"
+                                                        required={birthdateRequired}
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                {!birthdateRequired && (
+                                                    <FormDescription>Podés dejar este campo vacío si lo preferís.</FormDescription>
+                                                )}
+                                                <FormMessage />
+                                            </FormItem>
+                                        );
+                                    }} />
                                     {gameData?.isPhoneRequired && (
                                         <FormField control={form.control} name="phone" render={({ field }) => (
                                             <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input type="tel" placeholder="Tu teléfono" {...field} /></FormControl><FormMessage /></FormItem>
