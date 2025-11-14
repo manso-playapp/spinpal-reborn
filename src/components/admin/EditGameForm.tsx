@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { db, auth } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase/config';
 import { doc, updateDoc, onSnapshot, addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
@@ -36,7 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink, Clipboard, ClipboardPaste, KeyRound, UserPlus, Settings2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, EyeOff, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink, Clipboard, ClipboardPaste, KeyRound, UserPlus, AlertCircle, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -59,8 +58,6 @@ const segmentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
-  useStockControl: z.boolean().default(false).optional(),
-  quantity: z.number().int().min(0, 'La cantidad no puede ser negativa.').nullable().optional(),
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
   fontFamily: z.string().default('DM Sans'),
   fontSize: z.number().min(4).max(40).default(16),
@@ -78,6 +75,10 @@ const formSchema = z.object({
   status: z.enum(['activo', 'demo']),
   clientName: z.string().optional(),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
+  clientPhone: z.string().optional(),
+  clientCuit: z.string().optional(),
+  clientAddress: z.string().optional(),
+  clientNotes: z.string().optional(),
   managementType: z.enum(['client', 'playapp']).default('client'),
   accessCredentials: z.object({
     email: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
@@ -164,7 +165,7 @@ interface WheelConfig {
 }
 
 type GameFormValues = z.infer<typeof formSchema>;
-type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName' | 'quantity' | 'useStockControl'>;
+type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName'>;
 
 
 interface Game {
@@ -173,6 +174,10 @@ interface Game {
   status: 'activo' | 'demo';
   clientName?: string;
   clientEmail?: string;
+  clientPhone?: string;
+  clientCuit?: string;
+  clientAddress?: string;
+  clientNotes?: string;
   managementType?: 'client' | 'playapp';
   exemptedEmails?: string[];
   instagramProfile?: string;
@@ -216,8 +221,6 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   color: getRandomColor(),
   isRealPrize: false,
   probability: 0,
-  useStockControl: false,
-  quantity: null,
   textColor: '#FFFFFF',
   fontFamily: 'Bebas Neue',
   fontSize: 16,
@@ -239,91 +242,84 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const [newSegmentName, setNewSegmentName] = useState('');
   const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
   const [copiedStyle, setCopiedStyle] = useState<SegmentStyle | null>(null);
+  const [accessPassword, setAccessPassword] = useState('');
+  const [showAccessPassword, setShowAccessPassword] = useState(false);
+  const [updateUserOnInvite, setUpdateUserOnInvite] = useState(true);
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleCreateClientAccess = async () => {
+  const handleClientAccess = async ({ sendEmail, skipUserUpdate = false }: { sendEmail: boolean; skipUserUpdate?: boolean }) => {
     const email = form.watch('accessCredentials.email');
-    if (!email) return;
+    if (!email) {
+      toast({
+        variant: 'destructive',
+        title: 'Falta el email',
+        description: 'Ingresa el correo del cliente antes de crear el acceso.',
+      });
+      return;
+    }
+
+    if (accessPassword.trim().length < 8) {
+      toast({
+        variant: 'destructive',
+        title: 'Contraseña muy corta',
+        description: 'La contraseña debe tener al menos 8 caracteres.',
+      });
+      return;
+    }
 
     try {
       setLoading(true);
       const response = await fetch('/api/admin/invite-client', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, gameId: initialGame.id }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password: accessPassword,
+          clientId: (initialGame as any).clientId || undefined,
+          clientName: form.getValues('clientName') || initialGame.clientName || undefined,
+          gameId: initialGame.id,
+          gameName: initialGame.name,
+          sendEmail,
+          skipUserUpdate,
+        }),
       });
 
-      const result = await response.json();
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error(result?.error || 'No se pudo crear o invitar al cliente.');
+        throw new Error(data?.error || 'No se pudo crear el acceso.');
       }
 
-      form.setValue('accessCredentials.resetPasswordRequested', true);
-      form.setValue('accessCredentials.lastPasswordReset', new Date());
-
-      toast({
-        title: "Invitación enviada",
-        description: "El cliente recibirá un enlace mágico para acceder a su panel.",
-      });
+      if (!sendEmail) {
+        toast({
+          title: 'Acceso actualizado',
+          description: 'Se guardaron las credenciales para este cliente.',
+        });
+      } else {
+        toast({
+          title: data.emailStatus === 'sent' ? 'Invitación enviada' : 'Invitación pendiente',
+          description:
+            data.emailStatus === 'sent'
+              ? 'El cliente recibió un correo con su usuario y contraseña.'
+              : 'Se generó el correo, pero hubo un problema al enviarlo automáticamente.',
+        });
+      }
     } catch (error: any) {
-      console.error('Error creando acceso del cliente:', error);
+      console.error('Error creating client access:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "No se pudo invitar al cliente.",
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'No se pudo crear el acceso.',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async () => {
-    const email = form.watch('accessCredentials.email');
-    if (!email || !auth) return;
-
-    try {
-      setLoading(true);
-      await sendPasswordResetEmail(auth, email);
-
-      // Registrar el envío en el log de correos
-      try {
-        if (db) {
-          await addDoc(collection(db, 'outbound_emails'), {
-            to: email,
-            gameId: initialGame.id,
-            clientId: (initialGame as any).clientId || undefined,
-            type: 'Password Reset',
-            status: 'sent',
-            message: {
-              subject: 'Reseteo de contraseña',
-              html: '<p>Se envió un correo de Firebase Auth con instrucciones para resetear la contraseña.</p>',
-            },
-            createdAt: serverTimestamp(),
-          });
-        }
-      } catch (e) {
-        console.warn('No se pudo registrar el email de reseteo en outbound_emails:', e);
-      }
-      
-      // Actualizar el estado del formulario
-      form.setValue('accessCredentials.resetPasswordRequested', true);
-      form.setValue('accessCredentials.lastPasswordReset', new Date());
-
-      toast({
-        title: "Email Enviado",
-        description: "Se han enviado las instrucciones de reseteo de contraseña.",
-      });
-    } catch (error: any) {
-      console.error('Error resetting password:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "No se pudo enviar el email de reseteo.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSaveAccess = () => handleClientAccess({ sendEmail: false });
+  const handleSendInvitation = () =>
+    handleClientAccess({ sendEmail: true, skipUserUpdate: !updateUserOnInvite });
   
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -332,21 +328,14 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       status: initialGame.status || 'demo',
       clientName: initialGame.clientName || '',
       clientEmail: initialGame.clientEmail || '',
+      clientPhone: initialGame.clientPhone || '',
+      clientCuit: initialGame.clientCuit || '',
+      clientAddress: initialGame.clientAddress || '',
+      clientNotes: initialGame.clientNotes || '',
       managementType: initialGame.managementType || 'client',
       exemptedEmails: (initialGame.exemptedEmails || []).join(', '),
       instagramProfile: initialGame.instagramProfile || '',
-      segments: initialGame.segments && initialGame.segments.length > 0
-        ? initialGame.segments.map(s => {
-            const merged = { ...getDefaultSegment(''), ...s, id: s.id || generateUniqueId() };
-            if (typeof merged.quantity === 'number') {
-              merged.useStockControl = s.useStockControl ?? true;
-            }
-            if (!merged.useStockControl) {
-              merged.quantity = null;
-            }
-            return merged;
-          })
-        : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
+      segments: initialGame.segments && initialGame.segments.length > 0 ? initialGame.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')],
       segmentsJson: JSON.stringify(initialGame.segments, null, 2),
       backgroundImage: initialGame.backgroundImage || '',
       backgroundVideo: initialGame.backgroundVideo || '',
@@ -356,8 +345,8 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       mobileBackgroundFit: initialGame.mobileBackgroundFit || 'cover',
       registrationTitle: initialGame.registrationTitle || '',
       registrationSubtitle: initialGame.registrationSubtitle || '',
-      isBirthdateRequired: initialGame.isBirthdateRequired !== false,
       isPhoneRequired: initialGame.isPhoneRequired || false,
+      isBirthdateRequired: initialGame.isBirthdateRequired ?? true,
       successMessage: initialGame.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
       screenRotation: initialGame.screenRotation || 0,
       qrCodeScale: initialGame.qrCodeScale || 1,
@@ -393,23 +382,16 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as Game;
-        const segmentsData = data.segments && data.segments.length > 0
-          ? data.segments.map(s => {
-              const merged = { ...getDefaultSegment(''), ...s, id: s.id || generateUniqueId() };
-              if (typeof merged.quantity === 'number') {
-                merged.useStockControl = s.useStockControl ?? true;
-              }
-              if (!merged.useStockControl) {
-                merged.quantity = null;
-              }
-              return merged;
-            })
-          : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')];
+        const segmentsData = data.segments && data.segments.length > 0 ? data.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')];
         const formValues = {
           name: data.name || '',
           status: data.status || 'demo',
           clientName: data.clientName || '',
           clientEmail: data.clientEmail || '',
+          clientPhone: data.clientPhone || '',
+          clientCuit: data.clientCuit || '',
+          clientAddress: data.clientAddress || '',
+          clientNotes: data.clientNotes || '',
           managementType: data.managementType || 'client',
           exemptedEmails: (data.exemptedEmails || []).join(', '),
           instagramProfile: data.instagramProfile || '',
@@ -421,10 +403,10 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
           mobileBackgroundImage: data.mobileBackgroundImage || '',
           mobileBackgroundVideo: data.mobileBackgroundVideo || '',
           mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
-        registrationTitle: data.registrationTitle || '',
-        registrationSubtitle: data.registrationSubtitle || '',
-        isBirthdateRequired: data.isBirthdateRequired !== false,
-        isPhoneRequired: data.isPhoneRequired || false,
+          registrationTitle: data.registrationTitle || '',
+          registrationSubtitle: data.registrationSubtitle || '',
+          isPhoneRequired: data.isPhoneRequired || false,
+          isBirthdateRequired: data.isBirthdateRequired ?? true,
           successMessage: data.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
           qrCodeScale: data.qrCodeScale || 1,
           rouletteScale: data.rouletteScale || 1,
@@ -692,11 +674,14 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
 
                   <TabsContent value="data" className={!userRole.isSuperAdmin ? "hidden md:block" : ""}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                      {/* Card 1: Información Básica */}
+                      {/* Card: Información general y del cliente */}
                       <Card>
                         <CardHeader>
-                          <CardTitle>Información Básica</CardTitle>
-                          <CardDescription>Datos principales del juego</CardDescription>
+                          <CardTitle className="flex items-center gap-2">
+                            <Users className="h-5 w-5"/>
+                            Información del Juego y Cliente
+                          </CardTitle>
+                          <CardDescription>Nombre público de la ruleta y datos del responsable</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <FormField
@@ -712,73 +697,89 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               </FormItem>
                             )}
                           />
-                          <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                  <FormLabel className="text-base">Estado del Juego</FormLabel>
-                                  <FormDescription>
-                                    Activa el juego para todos o mantenlo en modo Demo.
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="clientName"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Nombre del Cliente</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading || !userRole.isSuperAdmin} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="clientEmail"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Email de Notificaciones</FormLabel>
+                                  <FormControl>
+                                    <Input type="email" placeholder="notificaciones@ejemplo.com" {...field} value={field.value || ''} disabled={!userRole.isSuperAdmin}/>
+                                  </FormControl>
+                                   <FormDescription>
+                                    Dirección donde recibirá avisos cuando se gane un premio.
                                   </FormDescription>
-                                </div>
-                                <FormControl>
-                                  <div className="flex items-center space-x-2">
-                                    <span className={`text-sm font-medium ${field.value === 'demo' ? 'text-muted-foreground' : 'text-foreground'}`}>Demo</span>
-                                    <Switch
-                                      checked={field.value === 'activo'}
-                                      onCheckedChange={(checked) => field.onChange(checked ? 'activo' : 'demo')}
-                                      disabled={loading}
-                                    />
-                                    <span className={`text-sm font-medium ${field.value === 'activo' ? 'text-primary' : 'text-muted-foreground'}`}>Activo</span>
-                                  </div>
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-                        </CardContent>
-                      </Card>
-
-                      {/* Card 2: Información del Cliente */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Users className="h-5 w-5"/>
-                            Información del Cliente
-                          </CardTitle>
-                          <CardDescription>Datos del propietario del juego</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="clientName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Nombre del Cliente</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Nombre de la empresa o persona" {...field} value={field.value || ''} disabled={loading || !userRole.isSuperAdmin} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="clientEmail"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Email de Notificaciones</FormLabel>
-                                <FormControl>
-                                  <Input type="email" placeholder="notificaciones@ejemplo.com" {...field} value={field.value || ''} disabled={!userRole.isSuperAdmin}/>
-                                </FormControl>
-                                 <FormDescription>
-                                  Dirección donde recibirá avisos cuando se gane un premio.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="clientPhone"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Teléfono del Cliente</FormLabel>
+                                  <FormControl>
+                                    <Input type="tel" placeholder="+54 11 1234-5678" {...field} value={field.value || ''} disabled={loading || !userRole.isSuperAdmin} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="clientCuit"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>CUIT</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="20-12345678-9" {...field} value={field.value || ''} disabled={loading || !userRole.isSuperAdmin} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="clientAddress"
+                              render={({ field }) => (
+                                <FormItem className="md:col-span-2">
+                                  <FormLabel>Dirección</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Calle 123, Piso 4, Ciudad" {...field} value={field.value || ''} disabled={loading || !userRole.isSuperAdmin} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="clientNotes"
+                              render={({ field }) => (
+                                <FormItem className="md:col-span-2">
+                                  <FormLabel>Comentarios</FormLabel>
+                                  <FormControl>
+                                    <Textarea placeholder="Notas internas sobre este cliente" {...field} value={field.value || ''} disabled={loading || !userRole.isSuperAdmin} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
                         </CardContent>
                       </Card>
 
@@ -800,116 +801,95 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormItem>
                                   <FormLabel>Email de Acceso</FormLabel>
                                   <FormControl>
-                                    <div className="flex gap-2">
-                                      <Input 
-                                        type="email" 
-                                        placeholder="acceso@ejemplo.com" 
-                                        {...field} 
-                                        value={field.value || ''} 
-                                      />
-                                      <Button 
-                                        type="button" 
-                                        variant="outline"
-                                        onClick={() => handleCreateClientAccess()}
-                                        disabled={!field.value || loading}
-                                      >
-                                        <UserPlus className="h-4 w-4 mr-2"/>
-                                        Crear Acceso
-                                      </Button>
-                                    </div>
+                                    <Input
+                                      type="email"
+                                      placeholder="acceso@ejemplo.com"
+                                      {...field}
+                                      value={field.value || ''}
+                                      disabled={loading}
+                                    />
                                   </FormControl>
                                   <FormDescription>
-                                    Email que usará el cliente para iniciar sesión.
+                                    Este correo quedará vinculado a la cuenta del cliente.
                                   </FormDescription>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
 
-                            {form.watch('accessCredentials.email') && (
-                              <div className="rounded-lg border p-4 space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <h4 className="font-medium">Estado de la Cuenta</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                      {form.watch('accessCredentials.lastPasswordReset') 
-                                        ? `Última actualización: ${form.watch('accessCredentials.lastPasswordReset')?.toLocaleDateString()}`
-                                        : 'Cuenta pendiente de activación'}
-                                    </p>
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => handleResetPassword()}
-                                    disabled={loading}
-                                  >
-                                    <RefreshCw className="h-4 w-4 mr-2"/>
-                                    Resetear Contraseña
-                                  </Button>
-                                </div>
-                                
-                                {form.watch('accessCredentials.resetPasswordRequested') && (
-                                  <Alert>
-                                    <AlertCircle className="h-4 w-4" />
-                                    <AlertTitle>Reseteo de Contraseña Pendiente</AlertTitle>
-                                    <AlertDescription>
-                                      Se ha enviado un email al cliente con instrucciones para establecer su contraseña.
-                                    </AlertDescription>
-                                  </Alert>
-                                )}
+                            <div className="space-y-2">
+                              <Label>Contraseña temporal</Label>
+                              <div className="flex gap-2">
+                                <Input
+                                  type={showAccessPassword ? 'text' : 'password'}
+                                  placeholder="Mínimo 8 caracteres"
+                                  value={accessPassword}
+                                  onChange={(event) => setAccessPassword(event.target.value)}
+                                  disabled={loading}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => setShowAccessPassword(!showAccessPassword)}
+                                >
+                                  {showAccessPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
                               </div>
-                            )}
+                              <p className="text-xs text-muted-foreground">
+                                Es la contraseña que el cliente usará para entrar. Puedes actualizarla cuando quieras.
+                              </p>
+                            </div>
+
+                            <div className="rounded-lg border p-4 space-y-4">
+                              <div>
+                                <h4 className="font-medium">Acciones rápidas</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Guarda la cuenta o reenvía las credenciales sin duplicar usuarios.
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  onClick={handleSaveAccess}
+                                  disabled={!form.watch('accessCredentials.email') || !accessPassword || loading}
+                                >
+                                  <UserPlus className="h-4 w-4 mr-2" />
+                                  Dar de alta / actualizar
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={handleSendInvitation}
+                                  disabled={!form.watch('accessCredentials.email') || !accessPassword || loading}
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  Enviar invitación
+                                </Button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  id="update-on-invite"
+                                  checked={updateUserOnInvite}
+                                  onCheckedChange={setUpdateUserOnInvite}
+                                  disabled={loading}
+                                />
+                                <Label htmlFor="update-on-invite" className="cursor-pointer">
+                                  Actualizar usuario al enviar
+                                </Label>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Activo: crea/actualiza al cliente y envía el correo. Inactivo: solo reenvía la invitación con los datos que escribiste.
+                              </p>
+                            </div>
                           </CardContent>
                         </Card>
                       )}
 
-                      {/* Card: Tipo de Gestión */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Settings2 className="h-5 w-5"/>
-                            Tipo de Gestión
-                          </CardTitle>
-                          <CardDescription>Define quién gestiona esta ruleta</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <FormField
-                            control={form.control}
-                            name="managementType"
-                            render={({ field }) => (
-                              <FormItem className="space-y-3">
-                                <FormControl>
-                                  <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex flex-row space-x-4"
-                                    disabled={loading || !userRole.isSuperAdmin}
-                                  >
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                      <FormControl>
-                                        <RadioGroupItem value="client" />
-                                      </FormControl>
-                                      <FormLabel className="font-normal">Controlado por Cliente</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                      <FormControl>
-                                        <RadioGroupItem value="playapp" />
-                                      </FormControl>
-                                      <FormLabel className="font-normal">Controlado por PlayApp</FormLabel>
-                                    </FormItem>
-                                  </RadioGroup>
-                                </FormControl>
-                                <FormDescription>
-                                  Determina quién puede modificar la configuración de esta ruleta.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </CardContent>
-                      </Card>
-
-                      {/* Card 3: Configuración de Registro */}
+                      {/* Card: Configuración de Registro */}
                       <Card>
                         <CardHeader>
                           <CardTitle>Configuración de Registro</CardTitle>
@@ -966,9 +946,9 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                             render={({ field }) => (
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
-                                  <FormLabel className="text-base">Requerir Fecha de Nacimiento</FormLabel>
+                                  <FormLabel className="text-base">Solicitar fecha de cumpleaños</FormLabel>
                                   <FormDescription>
-                                    Al activarlo, el campo de cumpleaños será obligatorio en el registro.
+                                    Activa este campo si necesitas conocer la fecha de nacimiento.
                                   </FormDescription>
                                 </div>
                                 <FormControl>
@@ -991,6 +971,31 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                           <CardDescription>Opciones de desarrollo y pruebas</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="status"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-base">Estado del Juego</FormLabel>
+                                  <FormDescription>
+                                    Usa "Demo" para ensayos internos y pasa a "Activo" cuando la ruleta esté pública.
+                                  </FormDescription>
+                                </div>
+                                <FormControl>
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`text-sm font-medium ${field.value === 'demo' ? 'text-foreground' : 'text-muted-foreground'}`}>Demo</span>
+                                    <Switch
+                                      checked={field.value === 'activo'}
+                                      onCheckedChange={(checked) => field.onChange(checked ? 'activo' : 'demo')}
+                                      disabled={loading}
+                                    />
+                                    <span className={`text-sm font-medium ${field.value === 'activo' ? 'text-primary' : 'text-muted-foreground'}`}>Activo</span>
+                                  </div>
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
                           <FormField
                             control={form.control}
                             name="exemptedEmails"
@@ -1261,80 +1266,11 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                                   <FormDescription>Define si este premio cuenta para las estadísticas y consume probabilidad.</FormDescription>
                                                               </div>
                                                               <FormControl>
-                                                                  <Checkbox
-                                                                    checked={!!field.value}
-                                                                    onCheckedChange={(checked) => {
-                                                                      field.onChange(checked);
-                                                                      if (!checked) {
-                                                                        form.setValue(`segments.${index}.useStockControl`, false, { shouldDirty: true, shouldValidate: true });
-                                                                        form.setValue(`segments.${index}.quantity`, null, { shouldDirty: true, shouldValidate: true });
-                                                                      }
-                                                                    }}
-                                                                  />
+                                                                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                                                               </FormControl>
                                                           </FormItem>
                                                       )}
                                                   />
-                                                  {watchedSegments[index]?.isRealPrize && (
-                                                    <FormField
-                                                      control={form.control}
-                                                      name={`segments.${index}.useStockControl`}
-                                                      render={({ field }) => (
-                                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                                                          <div className="space-y-0.5">
-                                                            <FormLabel>Controlar stock</FormLabel>
-                                                            <FormDescription>Activa esta opción si este premio tiene unidades limitadas.</FormDescription>
-                                                          </div>
-                                                          <FormControl>
-                                                            <Switch
-                                                              checked={!!field.value}
-                                                              onCheckedChange={(checked) => {
-                                                                field.onChange(checked);
-                                                                if (!checked) {
-                                                                  form.setValue(`segments.${index}.quantity`, null, { shouldDirty: true, shouldValidate: true });
-                                                                }
-                                                              }}
-                                                            />
-                                                          </FormControl>
-                                                        </FormItem>
-                                                      )}
-                                                    />
-                                                  )}
-                                                  {watchedSegments[index]?.isRealPrize && watchedSegments[index]?.useStockControl && (
-                                                    <FormField
-                                                      control={form.control}
-                                                      name={`segments.${index}.quantity`}
-                                                      render={({ field }) => (
-                                                        <FormItem>
-                                                          <FormLabel>Cantidad disponible</FormLabel>
-                                                          <FormControl>
-                                                            <Input
-                                                              type="number"
-                                                              min={0}
-                                                              value={typeof field.value === 'number' ? field.value.toString() : ''}
-                                                              onChange={(event) => {
-                                                                const value = event.target.value;
-                                                                if (value === '') {
-                                                                  field.onChange(null);
-                                                                  return;
-                                                                }
-                                                                const parsed = Math.max(0, Math.floor(Number(value)));
-                                                                if (Number.isNaN(parsed)) {
-                                                                  field.onChange(null);
-                                                                } else {
-                                                                  field.onChange(parsed);
-                                                                }
-                                                              }}
-                                                            />
-                                                          </FormControl>
-                                                          <FormDescription>
-                                                            Al llegar a 0 este premio dejará de entregarse automáticamente.
-                                                          </FormDescription>
-                                                          <FormMessage />
-                                                        </FormItem>
-                                                      )}
-                                                    />
-                                                  )}
                                                   <FormField
                                                       control={form.control}
                                                       name={`segments.${index}.probability`}
