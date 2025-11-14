@@ -46,6 +46,8 @@ interface GameData extends DocumentData {
     borderScale: number;
     centerImage: string;
     centerScale: number;
+    strokeWidth?: number;
+    strokeColor?: string;
   };
 }
 
@@ -76,15 +78,8 @@ async function getGameData(id: string): Promise<GameData | null> {
     };
 
     // Pre-cargar y validar las URLs de las imágenes
-    const config = {
-      borderImage: ensureAbsoluteUrl(data.config?.borderImage || ''),
-      borderScale: data.config?.borderScale || 1,
-      centerImage: ensureAbsoluteUrl(data.config?.centerImage || ''),
-      centerScale: data.config?.centerScale || 1
-    };
-
     console.log('Raw game data:', {
-      config,
+      config: data.config,
       backgroundImage: data.backgroundImage,
       backgroundVideo: data.backgroundVideo
     });
@@ -108,7 +103,9 @@ async function getGameData(id: string): Promise<GameData | null> {
         borderImage: data.config?.borderImage || '',
         borderScale: data.config?.borderScale || 1,
         centerImage: data.config?.centerImage || '',
-        centerScale: data.config?.centerScale || 1
+        centerScale: data.config?.centerScale || 1,
+        strokeWidth: data.config?.strokeWidth ?? 1,
+        strokeColor: data.config?.strokeColor || '#000000',
       }
     };
 

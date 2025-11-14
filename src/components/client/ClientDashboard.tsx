@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Gamepad2, Users, Link as LinkIcon, Copy, AlertTriangle, Settings, Mail } from 'lucide-react';
 import Link from 'next/link';
@@ -68,44 +68,82 @@ export default function ClientDashboard() {
     let isSubscribed = true;
     let unsubscribe: (() => void) | undefined;
 
-    const setupSubscription = async () => {
+    const watchByAllowedIds = () => {
+      if (!db || !userRole.allowedGameIds || userRole.allowedGameIds.length === 0) {
+        return false;
+      }
+
+      const filteredIds = userRole.allowedGameIds.filter(Boolean);
+      if (filteredIds.length === 0) {
+        return false;
+      }
+
+      setLoading(true);
+      const gameMap = new Map<string, Game>();
+      const unsubscribers = filteredIds.map((gameId) =>
+        onSnapshot(
+          doc(db, 'games', gameId),
+          (docSnap) => {
+            if (!isSubscribed) return;
+            if (docSnap.exists()) {
+              gameMap.set(gameId, { id: docSnap.id, ...(docSnap.data() as Game) });
+            } else {
+              gameMap.delete(gameId);
+            }
+            setGames(Array.from(gameMap.values()));
+            setLoading(false);
+          },
+          (error) => {
+            console.error('Error fetching game by ID: ', gameId, error);
+            if (isSubscribed) {
+              setLoading(false);
+            }
+          }
+        )
+      );
+
+      unsubscribe = () => {
+        unsubscribers.forEach((fn) => fn && fn());
+      };
+
+      return true;
+    };
+
+    const watchByEmail = () => {
       if (!impersonatedEmail) {
-          if (!user) setLoading(true);
-          else setLoading(false);
-          return;
+        if (!user) setLoading(true);
+        else setLoading(false);
+        return;
       }
 
       if (!db) {
-          setLoading(false);
-          toast({
-              title: 'Error de conexión',
-              description: 'No se pudo conectar a la base de datos.',
-              variant: 'destructive',
-          });
-          return;
+        setLoading(false);
+        toast({
+          title: 'Error de conexión',
+          description: 'No se pudo conectar a la base de datos.',
+          variant: 'destructive',
+        });
+        return;
       }
 
       setLoading(true);
 
-      const q = query(
-        collection(db, 'games'), 
-        where('clientEmail', '==', impersonatedEmail)
-      );
+      const q = query(collection(db, 'games'), where('clientEmail', '==', impersonatedEmail));
 
       unsubscribe = onSnapshot(
         q,
         (querySnapshot) => {
           if (!isSubscribed) return;
-        const gamesData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Game[];
-        
-        if (!userRole.isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
+          const gamesData = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Game[];
+
+          if (!userRole.isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
             setViewTitle(`Panel de: ${gamesData[0].clientName}`);
-        } else if (!userRole.isSuperAdmin) {
+          } else if (!userRole.isSuperAdmin) {
             setViewTitle('Dashboard');
-        }
+          }
 
           if (isSubscribed) {
             setGames(gamesData);
@@ -121,7 +159,9 @@ export default function ClientDashboard() {
       );
     };
 
-    setupSubscription();
+    if (!watchByAllowedIds()) {
+      watchByEmail();
+    }
 
     return () => {
       isSubscribed = false;
@@ -129,7 +169,7 @@ export default function ClientDashboard() {
         unsubscribe();
       }
     };
-  }, [impersonatedEmail, user, userRole.isSuperAdmin, toast, db]);
+  }, [impersonatedEmail, user, userRole.allowedGameIds, userRole.isSuperAdmin, toast, db]);
 
   const getGameUrl = (gameId: string) => {
     if (typeof window !== 'undefined') {
