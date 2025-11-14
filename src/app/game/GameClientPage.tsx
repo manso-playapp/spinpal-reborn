@@ -33,6 +33,8 @@ interface GameData extends DocumentData {
     borderScale: number;
     centerImage: string;
     centerScale: number;
+    strokeWidth?: number;
+    strokeColor?: string;
   };
   clientEmail?: string;
   clientId?: string;
@@ -78,6 +80,8 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
       ...initialGame.config,
       borderImage: validateUrl(initialGame.config.borderImage),
       centerImage: validateUrl(initialGame.config.centerImage),
+      strokeWidth: initialGame.config?.strokeWidth ?? 1,
+      strokeColor: initialGame.config?.strokeColor || '#000000',
     }
   };
 
@@ -171,6 +175,8 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                     borderScale: data.config?.borderScale || 1,
                     centerImage: validateUrl(data.config?.centerImage) || '',
                     centerScale: data.config?.centerScale || 1,
+                    strokeWidth: data.config?.strokeWidth ?? 1,
+                    strokeColor: data.config?.strokeColor || '#000000',
                 }
             };
             
