@@ -7,6 +7,19 @@ import packageJson from '../../../../../package.json';
 
 const changelogData = [
     {
+        version: "0.3.0",
+        date: "15 de Noviembre de 2025",
+        changes: [
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Nuevo flujo de invitación: ahora se pueden crear credenciales con contraseña definida, reenviar invitaciones o guardar accesos sin duplicar usuarios." },
+            { icon: <ShieldCheck className="h-4 w-4 text-primary" />, text: "Endpoint /api/admin/invite-client ejecutado con Firebase Admin + Resend; se registran envíos y se actualizan los custom claims de manera segura." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Login de clientes renovado: autenticación por email/contraseña con enlace de 'Olvidé mi contraseña'." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Dashboard de cliente ahora reconoce los juegos asignados por allowedGameIds, aun si el email del juego cambia." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Formulario de registro configurable: el teléfono y la fecha de nacimiento pueden activarse o no; se agregó el campo de cumpleaños opcional." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Tarjetas de edición reorganizadas: datos básicos y del cliente en un solo bloque, gestión de acceso más clara y estado Demo/Activo movido a Configuración Avanzada." },
+            { icon: <GitCommit className="h-4 w-4 text-primary" />, text: "Corrección visual: el color de línea entre gajos se respeta también en la versión pública de la ruleta." },
+        ]
+    },
+    {
         version: "0.2.5",
         date: "25 de Octubre de 2025",
         changes: [

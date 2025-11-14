@@ -1,10 +1,10 @@
 import 'server-only';
 
-import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { cert, getApps, initializeApp, type App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
-let appsInitialized = false;
+let adminApp: App | null = null;
 
 const getServiceAccount = () => {
   const requiredKeys = [
@@ -29,24 +29,27 @@ const getServiceAccount = () => {
   };
 };
 
-const ensureInitialized = () => {
-  if (!appsInitialized) {
-    const serviceAccount = getServiceAccount();
-    if (getApps().length === 0) {
-      initializeApp({
-        credential: cert(serviceAccount),
-      });
-    }
-    appsInitialized = true;
+const initAdminApp = () => {
+  if (adminApp) {
+    return adminApp;
   }
+
+  if (!getApps().length) {
+    const serviceAccount = getServiceAccount();
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else {
+    adminApp = getApps()[0]!;
+  }
+
+  return adminApp;
 };
 
 export const getAdminAuth = async () => {
-  ensureInitialized();
-  return getAuth();
+  return getAuth(initAdminApp());
 };
 
 export const getAdminDb = async () => {
-  ensureInitialized();
-  return getFirestore();
+  return getFirestore(initAdminApp());
 };
