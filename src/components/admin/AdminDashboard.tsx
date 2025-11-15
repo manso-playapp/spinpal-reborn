@@ -134,11 +134,11 @@ export default function AdminDashboard() {
                     Este panel está en modo de migración. No verás el dashboard normal. Sigue estos pasos:
                 </p>
                 <ol className="list-decimal list-inside mt-2 space-y-1">
-                    <li>Abre el panel de administrador en el proyecto **VIEJO ("RULETA")**.</li>
-                    <li>Para cada juego listado abajo, haz clic en **"Copiar Datos del Juego (JSON)"**.</li>
+                    <li>Abre el panel de administrador en el proyecto **VIEJO (&quot;RULETA&quot;)**.</li>
+                    <li>Para cada juego listado abajo, haz clic en **&quot;Copiar Datos del Juego (JSON)&quot;**.</li>
                     <li>Abre un editor de texto (como el Bloc de Notas o VSCode) y **pega los datos** de cada juego. Guarda estos archivos.</li>
-                    <li>Luego, iremos al proyecto **NUEVO ("SpinPal Reborn")** y crearemos los juegos a partir de estos datos.</li>
-                    <li>Después de migrar los juegos, haz clic en **"Descargar Clientes (CSV)"** para cada juego.</li>
+                    <li>Luego, iremos al proyecto **NUEVO (&quot;SpinPal Reborn&quot;)** y crearemos los juegos a partir de estos datos.</li>
+                    <li>Después de migrar los juegos, haz clic en **&quot;Descargar Clientes (CSV)&quot;** para cada juego.</li>
                 </ol>
             </div>
              {loading ? <Skeleton className="h-40 w-full" /> : (
@@ -346,7 +346,7 @@ export default function AdminDashboard() {
                 <Gamepad2 className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h2 className="mt-4 text-xl font-semibold">Aún no tienes juegos</h2>
                 <p className="text-muted-foreground mt-2">
-                    ¡Haz clic en "Crear Juego" para empezar a configurar tu primera ruleta!
+                    ¡Haz clic en &quot;Crear Juego&quot; para empezar a configurar tu primera ruleta!
                 </p>
             </div>
         ) : (

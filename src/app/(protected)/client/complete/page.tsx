@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback, startTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signInWithEmailLink, isSignInWithEmailLink } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
@@ -52,8 +52,10 @@ function ClientMagicLinkCompleteContent() {
     }
 
     if (!isSignInWithEmailLink(auth, window.location.href)) {
-      setErrorMessage('El enlace no es válido o ya fue utilizado. Solicita uno nuevo.');
-      setStatus('error');
+      startTransition(() => {
+        setErrorMessage('El enlace no es válido o ya fue utilizado. Solicita uno nuevo.');
+        setStatus('error');
+      });
       return;
     }
 
@@ -62,12 +64,18 @@ function ClientMagicLinkCompleteContent() {
     const emailToUse = storedEmail || emailFromQuery;
 
     if (!emailToUse) {
-      setStatus('needsEmail');
+      startTransition(() => {
+        setStatus('needsEmail');
+      });
       return;
     }
 
-    setEmail(emailToUse);
-    void completeSignIn(emailToUse);
+    startTransition(() => {
+      setEmail(emailToUse);
+    });
+    window.setTimeout(() => {
+      void completeSignIn(emailToUse);
+    }, 0);
   }, [searchParams, completeSignIn]);
 
   const handleSubmitEmail = async (event: React.FormEvent<HTMLFormElement>) => {

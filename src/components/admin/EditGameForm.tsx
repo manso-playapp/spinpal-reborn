@@ -979,7 +979,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <div className="space-y-0.5">
                                   <FormLabel className="text-base">Estado del Juego</FormLabel>
                                   <FormDescription>
-                                    Usa "Demo" para ensayos internos y pasa a "Activo" cuando la ruleta esté pública.
+                                    Usa &quot;Demo&quot; para ensayos internos y pasa a &quot;Activo&quot; cuando la ruleta esté pública.
                                   </FormDescription>
                                 </div>
                                 <FormControl>

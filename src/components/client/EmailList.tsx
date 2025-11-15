@@ -1,5 +1,5 @@
 import { collection, doc, getDoc, onSnapshot, orderBy, query, where, Firestore } from 'firebase/firestore';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, startTransition } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { db } from '@/lib/firebase/config';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -61,17 +61,17 @@ export function ClientEmailList() {
     }
     
     return newGameNames;
-  }, [db]);
+  }, []);
 
   useEffect(() => {
     if (!user || !targetClientEmail) {
       console.log('No user authenticated');
-      setLoading(false);
+      startTransition(() => setLoading(false));
       return;
     }
     if (!db) {
       console.log('Firestore not initialized');
-      setLoading(false);
+      startTransition(() => setLoading(false));
       return;
     }
 
@@ -83,7 +83,7 @@ export function ClientEmailList() {
     // Recuperar nombres de juegos cacheados
     const cachedGameNames = localStorage.getItem('gameNames');
     if (cachedGameNames) {
-      setGameNames(JSON.parse(cachedGameNames));
+      startTransition(() => setGameNames(JSON.parse(cachedGameNames)));
     }
 
     const setupSubscription = async () => {
@@ -132,17 +132,21 @@ export function ClientEmailList() {
               const gameIds = [...new Set(clientLogs.filter(l => l.gameId).map(l => l.gameId as string))];
               const names = await fetchGameNames(gameIds, isSubscribed);
               if (isSubscribed) {
-                setGameNames(names);
-                setLogs(clientLogs);
-                setLoading(false);
+                startTransition(() => {
+                  setGameNames(names);
+                  setLogs(clientLogs);
+                  setLoading(false);
+                });
               }
             });
           } else {
             // Fallback: subscribe per each owned gameId
             const ids = Array.from(ownedGameIds);
             if (ids.length === 0) {
-              setLogs([]);
-              setLoading(false);
+              startTransition(() => {
+                setLogs([]);
+                setLoading(false);
+              });
               return;
             }
             const allLogsMap = new Map<string, EmailLog>();
@@ -165,9 +169,11 @@ export function ClientEmailList() {
                 });
                 const names = await fetchGameNames(ids, isSubscribed);
                 if (isSubscribed) {
-                  setGameNames(names);
-                  setLogs(merged);
-                  setLoading(false);
+                  startTransition(() => {
+                    setGameNames(names);
+                    setLogs(merged);
+                    setLoading(false);
+                  });
                 }
               });
               perGameUnsubs.push(unsub);
@@ -176,7 +182,7 @@ export function ClientEmailList() {
         });
       } catch (error) {
         console.error('Error setting up subscription:', error);
-        setLoading(false);
+        startTransition(() => setLoading(false));
       }
     };
 
@@ -187,7 +193,7 @@ export function ClientEmailList() {
       if (unsubscribeEmails) unsubscribeEmails();
       if (unsubscribeGames) unsubscribeGames();
     };
-  }, [user, db, fetchGameNames, targetClientEmail]);
+  }, [user, fetchGameNames, targetClientEmail]);
 
   const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE);
   const paginatedLogs = logs.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);

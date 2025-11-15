@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { db } from '@/lib/firebase/config';
@@ -56,11 +56,15 @@ export default function ClientDashboard() {
     const clientNameParam = searchParams.get('clientName');
 
     if (clientEmailParam && userRole.isSuperAdmin) {
-        setImpersonatedEmail(clientEmailParam);
-        const title = clientNameParam ? `Juegos de: ${clientNameParam}` : `Juegos de: ${clientEmailParam}`;
-        setViewTitle(title);
+        startTransition(() => {
+            setImpersonatedEmail(clientEmailParam);
+            const title = clientNameParam ? `Juegos de: ${clientNameParam}` : `Juegos de: ${clientEmailParam}`;
+            setViewTitle(title);
+        });
     } else if (user) {
-        setImpersonatedEmail(user.email);
+        startTransition(() => {
+            setImpersonatedEmail(user.email);
+        });
     }
   }, [searchParams, userRole.isSuperAdmin, user]);
 
@@ -69,9 +73,10 @@ export default function ClientDashboard() {
     let unsubscribe: (() => void) | undefined;
 
     const watchByAllowedIds = () => {
-      if (!db || !userRole.allowedGameIds || userRole.allowedGameIds.length === 0) {
-        return false;
-      }
+    const firestore = db;
+    if (!firestore || !userRole.allowedGameIds || userRole.allowedGameIds.length === 0) {
+      return false;
+    }
 
       const filteredIds = userRole.allowedGameIds.filter(Boolean);
       if (filteredIds.length === 0) {
@@ -82,11 +87,12 @@ export default function ClientDashboard() {
       const gameMap = new Map<string, Game>();
       const unsubscribers = filteredIds.map((gameId) =>
         onSnapshot(
-          doc(db, 'games', gameId),
+          doc(firestore, 'games', gameId),
           (docSnap) => {
             if (!isSubscribed) return;
             if (docSnap.exists()) {
-              gameMap.set(gameId, { id: docSnap.id, ...(docSnap.data() as Game) });
+              const data = docSnap.data() as Game;
+              gameMap.set(gameId, { ...data, id: docSnap.id });
             } else {
               gameMap.delete(gameId);
             }
@@ -169,7 +175,7 @@ export default function ClientDashboard() {
         unsubscribe();
       }
     };
-  }, [impersonatedEmail, user, userRole.allowedGameIds, userRole.isSuperAdmin, toast, db]);
+  }, [impersonatedEmail, user, userRole.allowedGameIds, userRole.isSuperAdmin, toast]);
 
   const getGameUrl = (gameId: string) => {
     if (typeof window !== 'undefined') {

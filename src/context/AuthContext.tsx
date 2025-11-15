@@ -1,7 +1,7 @@
 'use client';
 
 import type { User } from 'firebase/auth';
-import { createContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, signOut as firebaseSignOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter } from 'next/navigation';
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [impersonatedClientId, setImpersonatedClientId] = useState<string | null>(null);
   const router = useRouter();
 
-  const updateUserRole = async (user: User | null) => {
+  const updateUserRole = useCallback(async (user: User | null) => {
     if (!user) {
       setUserRole({
         isAdmin: false,
@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // No necesitamos otro setUserRole aquí ya que ya lo hicimos arriba
     console.log('Roles actualizados:', { isAdmin, isSuperAdmin, isClient });
-  };
+  }, [router]);
 
   useEffect(() => {
     if (!auth) {
@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, updateUserRole]);
 
   const signOut = async () => {
     if (auth) {

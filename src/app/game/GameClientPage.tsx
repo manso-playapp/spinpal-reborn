@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { useFirebasePublic } from '@/context/FirebasePublicContext';
 import { DocumentData, doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
@@ -93,101 +93,85 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   
   const gameId = initialGame.id;
 
+  const uiStateRef = useRef(uiState);
+
   useEffect(() => {
-    // Intentar cargar las imágenes de manera anticipada
-    const preloadImages = async () => {
-      const imagesToPreload = [
-        game.config.borderImage,
-        game.config.centerImage,
-        game.backgroundImage
-      ].filter(Boolean);
+    uiStateRef.current = uiState;
+  }, [uiState]);
 
-      for (const src of imagesToPreload) {
-        const img = document.createElement('img');
-        img.src = src;
-      }
-    };
+  useEffect(() => {
+    const imagesToPreload = [
+      game.config.borderImage,
+      game.config.centerImage,
+      game.backgroundImage,
+    ].filter(Boolean);
 
-    preloadImages();
+    imagesToPreload.forEach((src) => {
+      const img = document.createElement('img');
+      img.src = src;
+    });
+  }, [game.backgroundImage, game.config.borderImage, game.config.centerImage]);
 
+  useEffect(() => {
     if (!db) {
       console.warn('Firebase DB no está inicializada, funcionando en modo offline');
       return;
     }
-    
-    // Log inicial del estado del juego
-    console.log('Estado inicial del juego:', {
-      id: gameId,
-      config: game.config,
-      backgroundImage: game.backgroundImage,
-      backgroundVideo: game.backgroundVideo
-    });
-    
-    const gameRef = doc(db, 'games', gameId);
-    
-    const unsubscribe = onSnapshot(gameRef, async (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            
-            // Log detallado de las URLs de las imágenes
-            console.log('URLs de imágenes del juego:', {
-              borderImage: {
-                url: data.config?.borderImage,
-                isValid: Boolean(data.config?.borderImage && data.config.borderImage.startsWith('http'))
-              },
-              centerImage: {
-                url: data.config?.centerImage,
-                isValid: Boolean(data.config?.centerImage && data.config.centerImage.startsWith('http'))
-              },
-              backgroundImage: {
-                url: data.backgroundImage,
-                isValid: Boolean(data.backgroundImage && data.backgroundImage.startsWith('http'))
-              }
-            });
-            
-            const spinRequest = data.spinRequest;
-            if (spinRequest && spinRequest.customerId && uiState === 'IDLE' && db) {
-                setUiState('SPINNING');
-                const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
-                const customerSnap = await getDoc(customerRef);
-                if (customerSnap.exists()) {
-                    setCurrentPlayer(customerSnap.data().name);
-                }
-            }
 
-            const newGameData = {
-                id: docSnap.id,
-                ...data,
-                name: data.name || 'Juego sin nombre',
-                status: data.status || 'demo',
-                segments: data.segments || [],
-                backgroundImage: validateUrl(data.backgroundImage) || '',
-                backgroundVideo: validateUrl(data.backgroundVideo) || '',
-                backgroundFit: data.backgroundFit || 'cover',
-                qrCodeScale: data.qrCodeScale || 1,
-                rouletteScale: data.rouletteScale || 1,
-                wheelScale: data.wheelScale || 1,
-                rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
-                qrVerticalOffset: data.qrVerticalOffset || 0,
-                screenRotation: data.screenRotation || 0,
-                config: {
-                    borderImage: validateUrl(data.config?.borderImage) || '',
-                    borderScale: data.config?.borderScale || 1,
-                    centerImage: validateUrl(data.config?.centerImage) || '',
-                    centerScale: data.config?.centerScale || 1,
-                    strokeWidth: data.config?.strokeWidth ?? 1,
-                    strokeColor: data.config?.strokeColor || '#000000',
-                }
-            };
-            
-            setGame(newGameData as GameData);
+    const gameRef = doc(db, 'games', gameId);
+
+    const unsubscribe = onSnapshot(
+      gameRef,
+      async (docSnap) => {
+        if (!docSnap.exists()) {
+          return;
         }
-    }, (error) => {
-        console.error("Error fetching game data in real-time:", error);
-    });
+
+        const data = docSnap.data();
+        const spinRequest = data.spinRequest;
+        if (spinRequest && spinRequest.customerId && uiStateRef.current === 'IDLE') {
+          setUiState('SPINNING');
+          const customerRef = doc(db, 'games', gameId, 'customers', spinRequest.customerId);
+          const customerSnap = await getDoc(customerRef);
+          if (customerSnap.exists()) {
+            setCurrentPlayer(customerSnap.data().name);
+          }
+        }
+
+        const newGameData = {
+          id: docSnap.id,
+          ...data,
+          name: data.name || 'Juego sin nombre',
+          status: data.status || 'demo',
+          segments: data.segments || [],
+          backgroundImage: validateUrl(data.backgroundImage) || '',
+          backgroundVideo: validateUrl(data.backgroundVideo) || '',
+          backgroundFit: data.backgroundFit || 'cover',
+          qrCodeScale: data.qrCodeScale || 1,
+          rouletteScale: data.rouletteScale || 1,
+          wheelScale: data.wheelScale || 1,
+          rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
+          qrVerticalOffset: data.qrVerticalOffset || 0,
+          screenRotation: data.screenRotation || 0,
+          config: {
+            borderImage: validateUrl(data.config?.borderImage) || '',
+            borderScale: data.config?.borderScale || 1,
+            centerImage: validateUrl(data.config?.centerImage) || '',
+            centerScale: data.config?.centerScale || 1,
+            strokeWidth: data.config?.strokeWidth ?? 1,
+            strokeColor: data.config?.strokeColor || '#000000',
+          },
+        };
+
+        setGame(newGameData as GameData);
+      },
+      (error) => {
+        console.error('Error fetching game data in real-time:', error);
+      },
+    );
 
     return () => unsubscribe();
-  }, [gameId, uiState]);
+  }, [db, gameId]);
 
 
   const handleSpinEnd = useCallback((result: SpinResult) => {

@@ -12,13 +12,7 @@ export default async function GamePage(props: Props) {
     notFound();
   }
 
-  try {
-    // gameData ya está correctamente formateado por getGameData
-    return <GameClientPage initialGame={gameData} />;
-  } catch (error) {
-    console.error('Error preparing game data:', error);
-    notFound();
-  }
+  return <GameClientPage initialGame={gameData} />;
 }
 
 // ... (resto del código como estaba antes)

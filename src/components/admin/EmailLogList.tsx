@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, Firestore, writeBatch } from 'firebase/firestore';
 import {
@@ -69,6 +69,11 @@ export default function EmailLogList() {
   const [selectedLogs, setSelectedLogs] = useState<string[]>([]);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const gameNamesRef = useRef<GameNames>({});
+
+  useEffect(() => {
+    gameNamesRef.current = gameNames;
+  }, [gameNames]);
 
   useEffect(() => {
     // Recuperar nombres de juegos cacheados
@@ -94,7 +99,7 @@ export default function EmailLogList() {
 
         // Obtener IDs únicos de juegos
         const uniqueGameIds = [...new Set(logsData.map(log => log.gameId))];
-        const newGameNames = { ...gameNames };
+        const newGameNames = { ...gameNamesRef.current };
 
         if (db && uniqueGameIds.length > 0) {
           // Crear un array de promesas para obtener los juegos en paralelo
@@ -326,4 +331,3 @@ export default function EmailLogList() {
     </Card>
   );
 }
-

@@ -235,9 +235,9 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                         </Link>
                     </Button>
                     <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                        <li>En la consola de Firebase, ve a la "Configuración del Proyecto" (el ícono del engranaje).</li>
-                        <li>En la pestaña "General", baja hasta la sección "Tus apps".</li>
-                        <li>Busca tu aplicación web y haz clic en el botón de opción "Configuración" y selecciona el formato **"CDN"**.</li>
+                        <li>En la consola de Firebase, ve a la &quot;Configuración del Proyecto&quot; (el ícono del engranaje).</li>
+                        <li>En la pestaña &quot;General&quot;, baja hasta la sección &quot;Tus apps&quot;.</li>
+                        <li>Busca tu aplicación web y haz clic en el botón de opción &quot;Configuración&quot; y selecciona el formato **&quot;CDN&quot;**.</li>
                         <li>Verás un objeto de configuración. Copia los valores y pégalos en las variables correspondientes del archivo <code>.env</code>.</li>
                     </ul>
                 </GuideSection>
@@ -254,8 +254,8 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                         </Link>
                     </Button>
                     <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                        <li>En la pestaña <strong>"Sign-in method"</strong>, busca y habilita <strong>"Correo electrónico/Contraseña"</strong> (para el admin) y <strong>"Google"</strong> (para los clientes).</li>
-                        <li>Ve a la pestaña <strong>"Users"</strong> y haz clic en <strong>"Add user"</strong> para crear tu usuario administrador.</li>
+                        <li>En la pestaña <strong>&quot;Sign-in method&quot;</strong>, busca y habilita <strong>&quot;Correo electrónico/Contraseña&quot;</strong> (para el admin) y <strong>&quot;Google&quot;</strong> (para los clientes).</li>
+                        <li>Ve a la pestaña <strong>&quot;Users&quot;</strong> y haz clic en <strong>&quot;Add user&quot;</strong> para crear tu usuario administrador.</li>
                     </ul>
                 </GuideSection>
 
@@ -271,9 +271,9 @@ export default function ConnectionsChecker({ isGeminiConfigured, isResendConfigu
                         </Link>
                     </Button>
                     <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                        <li>Haz clic en <strong>"Crear base de datos"</strong>.</li>
-                        <li>Selecciona <strong>"Iniciar en modo de prueba"</strong>. Esto permite leer y escribir temporalmente, ideal para empezar.</li>
-                        <li>Elige una ubicación para tus servidores y haz clic en "Habilitar".</li>
+                        <li>Haz clic en <strong>&quot;Crear base de datos&quot;</strong>.</li>
+                        <li>Selecciona <strong>&quot;Iniciar en modo de prueba&quot;</strong>. Esto permite leer y escribir temporalmente, ideal para empezar.</li>
+                        <li>Elige una ubicación para tus servidores y haz clic en &quot;Habilitar&quot;.</li>
                     </ul>
                 </GuideSection>
                 
@@ -329,7 +329,7 @@ service cloud.firestore {
     }
   }
 }`}</code></pre>
-                    <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
+                    <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>&quot;Publicar&quot;</strong> para guardar los cambios.</p>
                 </GuideSection>
 
                 <GuideSection
@@ -372,7 +372,7 @@ service firebase.storage {
     }
   }
 }`}</code></pre>
-                    <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>"Publicar"</strong> para guardar los cambios.</p>
+                    <p className="text-sm text-muted-foreground">No olvides hacer clic en <strong>&quot;Publicar&quot;</strong> para guardar los cambios.</p>
                 </GuideSection>
                 
                 <GuideSection
@@ -387,7 +387,7 @@ service firebase.storage {
                         </Link>
                     </Button>
                     <ul className="list-decimal list-inside space-y-2 pl-4 text-muted-foreground">
-                        <li>Haz clic en <strong>"Add Domain"</strong> e introduce tu dominio.</li>
+                        <li>Haz clic en <strong>&quot;Add Domain&quot;</strong> e introduce tu dominio.</li>
                         <li>Resend te dará unos registros DNS que deberás añadir en la configuración de tu proveedor de dominio (GoDaddy, Namecheap, DONWEB, etc.).</li>
                         <li className='font-bold text-card-foreground'>
                             <strong>¡Atención Proveedores como DONWEB!</strong> Si el panel de tu dominio no acepta un nombre de host como `send` o `resend._domainkey`, es porque espera el nombre completo. Debes construirlo tú mismo:
@@ -396,8 +396,8 @@ service firebase.storage {
                                 <li>Si Resend pide un registro <strong>TXT</strong> con el host `resend._domainkey`, en tu panel debes poner `resend._domainkey.tudominio.com`.</li>
                             </ul>
                         </li>
-                        <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como "Verified".</li>
-                        <li>**Importante:** Después de verificar, actualiza la dirección del remitente en el código (`src/ai/flows/prize-notification-flow.ts`) a un correo de tu dominio verificado (ej: `noreply@tuempresa.com`).</li>
+                        <li>Una vez que Resend detecte los cambios (puede tardar unas horas), tu dominio aparecerá como &quot;Verified&quot;.</li>
+                        <li><strong>Importante:</strong> Después de verificar, actualiza la dirección del remitente en el código (<code>src/ai/flows/prize-notification-flow.ts</code>) a un correo de tu dominio verificado (ej: <code>noreply@tuempresa.com</code>).</li>
                     </ul>
                 </GuideSection>
 

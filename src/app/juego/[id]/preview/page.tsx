@@ -9,7 +9,7 @@ export default async function GamePreviewPage({ params }: any) {
     notFound();
   }
 
-  return <GameClientPage key={Date.now()} initialGame={gameData} />;
+  return <GameClientPage initialGame={gameData} />;
 }
 
 // ... (resto del código como estaba antes)

@@ -58,7 +58,6 @@ const capitalize = (s: string) => {
 export default function SpinningWheel({ segments: initialSegments, gameId, onSpinEnd, isDemoMode = false, wheelScale = 1, config = {} }: SpinningWheelProps) {
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
   const [winningSegmentId, setWinningSegmentId] = useState<string | null>(null);
 
   const isSpinningRef = useRef(isSpinning);
@@ -75,10 +74,6 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const centerScale = config?.centerScale || 1;
   const strokeWidth = config?.strokeWidth ?? 1;
   const strokeColor = config?.strokeColor || '#000000';
-
-  useEffect(() => {
-    setShouldRender(true);
-  }, []);
 
   const segments = useMemo(() => initialSegments, [initialSegments]);
 
@@ -181,7 +176,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     transformOrigin: 'center center',
   };
 
-  if (!shouldRender || !segments) {
+  if (!segments) {
     return <div className="w-full max-w-md aspect-square bg-muted rounded-full animate-pulse" />;
   }
 
