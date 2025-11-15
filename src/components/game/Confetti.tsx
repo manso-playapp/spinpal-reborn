@@ -1,24 +1,23 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+
+const createPieces = () =>
+  Array.from({ length: 150 }).map((_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: -10 - Math.random() * 100,
+    angle: Math.random() * 360,
+    speed: 5 + Math.random() * 5,
+    rotationSpeed: (Math.random() - 0.5) * 10,
+    color: `hsl(${Math.random() * 360}, 90%, 60%)`,
+    size: 5 + Math.random() * 5,
+    delay: Math.random() * 2,
+  }));
 
 const Confetti = () => {
-  const [pieces, setPieces] = useState<any[]>([]);
-
-  useEffect(() => {
-    const newPieces = Array.from({ length: 150 }).map((_, i) => ({
-      id: i,
-      x: Math.random() * 100, // percentage
-      y: -10 - Math.random() * 100, // start from top
-      angle: Math.random() * 360,
-      speed: 5 + Math.random() * 5, // vertical speed
-      rotationSpeed: (Math.random() - 0.5) * 10,
-      color: `hsl(${Math.random() * 360}, 90%, 60%)`,
-      size: 5 + Math.random() * 5,
-    }));
-    setPieces(newPieces);
-  }, []);
+  const [pieces] = useState(createPieces);
 
   return (
     <div
@@ -44,7 +43,7 @@ const Confetti = () => {
             height: `${piece.size * 1.5}px`,
             backgroundColor: piece.color,
             animation: `fall ${piece.speed}s linear infinite`,
-            animationDelay: `${Math.random() * 2}s`,
+            animationDelay: `${piece.delay}s`,
             transform: `rotate(${piece.angle}deg)`,
           }}
         />

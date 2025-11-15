@@ -39,7 +39,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import Papa from 'papaparse';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, writeBatch, getDocs } from '@firebase/firestore';
 import { Checkbox } from "../ui/checkbox";
@@ -100,7 +100,7 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
     return () => unsubscribe();
   }, [gameId]);
 
-  const handleDeleteCustomers = async (customerIds: string[]) => {
+  const handleDeleteCustomers = useCallback(async (customerIds: string[]) => {
     const firestore = db;
     if (!firestore) {
         toast({
@@ -122,7 +122,7 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
             title: "¡Participantes Eliminados!",
             description: `${customerIds.length} participante(s) ha(n) sido eliminado(s). Ahora puede(n) volver a jugar.`,
         });
-        table.toggleAllPageRowsSelected(false); // Clear selection
+        setRowSelection({});
     } catch (error) {
         console.error("Error deleting customers in batch: ", error);
         toast({
@@ -131,7 +131,7 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
             description: "No se pudieron eliminar los participantes. Inténtalo de nuevo.",
         });
     }
-  };
+  }, [gameId, toast]);
   
   const columns: ColumnDef<Customer>[] = useMemo(() => [
     {
@@ -247,8 +247,9 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
         )
       },
     },
-  ], [gameId, toast]);
+  ], [handleDeleteCustomers]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: customers,
     columns,
