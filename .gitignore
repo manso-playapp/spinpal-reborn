@@ -45,3 +45,5 @@ firebase-debug.log
 firestore-debug.log
 .firebase/logs/.history/
 .firebase/
+.history/
+.firebase/
