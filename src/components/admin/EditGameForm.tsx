@@ -58,6 +58,8 @@ const segmentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.'),
   isRealPrize: z.boolean().optional(),
   probability: z.number().optional(),
+  useStockControl: z.boolean().default(false).optional(),
+  quantity: z.number().int().min(0, 'La cantidad no puede ser negativa.').nullable().optional(),
   textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Debe ser un color HEX válido.').default('#FFFFFF'),
   fontFamily: z.string().default('DM Sans'),
   fontSize: z.number().min(4).max(40).default(16),
@@ -68,6 +70,23 @@ const segmentSchema = z.object({
   iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
   iconName: z.string().optional(),
   iconScale: z.number().min(0.1).max(2).default(1),
+}).superRefine((segment, ctx) => {
+  if (segment.useStockControl) {
+    if (!segment.isRealPrize) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['useStockControl'],
+        message: 'Solo los premios reales pueden usar control de stock.',
+      });
+    }
+    if (segment.quantity === null || segment.quantity === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['quantity'],
+        message: 'Define la cantidad disponible cuando activas el stock.',
+      });
+    }
+  }
 });
 
 const formSchema = z.object({
@@ -165,7 +184,7 @@ interface WheelConfig {
 }
 
 type GameFormValues = z.infer<typeof formSchema>;
-type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName'>;
+type SegmentStyle = Omit<z.infer<typeof segmentSchema>, 'id' | 'name' | 'color' | 'isRealPrize' | 'probability' | 'formalName' | 'useStockControl' | 'quantity'>;
 
 
 interface Game {
@@ -221,6 +240,8 @@ const getDefaultSegment = (name: string): z.infer<typeof segmentSchema> => ({
   color: getRandomColor(),
   isRealPrize: false,
   probability: 0,
+  useStockControl: false,
+  quantity: null,
   textColor: '#FFFFFF',
   fontFamily: 'Bebas Neue',
   fontSize: 16,
@@ -591,7 +612,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   };
 
   const copyStyle = (index: number) => {
-    const { id, name, color, isRealPrize, probability, formalName, ...style } = form.getValues(`segments.${index}`);
+    const { id, name, color, isRealPrize, probability, formalName, useStockControl, quantity, ...style } = form.getValues(`segments.${index}`);
     setCopiedStyle(style);
     toast({
         title: "Estilo Copiado",
@@ -846,7 +867,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
 
                             <div className="rounded-lg border p-4 space-y-4">
                               <div>
-                                <h4 className="font-medium">Acciones rápidas</h4>
+                                <h4 className="font-medium">Nuevo usuario</h4>
                                 <p className="text-sm text-muted-foreground">
                                   Guarda la cuenta o reenvía las credenciales sin duplicar usuarios.
                                 </p>
@@ -884,6 +905,55 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <p className="text-xs text-muted-foreground">
                                 Activo: crea/actualiza al cliente y envía el correo. Inactivo: solo reenvía la invitación con los datos que escribiste.
                               </p>
+                            </div>
+                            <div className="rounded-lg border p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="font-medium">Usuarios del juego</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    Accesos existentes para esta ruleta.
+                                  </p>
+                                </div>
+                              </div>
+                              {form.watch('accessCredentials.email') ? (
+                                <div className="flex items-center justify-between rounded-md border p-3">
+                                  <div>
+                                    <p className="font-medium">{form.watch('accessCredentials.email')}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      Contraseña: {accessPassword ? '••••••' : 'No disponible'}
+                                    </p>
+                                  </div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => {
+                                        const email = form.watch('accessCredentials.email');
+                                        if (email) {
+                                          form.setValue('accessCredentials.email', email);
+                                          setAccessPassword(accessPassword);
+                                        }
+                                      }}>
+                                        <Edit className="mr-2 h-4 w-4" /> Editar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => {
+                                        form.setValue('accessCredentials.email', '', { shouldDirty: true });
+                                        setAccessPassword('');
+                                      }}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Borrar
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleSendInvitation()}>
+                                        <Mail className="mr-2 h-4 w-4" /> Reenviar invitación
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">No hay usuarios aún.</p>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -1270,6 +1340,68 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                                               </FormControl>
                                                           </FormItem>
                                                       )}
+                                                  />
+                                                  <FormField
+                                                      control={form.control}
+                                                      name={`segments.${index}.useStockControl`}
+                                                      render={({ field }) => {
+                                                        const isReal = !!watchedSegments[index]?.isRealPrize;
+                                                        const isChecked = isReal && !!field.value;
+                                                        return (
+                                                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                                            <div className="space-y-0.5">
+                                                              <FormLabel>Control de stock</FormLabel>
+                                                              <FormDescription>Activa el stock y define cuántas unidades hay disponibles.</FormDescription>
+                                                            </div>
+                                                            <FormControl>
+                                                              <Switch
+                                                                checked={isChecked}
+                                                                disabled={!isReal}
+                                                                onCheckedChange={(checked) => {
+                                                                  if (!isReal) return;
+                                                                  field.onChange(checked);
+                                                                  if (!checked) {
+                                                                    form.setValue(`segments.${index}.quantity`, null, { shouldDirty: true });
+                                                                  }
+                                                                }}
+                                                              />
+                                                            </FormControl>
+                                                          </FormItem>
+                                                        );
+                                                      }}
+                                                  />
+                                                  <FormField
+                                                      control={form.control}
+                                                      name={`segments.${index}.quantity`}
+                                                      render={({ field }) => {
+                                                        const segment = watchedSegments[index];
+                                                        const stockEnabled = !!segment?.isRealPrize && !!segment?.useStockControl;
+                                                        return (
+                                                          <FormItem>
+                                                            <FormLabel>Cantidad disponible</FormLabel>
+                                                            <FormControl>
+                                                              <Input
+                                                                type="number"
+                                                                min={0}
+                                                                disabled={!stockEnabled || loading}
+                                                                value={field.value ?? ''}
+                                                                onChange={(e) => {
+                                                                  const value = e.target.value;
+                                                                  if (value === '') {
+                                                                    field.onChange(null);
+                                                                  } else {
+                                                                    field.onChange(Number(value));
+                                                                  }
+                                                                }}
+                                                              />
+                                                            </FormControl>
+                                                            <FormDescription>
+                                                              Solo se usa si activas el control de stock en un premio real.
+                                                            </FormDescription>
+                                                            <FormMessage />
+                                                          </FormItem>
+                                                        );
+                                                      }}
                                                   />
                                                   <FormField
                                                       control={form.control}
