@@ -192,8 +192,20 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   const handleDemoSpin = async () => {
     if (game.status !== 'demo' || uiState !== 'IDLE' || !db) return;
   
-    const winningIndex = Math.floor(Math.random() * game.segments.length);
-    const winningSegment = game.segments[winningIndex];
+    const eligibleSegments = (game.segments || []).filter((s: any) => {
+      if (s?.isRealPrize && s?.useStockControl) {
+        return (s.quantity ?? 0) > 0;
+      }
+      return true;
+    });
+
+    if (eligibleSegments.length === 0) {
+      console.error('No hay premios disponibles para el giro de demo (stock agotado).');
+      return;
+    }
+
+    const winningIndex = Math.floor(Math.random() * eligibleSegments.length);
+    const winningSegment = eligibleSegments[winningIndex];
   
     if (!winningSegment || typeof winningSegment.id !== 'string') {
       console.error('Invalid segment for demo spin.');

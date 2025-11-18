@@ -59,6 +59,7 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const [rotation, setRotation] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [winningSegmentId, setWinningSegmentId] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   const isSpinningRef = useRef(isSpinning);
   const currentRotationRef = useRef(0);
@@ -76,6 +77,11 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
   const strokeColor = config?.strokeColor || '#000000';
 
   const segments = useMemo(() => initialSegments, [initialSegments]);
+
+  useEffect(() => {
+    // Evitar desajustes de hidratación: renderizamos la ruleta sólo en el cliente
+    setIsMounted(true);
+  }, []);
 
   const spinTheWheel = useCallback((spinRequestData: { winningId: string; [key: string]: any }) => {
   if (isSpinningRef.current || !segments || segments.length === 0) return;
@@ -175,6 +181,10 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
     transform: `rotate(${rotation}deg)`,
     transformOrigin: 'center center',
   };
+
+  if (!isMounted) {
+    return <div className="w-full max-w-md aspect-square bg-muted rounded-full animate-pulse" />;
+  }
 
   if (!segments) {
     return <div className="w-full max-w-md aspect-square bg-muted rounded-full animate-pulse" />;

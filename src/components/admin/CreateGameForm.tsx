@@ -53,6 +53,23 @@ const segmentSchema = z.object({
   iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
   iconName: z.string().optional(),
   iconScale: z.number().min(0.1).max(2).default(1),
+}).superRefine((segment, ctx) => {
+  if (segment.useStockControl) {
+    if (!segment.isRealPrize) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['useStockControl'],
+        message: 'El control de stock solo aplica a premios reales.',
+      });
+    }
+    if (segment.quantity === null || segment.quantity === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['quantity'],
+        message: 'Indica cuántas unidades hay disponibles.',
+      });
+    }
+  }
 });
 
 const formSchema = z.object({

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc, onSnapshot, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -187,11 +187,23 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             // Lógica para determinar el premio
             const validSegments = gameData.segments.filter(s => s && typeof s.id === 'string');
             if (validSegments.length < 2) throw new Error('El juego no tiene suficientes premios válidos configurados.');
-            const realPrizeSegments = validSegments.filter(s => s.isRealPrize);
-            const nonRealPrizeSegments = validSegments.filter(s => !s.isRealPrize);
+
+            const eligibleSegments = validSegments.filter((s) => {
+                if (s.isRealPrize && s.useStockControl) {
+                    return (s.quantity ?? 0) > 0;
+                }
+                return true;
+            });
+
+            if (eligibleSegments.length === 0) {
+                throw new Error('No hay premios disponibles (stock agotado).');
+            }
+
+            const realPrizeSegments = eligibleSegments.filter(s => s.isRealPrize);
+            const nonRealPrizeSegments = eligibleSegments.filter(s => !s.isRealPrize);
             const realPrizeTotalProbability = realPrizeSegments.reduce((acc, seg) => acc + (seg.probability || 0), 0);
             const nonRealPrizeProb = nonRealPrizeSegments.length > 0 ? Math.max(0, 100 - realPrizeTotalProbability) / nonRealPrizeSegments.length : 0;
-            const finalProbabilities = validSegments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
+            const finalProbabilities = eligibleSegments.map(seg => seg.isRealPrize ? (seg.probability || 0) : nonRealPrizeProb);
             
             const random = Math.random() * 100;
             let accumulatedProb = 0;
@@ -203,10 +215,11 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     break;
                 }
             }
-            if (winningIndex === -1) winningIndex = validSegments.length - 1;
+            if (winningIndex === -1) winningIndex = eligibleSegments.length - 1;
             
-            const winningSegment = validSegments[winningIndex];
+            const winningSegment = eligibleSegments[winningIndex];
             if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
+            const winningSegmentIndex = gameData.segments.findIndex((s) => s.id === winningSegment.id);
 
             const prizeNameToDisplay = (winningSegment && (winningSegment.formalName || winningSegment.name)) || '';
             const result = { name: prizeNameToDisplay, isRealPrize: !!winningSegment.isRealPrize };
@@ -221,7 +234,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
             const gameRef = doc(db, 'games', gameId);
             const customerRef = doc(db, 'games', gameId, 'customers', customerId);
-            const batch = writeBatch(db);
 
             // Primero intentemos solo el spinRequest
             const gameUpdateData: { [key: string]: any } = {
@@ -237,6 +249,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
             if (winningSegment.isRealPrize) {
                 gameUpdateData.prizesAwarded = increment(1);
+                if (winningSegment.useStockControl && winningSegmentIndex !== -1) {
+                    gameUpdateData[`segments.${winningSegmentIndex}.quantity`] = increment(-1);
+                }
                 customerUpdateData.prizeWonName = prizeNameToDisplay;
                 customerUpdateData.prizeWonAt = serverTimestamp();
                 // Disparar notificación de premio vía API (server-side)
