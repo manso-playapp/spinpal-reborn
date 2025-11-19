@@ -34,7 +34,7 @@ import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Textarea } from '../ui/textarea';
 
-const segmentSchema = z.object({
+const baseSegmentSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'El nombre del premio no puede estar vacío.'),
   formalName: z.string().optional(),
@@ -53,7 +53,9 @@ const segmentSchema = z.object({
   iconUrl: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).default(''),
   iconName: z.string().optional(),
   iconScale: z.number().min(0.1).max(2).default(1),
-}).superRefine((segment, ctx) => {
+});
+
+const segmentSchema = baseSegmentSchema.superRefine((segment, ctx) => {
   if (segment.useStockControl) {
     if (!segment.isRealPrize) {
       ctx.addIssue({
@@ -133,7 +135,7 @@ export default function CreateGameForm() {
                 parsedSegments = parsedData.segments;
             }
 
-            const validationResult = z.array(segmentSchema.partial()).safeParse(parsedSegments);
+            const validationResult = z.array(baseSegmentSchema.partial()).safeParse(parsedSegments);
             if (validationResult.success) {
                 segmentsToSave = validationResult.data.map(seg => ({ ...seg, id: seg.id || generateUniqueId() })) as any;
                  toast({ title: '¡Datos Importados!', description: 'Se usará la configuración de premios del JSON que pegaste.' });
