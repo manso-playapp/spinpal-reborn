@@ -250,7 +250,15 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             if (winningSegment.isRealPrize) {
                 gameUpdateData.prizesAwarded = increment(1);
                 if (winningSegment.useStockControl && winningSegmentIndex !== -1) {
-                    gameUpdateData[`segments.${winningSegmentIndex}.quantity`] = increment(-1);
+                    const nextSegments = gameData.segments.map((segment, idx) => {
+                        if (idx !== winningSegmentIndex) return segment;
+                        const currentQuantity = typeof segment.quantity === 'number' ? segment.quantity : 0;
+                        return {
+                            ...segment,
+                            quantity: Math.max(0, currentQuantity - 1),
+                        };
+                    });
+                    gameUpdateData.segments = nextSegments;
                 }
                 customerUpdateData.prizeWonName = prizeNameToDisplay;
                 customerUpdateData.prizeWonAt = serverTimestamp();
