@@ -9,9 +9,12 @@ export default function QRCodeDisplay({ gameId, scale = 1 }: { gameId: string; s
   const [url, setUrl] = useState<string>('');
 
   useEffect(() => {
-    // Evita diferencia SSR/CSR; solo leemos window en el cliente ya montado
-    const origin = window.location.origin;
-    setUrl(`${origin}/jugar/${gameId}`);
+    // Evita diferencia SSR/CSR; calcula la URL en el siguiente frame
+    const frame = requestAnimationFrame(() => {
+      const origin = window.location.origin;
+      setUrl(`${origin}/jugar/${gameId}`);
+    });
+    return () => cancelAnimationFrame(frame);
   }, [gameId]);
 
   if (!url) {
