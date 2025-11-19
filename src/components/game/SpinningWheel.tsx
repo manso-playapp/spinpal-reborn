@@ -80,7 +80,8 @@ export default function SpinningWheel({ segments: initialSegments, gameId, onSpi
 
   useEffect(() => {
     // Evitar desajustes de hidratación: renderizamos la ruleta sólo en el cliente
-    setIsMounted(true);
+    const frame = requestAnimationFrame(() => setIsMounted(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   const spinTheWheel = useCallback((spinRequestData: { winningId: string; [key: string]: any }) => {
