@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { useFirebasePublic } from '@/context/FirebasePublicContext';
 import { DocumentData, doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import Confetti from '@/components/game/Confetti';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/logo';
+import { mergeGameTexts, extractGameTextOverrides } from '@/lib/textDefaults';
 
 interface GameData extends DocumentData {
   id: string;
@@ -90,6 +91,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const texts = useMemo(() => mergeGameTexts(extractGameTextOverrides(game)), [game]);
   
   const gameId = initialGame.id;
 
@@ -240,9 +242,9 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
         case 'SPINNING':
             return (
                 <Card className="shadow-lg bg-black/70 backdrop-blur-md border-white/40 text-white animate-in fade-in">
-                    <CardContent className="p-6 flex flex-col items-center justify-center gap-4">
+                         <CardContent className="p-6 flex flex-col items-center justify-center gap-4">
                          <Loader2 className="h-12 w-12 text-white animate-spin" />
-                         <p className="font-headline text-3xl">¡Mucha suerte...!</p>
+                         <p className="font-headline text-3xl">{texts.tvSpinningMessage}</p>
                          <p className="font-bold text-4xl text-white">{currentPlayer || ''}</p>
                     </CardContent>
                 </Card>
@@ -255,13 +257,13 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 >
                     <h2 className="font-headline text-6xl md:text-7xl font-bold flex items-center justify-center gap-4 text-white">
                         {spinResult?.isRealPrize ? <Gift className="h-16 w-16 md:h-20 md:w-20" /> : <ThumbsDown className="text-red-400 h-16 w-16 md:h-20 md:w-20" />}
-                        {spinResult?.isRealPrize ? '¡Premio!' : '¡Casi!'}
+                        {spinResult?.isRealPrize ? texts.tvWinMessage : texts.tvLoseMessage}
                     </h2>
                     <p className="mt-4 text-4xl md:text-5xl font-semibold">
                         {spinResult?.name}
                     </p>
                     <p className="text-white/80 mt-4 text-lg md:text-xl">
-                        {spinResult?.isRealPrize ? 'El ganador recibirá un email con instrucciones.' : '¡Mucha suerte para la próxima!'}
+                        {spinResult?.isRealPrize ? texts.tvWinSubtitle : texts.tvLoseSubtitle}
                     </p>
                 </div>
             );
@@ -271,14 +273,14 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
                 <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
                     <CardHeader>
                     <CardTitle className="font-headline text-2xl flex items-center justify-center">
-                        ¡Escanea para Jugar!
+                        {texts.tvIdleTitle}
                     </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col items-center justify-center gap-4">
                         <QRCodeDisplay gameId={game.id} />
                         <Separator className="bg-white/20"/>
                         <p className="text-sm">
-                        Abre la cámara de tu teléfono, apunta al código QR y sigue el enlace para registrarte y jugar.
+                        {texts.tvIdleDescription}
                         </p>
                     </CardContent>
                 </Card>
@@ -340,11 +342,11 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
         {game.status === 'demo' && (
              <div className="absolute top-4 right-4 z-30 flex flex-col gap-2 items-end">
                 <div className="bg-yellow-400 text-black px-4 py-1 text-sm font-bold shadow-lg rounded-full">
-                    MODO DEMO
+                    {texts.tvDemoBadgeText}
                 </div>
                  <Button onClick={handleDemoSpin} disabled={uiState !== 'IDLE'} size="sm" variant="secondary" className="shadow-lg">
                     {uiState !== 'IDLE' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Giro de Prueba
+                    {texts.tvDemoButtonText}
                 </Button>
             </div>
         )}
@@ -387,10 +389,10 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
         </div>
         <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-50">
             <div className="flex flex-col items-center gap-1">
-                <div className="text-xs text-gray-300/50">Build: 2508211535</div>
+                <div className="text-xs text-gray-300/50">{texts.tvBuildLabel}: 2508211535</div>
                 <div className="bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full">
                     <a href="https://playapp.mansoestudiocreativo.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/80 hover:text-white transition-colors text-base">
-                        <span className="font-semibold">un producto de</span>
+                        <span className="font-semibold">{texts.tvFooterByline}</span>
                         <Logo className="h-6 w-auto text-white" />
                     </a>
                 </div>

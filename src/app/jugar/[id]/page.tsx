@@ -24,6 +24,9 @@ export default async function PlayerPage(props: Props) {
     } : {})
   } : {};
 
+  const headerTitle = (game.texts?.registrationPageTitle || '').replace('{game}', game.name) || game.name;
+  const headerSubtitle = game.texts?.registrationPageSubtitle;
+
   return (
     <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 relative" style={backgroundStyles}>
       {game.mobileBackgroundVideo && (
@@ -43,10 +46,10 @@ export default async function PlayerPage(props: Props) {
        <div className="w-full max-w-md z-10 flex flex-col justify-center items-center flex-grow">
          <div className="text-center text-white mb-6">
             <h1 className="font-headline text-3xl font-bold">
-              {game.name}
+              {headerTitle}
             </h1>
-            {game.registrationSubtitle && (
-                <p className="mt-2">{game.registrationSubtitle}</p>
+            {(headerSubtitle || game.registrationSubtitle) && (
+                <p className="mt-2">{headerSubtitle || game.registrationSubtitle}</p>
             )}
           </div>
         <CustomerRegistrationForm gameId={game.id} />
@@ -66,6 +69,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import CustomerRegistrationForm from '@/components/game/CustomerRegistrationForm';
 import Logo from '@/components/logo';
+import { mergeGameTexts, extractGameTextOverrides } from '@/lib/textDefaults';
 
 async function getGameData(id: string) {
   if (!db) {
@@ -80,10 +84,13 @@ async function getGameData(id: string) {
     return null;
   }
   const data = gameSnap.data();
+  const mergedTexts = mergeGameTexts(extractGameTextOverrides(data));
   return { 
     id: gameSnap.id, 
     name: data.name || "Juego sin nombre",
-    registrationSubtitle: data.registrationSubtitle,
+    registrationTitle: mergedTexts.registrationTitle,
+    registrationSubtitle: mergedTexts.registrationSubtitle,
+    texts: mergedTexts,
     mobileBackgroundImage: data.mobileBackgroundImage || '',
     mobileBackgroundVideo: data.mobileBackgroundVideo || '',
     mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
