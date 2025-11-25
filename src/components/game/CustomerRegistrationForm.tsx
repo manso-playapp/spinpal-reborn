@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { db } from '@/lib/firebase/config';
-import { collection, serverTimestamp, doc, query, where, getDocs, limit, increment, addDoc, updateDoc, onSnapshot, getDoc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, query, where, getDocs, limit, addDoc, onSnapshot, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,17 +19,20 @@ import { Skeleton } from '../ui/skeleton';
 import { Checkbox } from '../ui/checkbox';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
+import { defaultGameTexts, extractGameTextOverrides, mergeGameTexts, GameTextConfig } from '@/lib/textDefaults';
 
 
 // Always include all possible fields, with optional as needed
 
-const baseFormSchema = z.object({
-    name: z.string().min(2, { message: 'Tu nombre debe tener al menos 2 caracteres.' }),
-    email: z.string().email({ message: 'Por favor, introduce un correo electrónico válido.' }),
+const getBaseSchema = (texts: GameTextConfig) => z.object({
+    name: z.string().min(2, { message: texts.nameValidationMessage }),
+    email: z.string().email({ message: texts.emailValidationMessage }),
     phone: z.string().optional(),
     birthdate: z.string().optional(),
     confirmFollow: z.boolean().optional(),
 });
+
+type RegistrationFormValues = z.infer<ReturnType<typeof getBaseSchema>>;
 
 interface GameData {
     isDemoMode: boolean;
@@ -39,6 +42,7 @@ interface GameData {
     successMessage: string;
     segments: any[];
     instagramProfile?: string;
+    texts: GameTextConfig;
 }
 
 interface SpinResult {
@@ -54,22 +58,23 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     const { toast } = useToast();
     const [uiState, setUiState] = useState<UiState>('LOADING');
     const [gameData, setGameData] = useState<GameData | null>(null);
-    const [errorMessage, setErrorMessage] = useState('Ha ocurrido un error inesperado.');
+    const [errorMessage, setErrorMessage] = useState(defaultGameTexts.loadErrorMessage);
     const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
     const [customerId, setCustomerId] = useState<string | null>(null);
+    const texts = useMemo(() => mergeGameTexts(gameData?.texts || {}), [gameData]);
     
 
     // dynamicSchema is always the same shape, but we add conditional validation with .superRefine
-    const [dynamicSchema, setDynamicSchema] = useState<z.ZodTypeAny>(baseFormSchema);
+    const [dynamicSchema, setDynamicSchema] = useState<z.ZodTypeAny>(() => getBaseSchema(defaultGameTexts));
 
-    const form = useForm<z.infer<typeof baseFormSchema>>({
+    const form = useForm<RegistrationFormValues>({
         resolver: zodResolver(dynamicSchema),
         defaultValues: { name: '', email: '', phone: '', birthdate: '', confirmFollow: false },
     });
 
             useEffect(() => {
                     if (!db) {
-                            setErrorMessage('La conexión con la base de datos no está disponible.');
+                            setErrorMessage(defaultGameTexts.dbUnavailableMessage);
                             setUiState('ERROR');
                             return;
                     }
@@ -77,13 +82,15 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
                             if (docSnap.exists()) {
                                     const data = docSnap.data();
+                                    const textOverrides = extractGameTextOverrides(data);
+                                    const mergedTexts = mergeGameTexts(textOverrides);
                                     const isPhoneRequired = !!data.isPhoneRequired;
                                     const isBirthdateRequired = data.isBirthdateRequired !== false;
                                     const segments = data.segments || [];
                                     const instagramProfile = data.instagramProfile || '';
 
                                     if (!Array.isArray(segments) || segments.length < 2 || !segments.every(s => s && typeof s.id === 'string')) {
-                                            setErrorMessage('El juego no está configurado correctamente (faltan premios válidos con ID).');
+                                            setErrorMessage(mergedTexts.configErrorMessage);
                                             setUiState('ERROR');
                                             return;
                                     }
@@ -93,33 +100,34 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                             exemptedEmails: data.exemptedEmails || [],
                                             isPhoneRequired: isPhoneRequired,
                                             isBirthdateRequired,
-                                            successMessage: data.successMessage || '¡Mucha suerte! Revisa la pantalla grande.',
+                                            successMessage: mergedTexts.successMessage,
                                             segments: segments,
                                             instagramProfile: instagramProfile,
+                                            texts: mergedTexts,
                                     };
                                     setGameData(newGameData);
 
                                     // Always use the same shape, but add conditional validation
-                                    const conditionalSchema = baseFormSchema.superRefine((values, ctx) => {
+                                    const conditionalSchema = getBaseSchema(mergedTexts).superRefine((values, ctx) => {
                                         if (isPhoneRequired && (!values.phone || values.phone.length < 6)) {
                                             ctx.addIssue({
                                                 code: z.ZodIssueCode.custom,
                                                 path: ['phone'],
-                                                message: 'Por favor, introduce un número de teléfono válido.'
+                                                message: mergedTexts.phoneValidationMessage
                                             });
                                         }
                                         if (isBirthdateRequired && (!values.birthdate || values.birthdate.length < 4)) {
                                             ctx.addIssue({
                                                 code: z.ZodIssueCode.custom,
                                                 path: ['birthdate'],
-                                                message: 'La fecha de nacimiento es obligatoria.'
+                                                message: mergedTexts.birthdateValidationMessage
                                             });
                                         }
                                         if (instagramProfile && values.confirmFollow !== true) {
                                             ctx.addIssue({
                                                 code: z.ZodIssueCode.custom,
                                                 path: ['confirmFollow'],
-                                                message: 'Debes confirmar que sigues la cuenta para participar.'
+                                                message: mergedTexts.instagramValidationMessage
                                             });
                                         }
                                     });
@@ -130,12 +138,12 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     }
 
                             } else {
-                setErrorMessage('Este juego no existe o ha sido eliminado.');
+                setErrorMessage(defaultGameTexts.notFoundMessage);
                 setUiState('ERROR');
             }
         }, (error) => {
             console.error("Error fetching game data:", error);
-            setErrorMessage('No se pudo cargar la información del juego.');
+            setErrorMessage(defaultGameTexts.loadErrorMessage);
             setUiState('ERROR');
         });
 
@@ -232,36 +240,26 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 prizeNameToDisplay
             });
 
-            const gameRef = doc(db, 'games', gameId);
-            const customerRef = doc(db, 'games', gameId, 'customers', customerId);
+            // Llamar a API backend con credenciales de servidor (evita reglas de cliente)
+            const spinResponse = await fetch('/api/spin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameId,
+                    customerId,
+                    winningId: winningSegment.id,
+                    prizeName: prizeNameToDisplay,
+                    isRealPrize: !!winningSegment.isRealPrize,
+                    useStockControl: !!winningSegment.useStockControl,
+                })
+            });
 
-            // Primero intentemos solo el spinRequest
-            const gameUpdateData: { [key: string]: any } = {
-                spinRequest: { 
-                    timestamp: serverTimestamp(), 
-                    customerId: customerId, 
-                    winningId: winningSegment.id 
-                },
-                // Incrementar el contador de jugadas totales del juego
-                plays: increment(1),
-            };
-            const customerUpdateData: { [key: string]: any } = { hasPlayed: true };
+            if (!spinResponse.ok) {
+                const result = await spinResponse.json().catch(() => ({ message: 'Error al actualizar el giro.' }));
+                throw new Error(result.message || 'Error al actualizar el giro.');
+            }
 
             if (winningSegment.isRealPrize) {
-                gameUpdateData.prizesAwarded = increment(1);
-                if (winningSegment.useStockControl && winningSegmentIndex !== -1) {
-                    const nextSegments = gameData.segments.map((segment, idx) => {
-                        if (idx !== winningSegmentIndex) return segment;
-                        const currentQuantity = typeof segment.quantity === 'number' ? segment.quantity : 0;
-                        return {
-                            ...segment,
-                            quantity: Math.max(0, currentQuantity - 1),
-                        };
-                    });
-                    gameUpdateData.segments = nextSegments;
-                }
-                customerUpdateData.prizeWonName = prizeNameToDisplay;
-                customerUpdateData.prizeWonAt = serverTimestamp();
                 // Disparar notificación de premio vía API (server-side)
                 try {
                     fetch('/api/notify-prize', {
@@ -272,23 +270,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 } catch (_) {
                     // No bloquear el flujo por errores de red
                 }
-            }
-
-            try {
-                console.log('Intentando actualizar el juego con:', gameUpdateData);
-                // Primero intentemos actualizar solo el juego
-                await updateDoc(gameRef, gameUpdateData);
-                console.log('Actualización del juego exitosa');
-
-                // Si lo anterior funciona, actualizamos el cliente
-                console.log('Intentando actualizar el cliente con:', customerUpdateData);
-                await updateDoc(customerRef, customerUpdateData);
-                console.log('Actualización del cliente exitosa');
-            } catch (error: any) {
-                console.error('Error específico al actualizar:', error);
-                setErrorMessage(`Error al actualizar: ${error.message}`);
-                setUiState('ERROR');
-                return; // Salimos de la función en lugar de lanzar el error
             }
 
             // Esperar un tiempo prudencial para la animación antes de mostrar el resultado
@@ -323,8 +304,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                         <Card className="w-full max-w-md text-center shadow-lg">
                             <CardHeader><PartyPopper className="h-12 w-12 text-green-600 mx-auto" /></CardHeader>
                             <CardContent>
-                                <CardTitle>¡Modo Demo Activo!</CardTitle>
-                                <CardDescription>El registro de prueba iniciará el giro en la pantalla grande automáticamente.</CardDescription>
+                                <CardTitle>{texts.demoModeTitle}</CardTitle>
+                                <CardDescription>{texts.demoModeDescription}</CardDescription>
                             </CardContent>
                         </Card>
                     );
@@ -332,24 +313,24 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 return (
                     <Card className="w-full max-w-md shadow-lg">
                         <CardHeader>
-                            <CardTitle>¡Regístrate para Jugar!</CardTitle>
-                            <CardDescription>Completa tus datos para participar.</CardDescription>
+                            <CardTitle>{texts.registrationTitle}</CardTitle>
+                            <CardDescription>{texts.registrationDescription}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(handleRegistration)} className="space-y-6">
                                     <FormField control={form.control} name="name" render={({ field }) => (
-                                        <FormItem><FormLabel>Nombre</FormLabel><FormControl><Input placeholder="Tu nombre" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>{texts.formNameLabel}</FormLabel><FormControl><Input placeholder={texts.formNamePlaceholder} {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
                                     <FormField control={form.control} name="email" render={({ field }) => (
-                                        <FormItem><FormLabel>Correo Electrónico</FormLabel><FormControl><Input type="email" placeholder="tu@correo.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>{texts.formEmailLabel}</FormLabel><FormControl><Input type="email" placeholder={texts.formEmailPlaceholder} {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
                                     {gameData?.isBirthdateRequired && (
                                         <FormField control={form.control} name="birthdate" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Fecha de nacimiento</FormLabel>
+                                                <FormLabel>{texts.formBirthdateLabel}</FormLabel>
                                                 <FormControl>
-                                                    <Input type="date" placeholder="AAAA-MM-DD" {...field} />
+                                                    <Input type="date" placeholder={texts.formBirthdatePlaceholder} {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -357,7 +338,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     )}
                                     {gameData?.isPhoneRequired && (
                                         <FormField control={form.control} name="phone" render={({ field }) => (
-                                            <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input type="tel" placeholder="Tu teléfono" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>{texts.formPhoneLabel}</FormLabel><FormControl><Input type="tel" placeholder={texts.formPhonePlaceholder} {...field} /></FormControl><FormMessage /></FormItem>
                                         )} />
                                     )}
                                     {gameData?.instagramProfile && (
@@ -366,27 +347,27 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                             name="confirmFollow"
                                             render={({ field }) => (
                                                 <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                                    <FormControl>
-                                                        <Checkbox
-                                                        checked={field.value}
-                                                        onCheckedChange={field.onChange}
-                                                        />
-                                                    </FormControl>
-                                                    <div className="space-y-1 leading-none">
-                                                        <FormLabel>
-                                                            Para participar debes seguirnos en instagram{' '}
-                                                            <Link href={gameData.instagramProfile!} target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-1">
-                                                                @{gameData.instagramProfile!.split('/').pop()}<Instagram className="h-4 w-4"/>
-                                                            </Link>
-                                                        </FormLabel>
-                                                        <FormMessage />
-                                                    </div>
-                                                </FormItem>
-                                            )}
-                                        />
+                                                <FormControl>
+                                                    <Checkbox
+                                                    checked={field.value}
+                                                    onCheckedChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                                <div className="space-y-1 leading-none">
+                                                    <FormLabel>
+                                                        {texts.instagramCheckboxLabel}{' '}
+                                                        <Link href={gameData.instagramProfile!} target="_blank" className="text-primary hover:underline font-bold inline-flex items-center gap-1">
+                                                            @{gameData.instagramProfile!.split('/').pop()}<Instagram className="h-4 w-4"/>
+                                                        </Link>
+                                                    </FormLabel>
+                                                    <FormMessage />
+                                                </div>
+                                            </FormItem>
+                                        )}
+                                    />
                                     )}
                                     <Button type="submit" className="w-full" disabled={!gameData}>
-                                        ¡Registrarme!
+                                        {texts.registrationSubmitText}
                                     </Button>
                                 </form>
                             </Form>
@@ -399,7 +380,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                            <p className="text-xl font-semibold">Validando tus datos...</p>
+                            <p className="text-xl font-semibold">{texts.validatingTitle}</p>
                         </CardContent>
                     </Card>
                 );
@@ -408,13 +389,13 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                  return (
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardHeader>
-                            <CardTitle>¡Todo Listo!</CardTitle>
-                            <CardDescription>Estás a un paso de la gloria. ¡Mucha suerte!</CardDescription>
+                            <CardTitle>{texts.readyTitle}</CardTitle>
+                            <CardDescription>{texts.readySubtitle}</CardDescription>
                         </CardHeader>
                         <CardContent>
                            <Button onClick={handleSpin} className="w-full h-16 text-lg" size="lg">
                                 <PlayCircle className="mr-2 h-6 w-6"/>
-                                Girar la Ruleta
+                                {texts.spinButtonText}
                            </Button>
                         </CardContent>
                     </Card>
@@ -425,8 +406,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardContent className="pt-6 flex flex-col items-center justify-center gap-4">
                             <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                            <p className="text-xl font-semibold">Girando... ¡Mucha suerte!</p>
-                            <p className="text-muted-foreground">Revisa la pantalla grande para ver la animación.</p>
+                            <p className="text-xl font-semibold">{texts.spinningTitle}</p>
+                            <p className="text-muted-foreground">{texts.spinningSubtitle}</p>
                         </CardContent>
                     </Card>
                 );
@@ -437,7 +418,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                         <CardHeader className="p-6">
                             <CardTitle className="font-headline text-3xl md:text-4xl flex items-center justify-center gap-4 text-primary">
                                 {spinResult?.isRealPrize ? <Gift className="h-10 w-10" /> : <ThumbsDown className="text-red-400 h-10 w-10" />}
-                                {spinResult?.isRealPrize ? '¡Felicidades!' : '¡Casi!'}
+                                {spinResult?.isRealPrize ? texts.mobileWinMessage : texts.mobileLoseMessage}
                             </CardTitle>
                         </CardHeader>
                         <Separator />
@@ -447,11 +428,11 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                             </p>
                             <CardDescription className="text-card-foreground/80 mt-2 text-sm">
                                 {spinResult?.isRealPrize 
-                                    ? 'Hemos enviado un email a tu correo con las instrucciones para reclamar tu premio. ¡Gracias por participar!' 
-                                    : 'Más suerte la próxima vez. ¡Gracias por participar!'
+                                    ? texts.mobileWinSubtitle 
+                                    : texts.mobileLoseSubtitle
                                 }
                             </CardDescription>
-                             <p className="text-xs text-muted-foreground mt-6">Puedes cerrar esta ventana.</p>
+                             <p className="text-xs text-muted-foreground mt-6">{texts.mobileCloseHint}</p>
                         </CardContent>
                     </Card>
                 );
@@ -461,8 +442,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     <Card className="w-full max-w-md text-center shadow-lg">
                         <CardHeader><AlertCircle className="h-12 w-12 text-yellow-600 mx-auto" /></CardHeader>
                         <CardContent>
-                            <CardTitle>¡Ya has participado!</CardTitle>
-                            <CardDescription>Este correo ya ha sido utilizado. ¡Gracias!</CardDescription>
+                            <CardTitle>{texts.alreadyPlayedTitle}</CardTitle>
+                            <CardDescription>{texts.alreadyPlayedSubtitle}</CardDescription>
                         </CardContent>
                     </Card>
                 );
@@ -473,11 +454,11 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                         <CardContent className="pt-6">
                             <Alert variant="destructive">
                                 <Bug className="h-4 w-4" />
-                                <AlertTitle>Error</AlertTitle>
+                                <AlertTitle>{texts.errorTitle}</AlertTitle>
                                 <AlertDescription>{errorMessage}</AlertDescription>
                             </Alert>
                              <Button variant="outline" className="mt-4 w-full" onClick={() => setUiState('FORM')}>
-                                Volver a intentar
+                                {texts.errorRetryButtonText}
                             </Button>
                         </CardContent>
                     </Card>

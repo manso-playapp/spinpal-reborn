@@ -35,6 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { defaultGameTexts } from '@/lib/textDefaults';
 import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, EyeOff, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink, Clipboard, ClipboardPaste, KeyRound, UserPlus, AlertCircle, Mail, MoreVertical, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
@@ -116,10 +117,52 @@ const formSchema = z.object({
   tvWinSubtitle: z.string().optional(),
   tvLoseMessage: z.string().optional(),
   tvLoseSubtitle: z.string().optional(),
+  tvSpinningMessage: z.string().optional(),
+  tvIdleTitle: z.string().optional(),
+  tvIdleDescription: z.string().optional(),
+  tvDemoBadgeText: z.string().optional(),
+  tvDemoButtonText: z.string().optional(),
+  tvFooterByline: z.string().optional(),
+  tvBuildLabel: z.string().optional(),
   mobileWinMessage: z.string().optional(),
   mobileWinSubtitle: z.string().optional(),
   mobileLoseMessage: z.string().optional(),
   mobileLoseSubtitle: z.string().optional(),
+  mobileCloseHint: z.string().optional(),
+  registrationDescription: z.string().optional(),
+  registrationSubmitText: z.string().optional(),
+  registrationPageTitle: z.string().optional(),
+  registrationPageSubtitle: z.string().optional(),
+  demoModeTitle: z.string().optional(),
+  demoModeDescription: z.string().optional(),
+  validatingTitle: z.string().optional(),
+  readyTitle: z.string().optional(),
+  readySubtitle: z.string().optional(),
+  spinButtonText: z.string().optional(),
+  spinningTitle: z.string().optional(),
+  spinningSubtitle: z.string().optional(),
+  alreadyPlayedTitle: z.string().optional(),
+  alreadyPlayedSubtitle: z.string().optional(),
+  errorTitle: z.string().optional(),
+  errorRetryButtonText: z.string().optional(),
+  formNameLabel: z.string().optional(),
+  formNamePlaceholder: z.string().optional(),
+  formEmailLabel: z.string().optional(),
+  formEmailPlaceholder: z.string().optional(),
+  formBirthdateLabel: z.string().optional(),
+  formBirthdatePlaceholder: z.string().optional(),
+  formPhoneLabel: z.string().optional(),
+  formPhonePlaceholder: z.string().optional(),
+  instagramCheckboxLabel: z.string().optional(),
+  nameValidationMessage: z.string().optional(),
+  emailValidationMessage: z.string().optional(),
+  phoneValidationMessage: z.string().optional(),
+  birthdateValidationMessage: z.string().optional(),
+  instagramValidationMessage: z.string().optional(),
+  configErrorMessage: z.string().optional(),
+  notFoundMessage: z.string().optional(),
+  loadErrorMessage: z.string().optional(),
+  dbUnavailableMessage: z.string().optional(),
   segments: z.array(segmentSchema).min(2, 'Se necesitan al menos 2 premios.').max(16, 'No puedes tener más de 16 premios.'),
   segmentsJson: z.string().optional(),
   backgroundImage: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')),
@@ -370,22 +413,64 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       mobileBackgroundImage: initialGame.mobileBackgroundImage || '',
       mobileBackgroundVideo: initialGame.mobileBackgroundVideo || '',
       mobileBackgroundFit: initialGame.mobileBackgroundFit || 'cover',
-      registrationTitle: initialGame.registrationTitle || '',
-      registrationSubtitle: initialGame.registrationSubtitle || '',
+      registrationTitle: initialGame.registrationTitle || defaultGameTexts.registrationTitle,
+      registrationSubtitle: initialGame.registrationSubtitle || defaultGameTexts.registrationSubtitle,
+      registrationPageTitle: initialGame.registrationPageTitle || defaultGameTexts.registrationPageTitle,
+      registrationPageSubtitle: initialGame.registrationPageSubtitle || defaultGameTexts.registrationPageSubtitle,
       isPhoneRequired: initialGame.isPhoneRequired || false,
       isBirthdateRequired: initialGame.isBirthdateRequired ?? true,
-      successMessage: initialGame.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+      successMessage: initialGame.successMessage || defaultGameTexts.successMessage,
       screenRotation: initialGame.screenRotation || 0,
       qrCodeScale: initialGame.qrCodeScale || 1,
       rouletteScale: initialGame.rouletteScale || 1,
-      tvWinMessage: initialGame.tvWinMessage || '¡Premio!',
-      tvWinSubtitle: initialGame.tvWinSubtitle || 'El ganador recibirá un email con instrucciones.',
-      tvLoseMessage: initialGame.tvLoseMessage || '¡Casi!',
-      tvLoseSubtitle: initialGame.tvLoseSubtitle || '¡Mucha suerte para la próxima!',
-      mobileWinMessage: initialGame.mobileWinMessage || '¡Felicidades!',
-      mobileWinSubtitle: initialGame.mobileWinSubtitle || 'El ganador recibirá un email con instrucciones.',
-      mobileLoseMessage: initialGame.mobileLoseMessage || '¡Casi!',
-      mobileLoseSubtitle: initialGame.mobileLoseSubtitle || '¡Mucha suerte para la próxima!',
+      tvWinMessage: initialGame.tvWinMessage || defaultGameTexts.tvWinMessage,
+      tvWinSubtitle: initialGame.tvWinSubtitle || defaultGameTexts.tvWinSubtitle,
+      tvLoseMessage: initialGame.tvLoseMessage || defaultGameTexts.tvLoseMessage,
+      tvLoseSubtitle: initialGame.tvLoseSubtitle || defaultGameTexts.tvLoseSubtitle,
+      tvSpinningMessage: initialGame.tvSpinningMessage || defaultGameTexts.tvSpinningMessage,
+      tvIdleTitle: initialGame.tvIdleTitle || defaultGameTexts.tvIdleTitle,
+      tvIdleDescription: initialGame.tvIdleDescription || defaultGameTexts.tvIdleDescription,
+      tvDemoBadgeText: initialGame.tvDemoBadgeText || defaultGameTexts.tvDemoBadgeText,
+      tvDemoButtonText: initialGame.tvDemoButtonText || defaultGameTexts.tvDemoButtonText,
+      tvFooterByline: initialGame.tvFooterByline || defaultGameTexts.tvFooterByline,
+      tvBuildLabel: initialGame.tvBuildLabel || defaultGameTexts.tvBuildLabel,
+      mobileWinMessage: initialGame.mobileWinMessage || defaultGameTexts.mobileWinMessage,
+      mobileWinSubtitle: initialGame.mobileWinSubtitle || defaultGameTexts.mobileWinSubtitle,
+      mobileLoseMessage: initialGame.mobileLoseMessage || defaultGameTexts.mobileLoseMessage,
+      mobileLoseSubtitle: initialGame.mobileLoseSubtitle || defaultGameTexts.mobileLoseSubtitle,
+      mobileCloseHint: initialGame.mobileCloseHint || defaultGameTexts.mobileCloseHint,
+      registrationDescription: initialGame.registrationDescription || defaultGameTexts.registrationDescription,
+      registrationSubmitText: initialGame.registrationSubmitText || defaultGameTexts.registrationSubmitText,
+      demoModeTitle: initialGame.demoModeTitle || defaultGameTexts.demoModeTitle,
+      demoModeDescription: initialGame.demoModeDescription || defaultGameTexts.demoModeDescription,
+      validatingTitle: initialGame.validatingTitle || defaultGameTexts.validatingTitle,
+      readyTitle: initialGame.readyTitle || defaultGameTexts.readyTitle,
+      readySubtitle: initialGame.readySubtitle || defaultGameTexts.readySubtitle,
+      spinButtonText: initialGame.spinButtonText || defaultGameTexts.spinButtonText,
+      spinningTitle: initialGame.spinningTitle || defaultGameTexts.spinningTitle,
+      spinningSubtitle: initialGame.spinningSubtitle || defaultGameTexts.spinningSubtitle,
+      alreadyPlayedTitle: initialGame.alreadyPlayedTitle || defaultGameTexts.alreadyPlayedTitle,
+      alreadyPlayedSubtitle: initialGame.alreadyPlayedSubtitle || defaultGameTexts.alreadyPlayedSubtitle,
+      errorTitle: initialGame.errorTitle || defaultGameTexts.errorTitle,
+      errorRetryButtonText: initialGame.errorRetryButtonText || defaultGameTexts.errorRetryButtonText,
+      formNameLabel: initialGame.formNameLabel || defaultGameTexts.formNameLabel,
+      formNamePlaceholder: initialGame.formNamePlaceholder || defaultGameTexts.formNamePlaceholder,
+      formEmailLabel: initialGame.formEmailLabel || defaultGameTexts.formEmailLabel,
+      formEmailPlaceholder: initialGame.formEmailPlaceholder || defaultGameTexts.formEmailPlaceholder,
+      formBirthdateLabel: initialGame.formBirthdateLabel || defaultGameTexts.formBirthdateLabel,
+      formBirthdatePlaceholder: initialGame.formBirthdatePlaceholder || defaultGameTexts.formBirthdatePlaceholder,
+      formPhoneLabel: initialGame.formPhoneLabel || defaultGameTexts.formPhoneLabel,
+      formPhonePlaceholder: initialGame.formPhonePlaceholder || defaultGameTexts.formPhonePlaceholder,
+      instagramCheckboxLabel: initialGame.instagramCheckboxLabel || defaultGameTexts.instagramCheckboxLabel,
+      nameValidationMessage: initialGame.nameValidationMessage || defaultGameTexts.nameValidationMessage,
+      emailValidationMessage: initialGame.emailValidationMessage || defaultGameTexts.emailValidationMessage,
+      phoneValidationMessage: initialGame.phoneValidationMessage || defaultGameTexts.phoneValidationMessage,
+      birthdateValidationMessage: initialGame.birthdateValidationMessage || defaultGameTexts.birthdateValidationMessage,
+      instagramValidationMessage: initialGame.instagramValidationMessage || defaultGameTexts.instagramValidationMessage,
+      configErrorMessage: initialGame.configErrorMessage || defaultGameTexts.configErrorMessage,
+      notFoundMessage: initialGame.notFoundMessage || defaultGameTexts.notFoundMessage,
+      loadErrorMessage: initialGame.loadErrorMessage || defaultGameTexts.loadErrorMessage,
+      dbUnavailableMessage: initialGame.dbUnavailableMessage || defaultGameTexts.dbUnavailableMessage,
       wheelScale: initialGame.wheelScale || 1,
       rouletteVerticalOffset: initialGame.rouletteVerticalOffset || 0,
       qrVerticalOffset: initialGame.qrVerticalOffset || 0,
@@ -430,16 +515,66 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
           mobileBackgroundImage: data.mobileBackgroundImage || '',
           mobileBackgroundVideo: data.mobileBackgroundVideo || '',
           mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
-          registrationTitle: data.registrationTitle || '',
-          registrationSubtitle: data.registrationSubtitle || '',
+          registrationTitle: data.registrationTitle || defaultGameTexts.registrationTitle,
+          registrationSubtitle: data.registrationSubtitle || defaultGameTexts.registrationSubtitle,
+          registrationPageTitle: data.registrationPageTitle || defaultGameTexts.registrationPageTitle,
+          registrationPageSubtitle: data.registrationPageSubtitle || defaultGameTexts.registrationPageSubtitle,
           isPhoneRequired: data.isPhoneRequired || false,
           isBirthdateRequired: data.isBirthdateRequired ?? true,
-          successMessage: data.successMessage || 'La ruleta en la pantalla grande debería empezar a girar. ¡Gracias por participar!',
+          successMessage: data.successMessage || defaultGameTexts.successMessage,
           qrCodeScale: data.qrCodeScale || 1,
           rouletteScale: data.rouletteScale || 1,
           wheelScale: data.wheelScale || 1,
           rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
           qrVerticalOffset: data.qrVerticalOffset || 0,
+          tvWinMessage: data.tvWinMessage || defaultGameTexts.tvWinMessage,
+          tvWinSubtitle: data.tvWinSubtitle || defaultGameTexts.tvWinSubtitle,
+          tvLoseMessage: data.tvLoseMessage || defaultGameTexts.tvLoseMessage,
+          tvLoseSubtitle: data.tvLoseSubtitle || defaultGameTexts.tvLoseSubtitle,
+          tvSpinningMessage: data.tvSpinningMessage || defaultGameTexts.tvSpinningMessage,
+          tvIdleTitle: data.tvIdleTitle || defaultGameTexts.tvIdleTitle,
+          tvIdleDescription: data.tvIdleDescription || defaultGameTexts.tvIdleDescription,
+          tvDemoBadgeText: data.tvDemoBadgeText || defaultGameTexts.tvDemoBadgeText,
+          tvDemoButtonText: data.tvDemoButtonText || defaultGameTexts.tvDemoButtonText,
+          tvFooterByline: data.tvFooterByline || defaultGameTexts.tvFooterByline,
+          tvBuildLabel: data.tvBuildLabel || defaultGameTexts.tvBuildLabel,
+          mobileWinMessage: data.mobileWinMessage || defaultGameTexts.mobileWinMessage,
+          mobileWinSubtitle: data.mobileWinSubtitle || defaultGameTexts.mobileWinSubtitle,
+          mobileLoseMessage: data.mobileLoseMessage || defaultGameTexts.mobileLoseMessage,
+          mobileLoseSubtitle: data.mobileLoseSubtitle || defaultGameTexts.mobileLoseSubtitle,
+          mobileCloseHint: data.mobileCloseHint || defaultGameTexts.mobileCloseHint,
+          registrationDescription: data.registrationDescription || defaultGameTexts.registrationDescription,
+          registrationSubmitText: data.registrationSubmitText || defaultGameTexts.registrationSubmitText,
+          demoModeTitle: data.demoModeTitle || defaultGameTexts.demoModeTitle,
+          demoModeDescription: data.demoModeDescription || defaultGameTexts.demoModeDescription,
+          validatingTitle: data.validatingTitle || defaultGameTexts.validatingTitle,
+          readyTitle: data.readyTitle || defaultGameTexts.readyTitle,
+          readySubtitle: data.readySubtitle || defaultGameTexts.readySubtitle,
+          spinButtonText: data.spinButtonText || defaultGameTexts.spinButtonText,
+          spinningTitle: data.spinningTitle || defaultGameTexts.spinningTitle,
+          spinningSubtitle: data.spinningSubtitle || defaultGameTexts.spinningSubtitle,
+          alreadyPlayedTitle: data.alreadyPlayedTitle || defaultGameTexts.alreadyPlayedTitle,
+          alreadyPlayedSubtitle: data.alreadyPlayedSubtitle || defaultGameTexts.alreadyPlayedSubtitle,
+          errorTitle: data.errorTitle || defaultGameTexts.errorTitle,
+          errorRetryButtonText: data.errorRetryButtonText || defaultGameTexts.errorRetryButtonText,
+          formNameLabel: data.formNameLabel || defaultGameTexts.formNameLabel,
+          formNamePlaceholder: data.formNamePlaceholder || defaultGameTexts.formNamePlaceholder,
+          formEmailLabel: data.formEmailLabel || defaultGameTexts.formEmailLabel,
+          formEmailPlaceholder: data.formEmailPlaceholder || defaultGameTexts.formEmailPlaceholder,
+          formBirthdateLabel: data.formBirthdateLabel || defaultGameTexts.formBirthdateLabel,
+          formBirthdatePlaceholder: data.formBirthdatePlaceholder || defaultGameTexts.formBirthdatePlaceholder,
+          formPhoneLabel: data.formPhoneLabel || defaultGameTexts.formPhoneLabel,
+          formPhonePlaceholder: data.formPhonePlaceholder || defaultGameTexts.formPhonePlaceholder,
+          instagramCheckboxLabel: data.instagramCheckboxLabel || defaultGameTexts.instagramCheckboxLabel,
+          nameValidationMessage: data.nameValidationMessage || defaultGameTexts.nameValidationMessage,
+          emailValidationMessage: data.emailValidationMessage || defaultGameTexts.emailValidationMessage,
+          phoneValidationMessage: data.phoneValidationMessage || defaultGameTexts.phoneValidationMessage,
+          birthdateValidationMessage: data.birthdateValidationMessage || defaultGameTexts.birthdateValidationMessage,
+          instagramValidationMessage: data.instagramValidationMessage || defaultGameTexts.instagramValidationMessage,
+          configErrorMessage: data.configErrorMessage || defaultGameTexts.configErrorMessage,
+          notFoundMessage: data.notFoundMessage || defaultGameTexts.notFoundMessage,
+          loadErrorMessage: data.loadErrorMessage || defaultGameTexts.loadErrorMessage,
+          dbUnavailableMessage: data.dbUnavailableMessage || defaultGameTexts.dbUnavailableMessage,
           config: {
             borderImage: data.config?.borderImage || data.borderImage || 'https://i.imgur.com/J62nHj9.png',
             borderScale: data.config?.borderScale || data.borderScale || 1,
@@ -1566,48 +1701,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
 
                   <TabsContent value="texts">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                      {/* Card 1: Pantalla de Registro */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <QrCode className="h-5 w-5"/>
-                            Pantalla de Registro
-                          </CardTitle>
-                          <CardDescription>Textos mostrados en el formulario inicial</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <FormField
-                            control={form.control}
-                            name="registrationSubtitle"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Subtítulo del Juego</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="Ej: Completa tus datos para ganar" value={field.value || ''}/>
-                                </FormControl>
-                                <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="successMessage"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Mensaje de Confirmación</FormLabel>
-                                <FormControl>
-                                  <Textarea {...field} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio." value={field.value || ''} />
-                                </FormControl>
-                                <FormDescription>El mensaje que ve el jugador después de completar el registro.</FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </CardContent>
-                      </Card>
-
-                      {/* Card 2: Pantalla de TV - Ganar */}
+                      {/* TV - Victoria */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
@@ -1646,7 +1740,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                         </CardContent>
                       </Card>
 
-                      {/* Card 3: Pantalla de TV - Perder */}
+                      {/* TV - No Victoria */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
@@ -1676,7 +1770,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                               <FormItem>
                                 <FormLabel>Subtítulo</FormLabel>
                                 <FormControl>
-                                  <Input {...field} placeholder="¡Mucha suerte para la próxima!" value={field.value || ''}/>
+                                  <Input {...field} placeholder="Gracias por participar." value={field.value || ''}/>
                                 </FormControl>
                                 <FormDescription>Texto secundario que aparece debajo del título.</FormDescription>
                               </FormItem>
@@ -1685,7 +1779,304 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                         </CardContent>
                       </Card>
 
-                      {/* Card 4: Pantalla Móvil - Mensajes */}
+                      {/* TV - Estados e info */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Type className="h-5 w-5"/>
+                            Pantalla TV - Estados
+                          </CardTitle>
+                          <CardDescription>Textos de espera, QR y demo</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="tvSpinningMessage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Mensaje de giro</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder={defaultGameTexts.tvSpinningMessage} value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Se muestra en TV mientras gira.</FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="tvIdleTitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Título de QR</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder={defaultGameTexts.tvIdleTitle} value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Encabezado sobre el QR.</FormDescription>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="tvIdleDescription"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Descripción de QR</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder={defaultGameTexts.tvIdleDescription} value={field.value || ''}/>
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="tvDemoBadgeText"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Badge modo demo</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder={defaultGameTexts.tvDemoBadgeText} value={field.value || ''}/>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="tvDemoButtonText"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Botón modo demo</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder={defaultGameTexts.tvDemoButtonText} value={field.value || ''}/>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="tvFooterByline"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Firma inferior</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder={defaultGameTexts.tvFooterByline} value={field.value || ''}/>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="tvBuildLabel"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Etiqueta de build</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder={defaultGameTexts.tvBuildLabel} value={field.value || ''}/>
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Móvil - Registro */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <QrCode className="h-5 w-5"/>
+                            Pantalla de Registro
+                          </CardTitle>
+                          <CardDescription>Textos mostrados en el formulario inicial</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField
+                            control={form.control}
+                            name="registrationTitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Título del Bloque</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder={defaultGameTexts.registrationTitle} value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Título del formulario en el móvil.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="registrationPageTitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Título de la página</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder={defaultGameTexts.registrationPageTitle} value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Acepta {`{game}`} para incluir el nombre.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="registrationPageSubtitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Subtítulo de la página</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder={defaultGameTexts.registrationPageSubtitle} value={field.value || ''}/>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="registrationSubtitle"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Subtítulo del Juego</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder="Ej: Completa tus datos para ganar" value={field.value || ''}/>
+                                </FormControl>
+                                <FormDescription>Un texto adicional opcional debajo del nombre del juego.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="registrationDescription"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Descripción del Formulario</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder={defaultGameTexts.registrationDescription} value={field.value || ''} />
+                                </FormControl>
+                                <FormDescription>Texto corto debajo del título.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="successMessage"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Mensaje de Confirmación</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} placeholder="Ej: ¡Felicidades! Revisa la pantalla grande para ver tu premio." value={field.value || ''} />
+                                </FormControl>
+                                <FormDescription>El mensaje que ve el jugador después de completar el registro.</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="registrationSubmitText"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Texto del Botón de Registro</FormLabel>
+                                <FormControl>
+                                  <Input {...field} placeholder={defaultGameTexts.registrationSubmitText} value={field.value || ''} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      {/* Móvil - Estados */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Smartphone className="h-5 w-5"/>
+                            Flujo Móvil - Estados
+                          </CardTitle>
+                          <CardDescription>Mensajes antes y durante el giro</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FormField control={form.control} name="demoModeTitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Título modo demo</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.demoModeTitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="demoModeDescription" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Descripción modo demo</FormLabel>
+                              <FormControl><Textarea {...field} placeholder={defaultGameTexts.demoModeDescription} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="validatingTitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Validando datos</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.validatingTitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="readyTitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Título listo para girar</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.readyTitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="readySubtitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Subtítulo listo para girar</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.readySubtitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="spinButtonText" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Botón de giro</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.spinButtonText} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="spinningTitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Mensaje durante el giro</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.spinningTitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="spinningSubtitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Subtítulo durante el giro</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.spinningSubtitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="alreadyPlayedTitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Título ya jugó</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.alreadyPlayedTitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="alreadyPlayedSubtitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Subtítulo ya jugó</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.alreadyPlayedSubtitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="errorTitle" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Título de error</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.errorTitle} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="errorRetryButtonText" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Botón reintentar</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.errorRetryButtonText} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                        </CardContent>
+                      </Card>
+
+                      {/* Móvil - Resultados */}
                       <Card>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
@@ -1724,8 +2115,20 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                   </FormItem>
                                 )}
                               />
+                              <FormField
+                                control={form.control}
+                                name="mobileCloseHint"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Nota de cierre</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder={defaultGameTexts.mobileCloseHint} value={field.value || ''} />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
                             </div>
-                            
+                          
                             <Separator />
                             
                             <div className="space-y-4">
@@ -1757,6 +2160,132 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 )}
                               />
                             </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Móvil - Formulario y validaciones */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Type className="h-5 w-5"/>
+                            Formulario Móvil
+                          </CardTitle>
+                          <CardDescription>Etiquetas, placeholders y validaciones</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="formNameLabel" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Etiqueta nombre</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formNameLabel} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="formNamePlaceholder" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Placeholder nombre</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formNamePlaceholder} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="formEmailLabel" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Etiqueta email</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formEmailLabel} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="formEmailPlaceholder" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Placeholder email</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formEmailPlaceholder} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="formBirthdateLabel" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Etiqueta fecha de nacimiento</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formBirthdateLabel} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="formBirthdatePlaceholder" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Placeholder fecha de nacimiento</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formBirthdatePlaceholder} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="formPhoneLabel" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Etiqueta teléfono</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formPhoneLabel} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="formPhonePlaceholder" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Placeholder teléfono</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.formPhonePlaceholder} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                          </div>
+                          <FormField control={form.control} name="instagramCheckboxLabel" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Texto checkbox Instagram</FormLabel>
+                              <FormControl><Input {...field} placeholder={defaultGameTexts.instagramCheckboxLabel} value={field.value || ''} /></FormControl>
+                            </FormItem>
+                          )} />
+                          <Separator />
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="nameValidationMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Validación nombre</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.nameValidationMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="emailValidationMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Validación email</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.emailValidationMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="phoneValidationMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Validación teléfono</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.phoneValidationMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="birthdateValidationMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Validación fecha de nacimiento</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.birthdateValidationMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="instagramValidationMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Validación Instagram</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.instagramValidationMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="configErrorMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Error de configuración</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.configErrorMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="notFoundMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Juego no encontrado</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.notFoundMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="loadErrorMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Error al cargar</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.loadErrorMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
+                            <FormField control={form.control} name="dbUnavailableMessage" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>DB no disponible</FormLabel>
+                                <FormControl><Input {...field} placeholder={defaultGameTexts.dbUnavailableMessage} value={field.value || ''} /></FormControl>
+                              </FormItem>
+                            )} />
                           </div>
                         </CardContent>
                       </Card>
