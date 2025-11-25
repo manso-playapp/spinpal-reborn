@@ -152,7 +152,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
 
     // PASO 1: REGISTRO
-    const handleRegistration = async (formData: z.infer<typeof baseFormSchema>) => {
+    const handleRegistration = async (formData: RegistrationFormValues) => {
         if (!gameData || !db) return;
         setUiState('SUBMITTING');
         const submittedEmail = formData.email.toLowerCase().trim();
