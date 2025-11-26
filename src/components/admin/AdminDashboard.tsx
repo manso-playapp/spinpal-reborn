@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminI18n } from '@/context/AdminI18nContext';
+import { AdminHeaderLang } from './AdminHeaderLang';
 import Papa from 'papaparse';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Separator } from '../ui/separator';
@@ -65,6 +67,7 @@ export default function AdminDashboard() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t, lang } = useAdminI18n();
 
   useEffect(() => {
     if (user && db) {
@@ -302,8 +305,7 @@ export default function AdminDashboard() {
       console.error('Error downloading data: ', error);
       toast({
         variant: 'destructive',
-        title: 'Error al descargar',
-        description: 'No se pudieron descargar los datos. Inténtalo de nuevo.',
+        title: t('errorDownload'), description: t('errorDownloadDesc'),
       });
     }
   };
@@ -320,15 +322,16 @@ export default function AdminDashboard() {
     <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center justify-between">
             <div>
-            <h1 className="font-headline text-2xl font-semibold">Dashboard</h1>
-                <p className="text-muted-foreground">Crea, edita y gestiona tus campañas de ruletas interactivas.</p>
+              <h1 className="font-headline text-2xl font-semibold">{t('dashboard')}</h1>
+              <p className="text-muted-foreground">{t('dashboardSubtitle')}</p>
             </div>
             <div className="flex items-center gap-2">
+                <AdminHeaderLang />
                 <Button asChild size="sm" className="h-8 gap-1">
                     <Link href="/admin/juegos/crear">
                     <PlusCircle className="h-3.5 w-3.5" />
                     <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Crear Juego
+                        {t('createGame')}
                     </span>
                     </Link>
                 </Button>
@@ -344,9 +347,9 @@ export default function AdminDashboard() {
         ) : games.length === 0 ? (
             <div className="mt-8 p-8 text-center border-2 border-dashed border-border rounded-lg">
                 <Gamepad2 className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h2 className="mt-4 text-xl font-semibold">Aún no tienes juegos</h2>
+                <h2 className="mt-4 text-xl font-semibold">{t('noGamesTitle')}</h2>
                 <p className="text-muted-foreground mt-2">
-                    ¡Haz clic en &quot;Crear Juego&quot; para empezar a configurar tu primera ruleta!
+                    {t('noGamesSubtitle')}
                 </p>
             </div>
         ) : (
@@ -359,11 +362,11 @@ export default function AdminDashboard() {
                             <CardTitle className="font-headline text-xl mb-1">{game.name}</CardTitle>
                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Badge variant={game.status === 'activo' ? 'default' : 'secondary'} className="text-xs">
-                                    {game.status === 'activo' ? 'Activo' : 'Demo'}
+                                    {game.status === 'activo' ? t('statusActive') : t('statusDemo')}
                                 </Badge>
                                 <span>•</span>
                                 <p>
-                                    Creado: {formatDate(game.createdAt)}
+                                    {t('createdAt')}: {formatDate(game.createdAt)}
                                 </p>
                             </div>
                         </div>
@@ -372,7 +375,7 @@ export default function AdminDashboard() {
                             <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 flex-shrink-0">
                                 <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Más opciones</span>
+                                <span className="sr-only">{t('moreOptions')}</span>
                             </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
