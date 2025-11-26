@@ -30,6 +30,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { ClientEmailList } from './EmailList';
+import { useAdminI18n } from '@/context/AdminI18nContext';
 
 interface Game {
   id: string;
@@ -45,11 +46,12 @@ export default function ClientDashboard() {
   const { user, userRole } = useAuth();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { t } = useAdminI18n();
   
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [impersonatedEmail, setImpersonatedEmail] = useState<string | null>(null);
-  const [viewTitle, setViewTitle] = useState('Dashboard');
+  const [viewTitle, setViewTitle] = useState(t('dashboard'));
 
   useEffect(() => {
     const clientEmailParam = searchParams.get('clientEmail');
@@ -58,7 +60,7 @@ export default function ClientDashboard() {
     if (clientEmailParam && userRole.isSuperAdmin) {
         startTransition(() => {
             setImpersonatedEmail(clientEmailParam);
-            const title = clientNameParam ? `Juegos de: ${clientNameParam}` : `Juegos de: ${clientEmailParam}`;
+            const title = clientNameParam ? t('clientGamesOf', { name: clientNameParam }) : t('clientGamesOf', { name: clientEmailParam });
             setViewTitle(title);
         });
     } else if (user) {
@@ -66,7 +68,7 @@ export default function ClientDashboard() {
             setImpersonatedEmail(user.email);
         });
     }
-  }, [searchParams, userRole.isSuperAdmin, user]);
+  }, [searchParams, userRole.isSuperAdmin, user, t]);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -146,9 +148,9 @@ export default function ClientDashboard() {
           })) as Game[];
 
           if (!userRole.isSuperAdmin && gamesData.length > 0 && gamesData[0].clientName) {
-            setViewTitle(`Panel de: ${gamesData[0].clientName}`);
+            setViewTitle(t('clientPanelOf', { name: gamesData[0].clientName }));
           } else if (!userRole.isSuperAdmin) {
-            setViewTitle('Dashboard');
+            setViewTitle(t('dashboard'));
           }
 
           if (isSubscribed) {
@@ -175,7 +177,7 @@ export default function ClientDashboard() {
         unsubscribe();
       }
     };
-  }, [impersonatedEmail, user, userRole.allowedGameIds, userRole.isSuperAdmin, toast]);
+  }, [impersonatedEmail, user, userRole.allowedGameIds, userRole.isSuperAdmin, toast, t]);
 
   const getGameUrl = (gameId: string) => {
     if (typeof window !== 'undefined') {
@@ -187,8 +189,8 @@ export default function ClientDashboard() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
-        title: "¡Enlace Copiado!",
-        description: "El enlace público del juego ha sido copiado a tu portapapeles.",
+        title: t('linkCopiedTitle'),
+        description: t('linkCopiedDesc'),
     });
   };
 
@@ -197,11 +199,11 @@ export default function ClientDashboard() {
         <div className="flex items-center justify-between mb-8">
             <div>
                 <h1 className="font-headline text-3xl font-semibold tracking-tight">{viewTitle}</h1>
-                <p className="text-muted-foreground mt-1">Panel de control de tus campañas activas</p>
+                <p className="text-muted-foreground mt-1">{t('clientDashboardSubtitle')}</p>
             </div>
             {userRole.isSuperAdmin && impersonatedEmail && (
                 <Button variant="outline" asChild>
-                    <Link href="/admin/dashboard">Volver al Panel de Admin</Link>
+                    <Link href="/admin/dashboard">{t('clientBackToAdmin')}</Link>
                 </Button>
             )}
         </div>
@@ -214,9 +216,9 @@ export default function ClientDashboard() {
         ) : games.length === 0 ? (
             <div className="mt-8 p-12 text-center border-2 border-dashed border-border rounded-lg bg-muted/50">
                 <Gamepad2 className="mx-auto h-16 w-16 text-muted-foreground" />
-                <h2 className="mt-6 text-2xl font-semibold">No tienes juegos asignados</h2>
+                <h2 className="mt-6 text-2xl font-semibold">{t('clientNoGamesTitle')}</h2>
                 <p className="text-muted-foreground mt-3 max-w-md mx-auto">
-                    Contacta con el administrador para que te asigne tus campañas y empieza a recibir participantes.
+                    {t('clientNoGamesSubtitle')}
                 </p>
             </div>
         ) : (
@@ -233,7 +235,7 @@ export default function ClientDashboard() {
                                                 variant={game.status === 'activo' ? 'default' : 'secondary'} 
                                                 className={`text-xs ${game.status === 'activo' ? 'bg-green-600 hover:bg-green-700' : ''}`}
                                             >
-                                                {game.status === 'activo' ? 'Activo' : 'Demo'}
+                                                {game.status === 'activo' ? t('statusActive') : t('statusDemo')}
                                             </Badge>
                                         </div>
                                     </div>
@@ -243,17 +245,17 @@ export default function ClientDashboard() {
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-primary/5 transition-colors group-hover:bg-primary/10">
                                         <p className="text-4xl font-bold text-primary mb-1">{game.plays || 0}</p>
-                                        <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">Participantes Totales</p>
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">{t('clientStatsParticipants')}</p>
                                     </div>
                                     <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-green-500/5 transition-colors group-hover:bg-green-500/10">
                                         <p className="text-4xl font-bold text-green-600 dark:text-green-500 mb-1">{game.prizesAwarded || 0}</p>
-                                        <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">Premios Entregados</p>
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">{t('clientStatsPrizes')}</p>
                                     </div>
                                     <div className="flex flex-col items-center justify-center p-4 rounded-lg bg-blue-500/5 transition-colors group-hover:bg-blue-500/10">
                                         <p className="text-4xl font-bold text-blue-600 dark:text-blue-500 mb-1">
                                             {game.plays ? Math.round((game.prizesAwarded || 0) / game.plays * 100) : 0}%
                                         </p>
-                                        <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">Ratio de Premios</p>
+                                        <p className="text-xs text-muted-foreground uppercase tracking-wider text-center">{t('clientStatsRatio')}</p>
                                     </div>
                                 </div>
                                 
@@ -261,10 +263,10 @@ export default function ClientDashboard() {
                                     <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
                                         <p className="font-medium flex items-center text-yellow-700 dark:text-yellow-400 mb-1">
                                             <AlertTriangle className="h-4 w-4 mr-2" />
-                                            Modo Demo Activo
+                                            {t('clientDemoTitle')}
                                         </p>
                                         <p className="text-sm text-muted-foreground">
-                                            Este es un ambiente de pruebas. No se registrarán participantes ni se enviarán premios reales.
+                                            {t('clientDemoDesc')}
                                         </p>
                                     </div>
                                 )}
@@ -273,15 +275,15 @@ export default function ClientDashboard() {
                                     <Button asChild size="lg" className="h-auto py-4">
                                         <Link href={`/client/juegos/editar/${game.id}`} className="flex flex-col items-center gap-1">
                                             <Settings className="h-5 w-5"/>
-                                            <span>Configurar</span>
-                                            <span className="text-xs text-white">Ajustes del juego</span>
+                                            <span>{t('clientBtnConfigure')}</span>
+                                            <span className="text-xs text-white">{t('clientBtnConfigureSubtitle')}</span>
                                         </Link>
                                     </Button>
                                     <Button asChild size="lg" variant="secondary" className="h-auto py-4">
                                         <Link href={`/client/clientes/${game.id}`} className="flex flex-col items-center gap-1">
                                             <Users className="h-5 w-5" />
-                                            <span>Participantes</span>
-                                            <span className="text-xs text-white">Ver listado</span>
+                                            <span>{t('clientBtnParticipants')}</span>
+                                            <span className="text-xs text-white">{t('clientBtnParticipantsSubtitle')}</span>
                                         </Link>
                                     </Button>
                                 </div>
@@ -289,14 +291,14 @@ export default function ClientDashboard() {
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="outline" className="w-full">
-                                            <LinkIcon className="mr-2 h-4 w-4" /> Obtener Link para TV
+                                            <LinkIcon className="mr-2 h-4 w-4" /> {t('clientLinkTv')}
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Enlace Público del Juego</AlertDialogTitle>
+                                            <AlertDialogTitle>{t('clientLinkDialogTitle')}</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Usa este enlace para mostrar la ruleta en una pantalla o TV.
+                                                {t('clientLinkDialogDesc')}
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <div className="flex items-center space-x-2">
@@ -310,10 +312,10 @@ export default function ClientDashboard() {
                                             </Button>
                                         </div>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>Cerrar</AlertDialogCancel>
+                                            <AlertDialogCancel>{t('clientLinkDialogClose')}</AlertDialogCancel>
                                             <AlertDialogAction asChild>
                                                 <Link href={getGameUrl(game.id)} target="_blank">
-                                                    Abrir enlace
+                                                    {t('clientLinkDialogOpen')}
                                                 </Link>
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
