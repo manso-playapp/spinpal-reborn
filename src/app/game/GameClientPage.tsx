@@ -13,12 +13,13 @@ import { Separator } from '@/components/ui/separator';
 import Confetti from '@/components/game/Confetti';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/logo';
-import { mergeGameTexts, extractGameTextOverrides } from '@/lib/textDefaults';
+import { mergeGameTexts, extractGameTextOverrides, getDefaultTexts } from '@/lib/textDefaults';
 
 interface GameData extends DocumentData {
   id: string;
   name: string;
   status: string;
+  language?: 'es' | 'en' | 'pt';
   segments: any[];
   backgroundImage: string;
   backgroundVideo?: string;
@@ -37,6 +38,9 @@ interface GameData extends DocumentData {
     strokeWidth?: number;
     strokeColor?: string;
   };
+  texts_es?: any;
+  texts_en?: any;
+  texts_pt?: any;
   clientEmail?: string;
   clientId?: string;
   accessCredentials?: {
@@ -75,6 +79,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   // Validar URLs en los datos iniciales
   const validatedInitialGame = {
     ...initialGame,
+    language: initialGame.language || 'es',
     backgroundImage: validateUrl(initialGame.backgroundImage),
     backgroundVideo: validateUrl(initialGame.backgroundVideo),
     config: {
@@ -91,7 +96,11 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
   const [currentPlayer, setCurrentPlayer] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const texts = useMemo(() => mergeGameTexts(extractGameTextOverrides(game)), [game]);
+  const texts = useMemo(() => {
+    const lang = game.language || 'es';
+    const stored = game[`texts_${lang}`] || extractGameTextOverrides(game);
+    return mergeGameTexts(stored, lang);
+  }, [game]);
   
   const gameId = initialGame.id;
 
@@ -143,6 +152,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
         const newGameData = {
           id: docSnap.id,
           ...data,
+          language: data.language || 'es',
           name: data.name || 'Juego sin nombre',
           status: data.status || 'demo',
           segments: data.segments || [],
