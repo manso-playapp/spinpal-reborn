@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useAdminI18n } from '@/context/AdminI18nContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { tLogin } = useAdminI18n();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,19 +36,19 @@ export default function LoginPage() {
     setLoading(true);
 
     if (!auth) {
-        const configError = "La configuración de Firebase no está completa. Revisa el archivo .env y la página de conexiones.";
-        setError(configError);
-        toast({
-            variant: "destructive",
-            title: "Error de Configuración",
-            description: configError,
-        });
+    const configError = tLogin('loginFirebaseConfigError');
+    setError(configError);
+    toast({
+        variant: "destructive",
+        title: tLogin('loginConfigTitle'),
+        description: configError,
+    });
         setLoading(false);
         return;
     }
 
     if (!email || !password) {
-      setError('Por favor, introduce tu correo y contraseña.');
+      setError(tLogin('loginMissingFields'));
       setLoading(false);
       return;
     }
@@ -61,15 +63,15 @@ export default function LoginPage() {
       router.push('/admin');
     } catch (err: any) {
       const errorCode = err.code;
-      let friendlyMessage = 'Ha ocurrido un error inesperado.';
+      let friendlyMessage = tLogin('loginUnexpectedError');
       // Updated to include the current error code for wrong credentials
       if (errorCode === 'auth/invalid-credential') {
-        friendlyMessage = 'Credenciales incorrectas. Por favor, inténtalo de nuevo.';
+        friendlyMessage = tLogin('loginInvalidCredentials');
       }
       setError(friendlyMessage);
       toast({
         variant: "destructive",
-        title: "Error de inicio de sesión",
+        title: tLogin('loginErrorTitle'),
         description: friendlyMessage,
       });
     } finally {
@@ -82,27 +84,27 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm shadow-lg">
         <form onSubmit={handleLogin}>
           <CardHeader>
-            <CardTitle className="font-headline text-2xl">Admin Login</CardTitle>
+            <CardTitle className="font-headline text-2xl">{tLogin('loginTitle')}</CardTitle>
             <CardDescription>
-              Inicia sesión para gestionar tus juegos.
+              {tLogin('loginSubtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {!auth && (
                  <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error de Configuración</AlertTitle>
+                    <AlertTitle>{tLogin('loginConfigTitle')}</AlertTitle>
                     <AlertDescription>
-                        Firebase no está configurado. Ve a <Link href="/admin/conexiones" className="font-bold underline">Conexiones</Link> para solucionarlo.
+                        {tLogin('loginConfigDescription')} <Link href="/admin/conexiones" className="font-bold underline">Conexiones</Link>
                     </AlertDescription>
                 </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico</Label>
+              <Label htmlFor="email">{tLogin('loginEmailLabel')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@ejemplo.com"
+                placeholder={tLogin('loginEmailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -110,7 +112,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+              <Label htmlFor="password">{tLogin('loginPasswordLabel')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -123,7 +125,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={loading || !auth}>
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading ? tLogin('loginLoading') : tLogin('loginSubmit')}
             </Button>
           </CardFooter>
         </form>
