@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { adminDictionary } from '@/lib/adminI18n';
+import { adminLoginDict } from '@/lib/adminI18n.login';
 
 type Lang = 'es' | 'en' | 'pt';
 
@@ -9,6 +10,7 @@ interface AdminI18nContextValue {
   lang: Lang;
   setLang: (lang: Lang) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
+  tLogin: (key: string) => string;
 }
 
 const AdminI18nContext = createContext<AdminI18nContextValue | undefined>(undefined);
@@ -53,8 +55,13 @@ export function AdminI18nProvider({ children, defaultLang = 'es' }: { children: 
     return interpolate(value, vars);
   };
 
+  const tLoginFn = (key: string) => {
+    const dict = adminLoginDict[lang] || adminLoginDict.es;
+    return dict[key] || adminLoginDict.es[key] || key;
+  };
+
   return (
-    <AdminI18nContext.Provider value={{ lang, setLang, t }}>
+    <AdminI18nContext.Provider value={{ lang, setLang, t, tLogin: tLoginFn }}>
       {children}
     </AdminI18nContext.Provider>
   );
