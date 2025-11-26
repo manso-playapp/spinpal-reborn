@@ -318,6 +318,9 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const [showAccessPassword, setShowAccessPassword] = useState(false);
   const [updateUserOnInvite, setUpdateUserOnInvite] = useState(true);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const textFields = [
+    'registrationTitle','registrationSubtitle','registrationPageTitle','registrationPageSubtitle','registrationDescription','registrationSubmitText','successMessage','demoModeTitle','demoModeDescription','validatingTitle','readyTitle','readySubtitle','spinButtonText','spinningTitle','spinningSubtitle','tvWinMessage','tvWinSubtitle','tvLoseMessage','tvLoseSubtitle','tvSpinningMessage','tvIdleTitle','tvIdleDescription','tvDemoBadgeText','tvDemoButtonText','tvFooterByline','tvBuildLabel','mobileWinMessage','mobileWinSubtitle','mobileLoseMessage','mobileLoseSubtitle','mobileCloseHint','alreadyPlayedTitle','alreadyPlayedSubtitle','errorTitle','errorRetryButtonText','formNameLabel','formNamePlaceholder','formEmailLabel','formEmailPlaceholder','formBirthdateLabel','formBirthdatePlaceholder','formPhoneLabel','formPhonePlaceholder','instagramCheckboxLabel','nameValidationMessage','emailValidationMessage','phoneValidationMessage','birthdateValidationMessage','instagramValidationMessage','configErrorMessage','notFoundMessage','loadErrorMessage','dbUnavailableMessage'
+  ] as const;
 
   const handleClientAccess = async ({ sendEmail, skipUserUpdate = false }: { sendEmail: boolean; skipUserUpdate?: boolean }) => {
     const email = form.watch('accessCredentials.email');
@@ -396,6 +399,24 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const initialLang = initialGame.language || 'es';
   const initialTextsRaw = (initialGame as any)[`texts_${initialLang}`] || extractGameTextOverrides(initialGame);
   const initialTexts = mergeGameTexts(initialTextsRaw, initialLang);
+  const applyDefaultsForLang = (lang: 'es' | 'en' | 'pt') => {
+    const defaults = getDefaultTexts(lang);
+    textFields.forEach((fieldName) => {
+      // @ts-expect-error dynamic field names
+      form.setValue(fieldName, defaults[fieldName]);
+    });
+  };
+
+  const copyCurrentToLanguage = () => {
+    // Simply re-apply current values (no translation) to keep user edits when switching idioma
+    const currentLang = form.getValues('language') as 'es' | 'en' | 'pt';
+    const bundle: any = {};
+    textFields.forEach((fieldName) => {
+      bundle[fieldName] = form.getValues(fieldName) || '';
+    });
+    // Persist into hidden field texts_{lang} on submit via updateData; here only keep UI state
+    form.reset({ ...form.getValues(), ...bundle, language: currentLang }, { keepDefaultValues: false });
+  };
 
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
@@ -1793,6 +1814,17 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                   </TabsContent>
 
                   <TabsContent value="texts">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-2">
+                      <div className="text-sm text-muted-foreground">Textos mostrados en el idioma seleccionado.</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => applyDefaultsForLang((form.getValues('language') as 'es' | 'en' | 'pt') || 'es')}>
+                          Usar textos por defecto ({form.getValues('language') || 'es'})
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" onClick={copyCurrentToLanguage}>
+                          Copiar textos actuales a este idioma
+                        </Button>
+                      </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                       {/* TV - Victoria */}
                       <Card>
