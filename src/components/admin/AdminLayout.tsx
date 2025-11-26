@@ -20,11 +20,14 @@ import Logo from '../logo';
 import { LogOut, Gamepad, Mail, Link2, MessageSquareWarning, Sun, Moon, History } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { useAdminI18n } from '@/context/AdminI18nContext';
+import { tNav } from '@/lib/adminI18n';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut, userRole } = useAuth();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const { lang, t } = useAdminI18n();
 
   const handleReportBug = () => {
     const subject = "PlayApp - Reporte de Error/Sugerencia";
@@ -64,11 +67,11 @@ Gracias,
               <SidebarMenuButton
                 asChild
                 isActive={pathname === '/admin' || pathname === '/admin/dashboard'}
-                tooltip={{ children: 'Dashboard' }}
+                tooltip={{ children: tNav(lang, 'menuDashboard') }}
               >
                 <Link href="/admin">
                     <Gamepad />
-                    <span>Dashboard</span>
+                    <span>{tNav(lang, 'menuDashboard')}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -79,11 +82,11 @@ Gracias,
                   <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin/correos')}
-                    tooltip={{ children: 'Correos Enviados' }}
+                    tooltip={{ children: tNav(lang, 'menuEmails') }}
                   >
                     <Link href="/admin/correos">
                       <Mail />
-                      <span>Correos</span>
+                      <span>{tNav(lang, 'menuEmails')}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -92,11 +95,11 @@ Gracias,
                   <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin/conexiones')}
-                    tooltip={{ children: 'Conexiones' }}
+                    tooltip={{ children: tNav(lang, 'menuConnections') }}
                   >
                     <Link href="/admin/conexiones">
                       <Link2 />
-                      <span>Conexiones</span>
+                      <span>{tNav(lang, 'menuConnections')}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -105,11 +108,11 @@ Gracias,
                   <SidebarMenuButton
                     asChild
                     isActive={pathname.startsWith('/admin/changelog')}
-                    tooltip={{ children: 'Historial de Cambios' }}
+                    tooltip={{ children: tNav(lang, 'menuChangelog') }}
                   >
                     <Link href="/admin/changelog">
                       <History />
-                      <span>Historial</span>
+                      <span>{tNav(lang, 'menuChangelog')}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -121,24 +124,24 @@ Gracias,
         <SidebarFooter>
             <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleReportBug} tooltip={{ children: 'Reportar Error' }}>
+                  <SidebarMenuButton onClick={handleReportBug} tooltip={{ children: t('reportBug') }}>
                         <MessageSquareWarning />
-                        <span>Reportar Error</span>
+                        <span>{t('reportBug')}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                  <SidebarMenuItem>
                     <SidebarMenuButton
                         onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                        tooltip={{ children: `Cambiar a tema ${theme === 'light' ? 'oscuro' : 'claro'}` }}
+                        tooltip={{ children: theme === 'light' ? t('themeToDark') : t('themeToLight') }}
                     >
                         {theme === 'light' ? <Moon /> : <Sun />}
-                        <span>{theme === 'light' ? 'Tema Oscuro' : 'Tema Claro'}</span>
+                        <span>{theme === 'light' ? t('themeDark') : t('themeLight')}</span>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton onClick={signOut} tooltip={{ children: 'Cerrar Sesión' }}>
+                  <SidebarMenuButton onClick={signOut} tooltip={{ children: t('signOut') }}>
                         <LogOut />
-                        <span>Cerrar Sesión</span>
+                        <span>{t('signOut')}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
