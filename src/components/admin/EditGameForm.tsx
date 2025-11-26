@@ -35,7 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { defaultGameTexts } from '@/lib/textDefaults';
+import { defaultGameTexts, getDefaultTexts, mergeGameTexts, extractGameTextOverrides } from '@/lib/textDefaults';
 import { ArrowLeft, Trash2, PlusCircle, Gift, Image as ImageIcon, FileText, Settings, GripVertical, Eye, EyeOff, Copy as CopyIcon, Palette, Type, PictureInPicture, QrCode, Gamepad2, Users, RefreshCw, Smartphone, Instagram, ExternalLink, Clipboard, ClipboardPaste, KeyRound, UserPlus, AlertCircle, Mail, MoreVertical, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
@@ -99,6 +99,7 @@ const segmentSchema = z.object({
 const formSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
   status: z.enum(['activo', 'demo']),
+  language: z.enum(['es','en','pt']).default('es'),
   clientName: z.string().optional(),
   clientEmail: z.string().email({ message: "Por favor, introduce un correo válido." }).optional().or(z.literal('')),
   clientPhone: z.string().optional(),
@@ -240,6 +241,7 @@ interface Game {
   id: string;
   name: string;
   status: 'activo' | 'demo';
+  language?: 'es' | 'en' | 'pt';
   clientName?: string;
   clientEmail?: string;
   clientPhone?: string;
@@ -391,11 +393,16 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const handleSendInvitation = () =>
     handleClientAccess({ sendEmail: true, skipUserUpdate: !updateUserOnInvite });
   
+  const initialLang = initialGame.language || 'es';
+  const initialTextsRaw = (initialGame as any)[`texts_${initialLang}`] || extractGameTextOverrides(initialGame);
+  const initialTexts = mergeGameTexts(initialTextsRaw, initialLang);
+
   const form = useForm<GameFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialGame.name || '',
       status: initialGame.status || 'demo',
+      language: initialLang,
       clientName: initialGame.clientName || '',
       clientEmail: initialGame.clientEmail || '',
       clientPhone: initialGame.clientPhone || '',
@@ -413,64 +420,64 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       mobileBackgroundImage: initialGame.mobileBackgroundImage || '',
       mobileBackgroundVideo: initialGame.mobileBackgroundVideo || '',
       mobileBackgroundFit: initialGame.mobileBackgroundFit || 'cover',
-      registrationTitle: initialGame.registrationTitle || defaultGameTexts.registrationTitle,
-      registrationSubtitle: initialGame.registrationSubtitle || defaultGameTexts.registrationSubtitle,
-      registrationPageTitle: initialGame.registrationPageTitle || defaultGameTexts.registrationPageTitle,
-      registrationPageSubtitle: initialGame.registrationPageSubtitle || defaultGameTexts.registrationPageSubtitle,
+      registrationTitle: initialTexts.registrationTitle,
+      registrationSubtitle: initialTexts.registrationSubtitle,
+      registrationPageTitle: initialTexts.registrationPageTitle,
+      registrationPageSubtitle: initialTexts.registrationPageSubtitle,
       isPhoneRequired: initialGame.isPhoneRequired || false,
       isBirthdateRequired: initialGame.isBirthdateRequired ?? true,
-      successMessage: initialGame.successMessage || defaultGameTexts.successMessage,
+      successMessage: initialTexts.successMessage,
       screenRotation: initialGame.screenRotation || 0,
       qrCodeScale: initialGame.qrCodeScale || 1,
       rouletteScale: initialGame.rouletteScale || 1,
-      tvWinMessage: initialGame.tvWinMessage || defaultGameTexts.tvWinMessage,
-      tvWinSubtitle: initialGame.tvWinSubtitle || defaultGameTexts.tvWinSubtitle,
-      tvLoseMessage: initialGame.tvLoseMessage || defaultGameTexts.tvLoseMessage,
-      tvLoseSubtitle: initialGame.tvLoseSubtitle || defaultGameTexts.tvLoseSubtitle,
-      tvSpinningMessage: initialGame.tvSpinningMessage || defaultGameTexts.tvSpinningMessage,
-      tvIdleTitle: initialGame.tvIdleTitle || defaultGameTexts.tvIdleTitle,
-      tvIdleDescription: initialGame.tvIdleDescription || defaultGameTexts.tvIdleDescription,
-      tvDemoBadgeText: initialGame.tvDemoBadgeText || defaultGameTexts.tvDemoBadgeText,
-      tvDemoButtonText: initialGame.tvDemoButtonText || defaultGameTexts.tvDemoButtonText,
-      tvFooterByline: initialGame.tvFooterByline || defaultGameTexts.tvFooterByline,
-      tvBuildLabel: initialGame.tvBuildLabel || defaultGameTexts.tvBuildLabel,
-      mobileWinMessage: initialGame.mobileWinMessage || defaultGameTexts.mobileWinMessage,
-      mobileWinSubtitle: initialGame.mobileWinSubtitle || defaultGameTexts.mobileWinSubtitle,
-      mobileLoseMessage: initialGame.mobileLoseMessage || defaultGameTexts.mobileLoseMessage,
-      mobileLoseSubtitle: initialGame.mobileLoseSubtitle || defaultGameTexts.mobileLoseSubtitle,
-      mobileCloseHint: initialGame.mobileCloseHint || defaultGameTexts.mobileCloseHint,
-      registrationDescription: initialGame.registrationDescription || defaultGameTexts.registrationDescription,
-      registrationSubmitText: initialGame.registrationSubmitText || defaultGameTexts.registrationSubmitText,
-      demoModeTitle: initialGame.demoModeTitle || defaultGameTexts.demoModeTitle,
-      demoModeDescription: initialGame.demoModeDescription || defaultGameTexts.demoModeDescription,
-      validatingTitle: initialGame.validatingTitle || defaultGameTexts.validatingTitle,
-      readyTitle: initialGame.readyTitle || defaultGameTexts.readyTitle,
-      readySubtitle: initialGame.readySubtitle || defaultGameTexts.readySubtitle,
-      spinButtonText: initialGame.spinButtonText || defaultGameTexts.spinButtonText,
-      spinningTitle: initialGame.spinningTitle || defaultGameTexts.spinningTitle,
-      spinningSubtitle: initialGame.spinningSubtitle || defaultGameTexts.spinningSubtitle,
-      alreadyPlayedTitle: initialGame.alreadyPlayedTitle || defaultGameTexts.alreadyPlayedTitle,
-      alreadyPlayedSubtitle: initialGame.alreadyPlayedSubtitle || defaultGameTexts.alreadyPlayedSubtitle,
-      errorTitle: initialGame.errorTitle || defaultGameTexts.errorTitle,
-      errorRetryButtonText: initialGame.errorRetryButtonText || defaultGameTexts.errorRetryButtonText,
-      formNameLabel: initialGame.formNameLabel || defaultGameTexts.formNameLabel,
-      formNamePlaceholder: initialGame.formNamePlaceholder || defaultGameTexts.formNamePlaceholder,
-      formEmailLabel: initialGame.formEmailLabel || defaultGameTexts.formEmailLabel,
-      formEmailPlaceholder: initialGame.formEmailPlaceholder || defaultGameTexts.formEmailPlaceholder,
-      formBirthdateLabel: initialGame.formBirthdateLabel || defaultGameTexts.formBirthdateLabel,
-      formBirthdatePlaceholder: initialGame.formBirthdatePlaceholder || defaultGameTexts.formBirthdatePlaceholder,
-      formPhoneLabel: initialGame.formPhoneLabel || defaultGameTexts.formPhoneLabel,
-      formPhonePlaceholder: initialGame.formPhonePlaceholder || defaultGameTexts.formPhonePlaceholder,
-      instagramCheckboxLabel: initialGame.instagramCheckboxLabel || defaultGameTexts.instagramCheckboxLabel,
-      nameValidationMessage: initialGame.nameValidationMessage || defaultGameTexts.nameValidationMessage,
-      emailValidationMessage: initialGame.emailValidationMessage || defaultGameTexts.emailValidationMessage,
-      phoneValidationMessage: initialGame.phoneValidationMessage || defaultGameTexts.phoneValidationMessage,
-      birthdateValidationMessage: initialGame.birthdateValidationMessage || defaultGameTexts.birthdateValidationMessage,
-      instagramValidationMessage: initialGame.instagramValidationMessage || defaultGameTexts.instagramValidationMessage,
-      configErrorMessage: initialGame.configErrorMessage || defaultGameTexts.configErrorMessage,
-      notFoundMessage: initialGame.notFoundMessage || defaultGameTexts.notFoundMessage,
-      loadErrorMessage: initialGame.loadErrorMessage || defaultGameTexts.loadErrorMessage,
-      dbUnavailableMessage: initialGame.dbUnavailableMessage || defaultGameTexts.dbUnavailableMessage,
+      tvWinMessage: initialTexts.tvWinMessage,
+      tvWinSubtitle: initialTexts.tvWinSubtitle,
+      tvLoseMessage: initialTexts.tvLoseMessage,
+      tvLoseSubtitle: initialTexts.tvLoseSubtitle,
+      tvSpinningMessage: initialTexts.tvSpinningMessage,
+      tvIdleTitle: initialTexts.tvIdleTitle,
+      tvIdleDescription: initialTexts.tvIdleDescription,
+      tvDemoBadgeText: initialTexts.tvDemoBadgeText,
+      tvDemoButtonText: initialTexts.tvDemoButtonText,
+      tvFooterByline: initialTexts.tvFooterByline,
+      tvBuildLabel: initialTexts.tvBuildLabel,
+      mobileWinMessage: initialTexts.mobileWinMessage,
+      mobileWinSubtitle: initialTexts.mobileWinSubtitle,
+      mobileLoseMessage: initialTexts.mobileLoseMessage,
+      mobileLoseSubtitle: initialTexts.mobileLoseSubtitle,
+      mobileCloseHint: initialTexts.mobileCloseHint,
+      registrationDescription: initialTexts.registrationDescription,
+      registrationSubmitText: initialTexts.registrationSubmitText,
+      demoModeTitle: initialTexts.demoModeTitle,
+      demoModeDescription: initialTexts.demoModeDescription,
+      validatingTitle: initialTexts.validatingTitle,
+      readyTitle: initialTexts.readyTitle,
+      readySubtitle: initialTexts.readySubtitle,
+      spinButtonText: initialTexts.spinButtonText,
+      spinningTitle: initialTexts.spinningTitle,
+      spinningSubtitle: initialTexts.spinningSubtitle,
+      alreadyPlayedTitle: initialTexts.alreadyPlayedTitle,
+      alreadyPlayedSubtitle: initialTexts.alreadyPlayedSubtitle,
+      errorTitle: initialTexts.errorTitle,
+      errorRetryButtonText: initialTexts.errorRetryButtonText,
+      formNameLabel: initialTexts.formNameLabel,
+      formNamePlaceholder: initialTexts.formNamePlaceholder,
+      formEmailLabel: initialTexts.formEmailLabel,
+      formEmailPlaceholder: initialTexts.formEmailPlaceholder,
+      formBirthdateLabel: initialTexts.formBirthdateLabel,
+      formBirthdatePlaceholder: initialTexts.formBirthdatePlaceholder,
+      formPhoneLabel: initialTexts.formPhoneLabel,
+      formPhonePlaceholder: initialTexts.formPhonePlaceholder,
+      instagramCheckboxLabel: initialTexts.instagramCheckboxLabel,
+      nameValidationMessage: initialTexts.nameValidationMessage,
+      emailValidationMessage: initialTexts.emailValidationMessage,
+      phoneValidationMessage: initialTexts.phoneValidationMessage,
+      birthdateValidationMessage: initialTexts.birthdateValidationMessage,
+      instagramValidationMessage: initialTexts.instagramValidationMessage,
+      configErrorMessage: initialTexts.configErrorMessage,
+      notFoundMessage: initialTexts.notFoundMessage,
+      loadErrorMessage: initialTexts.loadErrorMessage,
+      dbUnavailableMessage: initialTexts.dbUnavailableMessage,
       wheelScale: initialGame.wheelScale || 1,
       rouletteVerticalOffset: initialGame.rouletteVerticalOffset || 0,
       qrVerticalOffset: initialGame.qrVerticalOffset || 0,
@@ -495,9 +502,13 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       if (docSnap.exists()) {
         const data = docSnap.data() as Game;
         const segmentsData = data.segments && data.segments.length > 0 ? data.segments.map(s => ({...getDefaultSegment(''), ...s, id: s.id || generateUniqueId()})) : [getDefaultSegment('Premio 1'), getDefaultSegment('No Ganas')];
+        const lang = data.language || 'es';
+        const textsRaw = (data as any)[`texts_${lang}`] || extractGameTextOverrides(data);
+        const mergedTexts = mergeGameTexts(textsRaw, lang);
         const formValues = {
           name: data.name || '',
           status: data.status || 'demo',
+          language: lang,
           clientName: data.clientName || '',
           clientEmail: data.clientEmail || '',
           clientPhone: data.clientPhone || '',
@@ -515,66 +526,66 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
           mobileBackgroundImage: data.mobileBackgroundImage || '',
           mobileBackgroundVideo: data.mobileBackgroundVideo || '',
           mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
-          registrationTitle: data.registrationTitle || defaultGameTexts.registrationTitle,
-          registrationSubtitle: data.registrationSubtitle || defaultGameTexts.registrationSubtitle,
-          registrationPageTitle: data.registrationPageTitle || defaultGameTexts.registrationPageTitle,
-          registrationPageSubtitle: data.registrationPageSubtitle || defaultGameTexts.registrationPageSubtitle,
+          registrationTitle: mergedTexts.registrationTitle,
+          registrationSubtitle: mergedTexts.registrationSubtitle,
+          registrationPageTitle: mergedTexts.registrationPageTitle,
+          registrationPageSubtitle: mergedTexts.registrationPageSubtitle,
           isPhoneRequired: data.isPhoneRequired || false,
           isBirthdateRequired: data.isBirthdateRequired ?? true,
-          successMessage: data.successMessage || defaultGameTexts.successMessage,
+          successMessage: mergedTexts.successMessage,
           qrCodeScale: data.qrCodeScale || 1,
           rouletteScale: data.rouletteScale || 1,
           wheelScale: data.wheelScale || 1,
           rouletteVerticalOffset: data.rouletteVerticalOffset || 0,
           qrVerticalOffset: data.qrVerticalOffset || 0,
-          tvWinMessage: data.tvWinMessage || defaultGameTexts.tvWinMessage,
-          tvWinSubtitle: data.tvWinSubtitle || defaultGameTexts.tvWinSubtitle,
-          tvLoseMessage: data.tvLoseMessage || defaultGameTexts.tvLoseMessage,
-          tvLoseSubtitle: data.tvLoseSubtitle || defaultGameTexts.tvLoseSubtitle,
-          tvSpinningMessage: data.tvSpinningMessage || defaultGameTexts.tvSpinningMessage,
-          tvIdleTitle: data.tvIdleTitle || defaultGameTexts.tvIdleTitle,
-          tvIdleDescription: data.tvIdleDescription || defaultGameTexts.tvIdleDescription,
-          tvDemoBadgeText: data.tvDemoBadgeText || defaultGameTexts.tvDemoBadgeText,
-          tvDemoButtonText: data.tvDemoButtonText || defaultGameTexts.tvDemoButtonText,
-          tvFooterByline: data.tvFooterByline || defaultGameTexts.tvFooterByline,
-          tvBuildLabel: data.tvBuildLabel || defaultGameTexts.tvBuildLabel,
-          mobileWinMessage: data.mobileWinMessage || defaultGameTexts.mobileWinMessage,
-          mobileWinSubtitle: data.mobileWinSubtitle || defaultGameTexts.mobileWinSubtitle,
-          mobileLoseMessage: data.mobileLoseMessage || defaultGameTexts.mobileLoseMessage,
-          mobileLoseSubtitle: data.mobileLoseSubtitle || defaultGameTexts.mobileLoseSubtitle,
-          mobileCloseHint: data.mobileCloseHint || defaultGameTexts.mobileCloseHint,
-          registrationDescription: data.registrationDescription || defaultGameTexts.registrationDescription,
-          registrationSubmitText: data.registrationSubmitText || defaultGameTexts.registrationSubmitText,
-          demoModeTitle: data.demoModeTitle || defaultGameTexts.demoModeTitle,
-          demoModeDescription: data.demoModeDescription || defaultGameTexts.demoModeDescription,
-          validatingTitle: data.validatingTitle || defaultGameTexts.validatingTitle,
-          readyTitle: data.readyTitle || defaultGameTexts.readyTitle,
-          readySubtitle: data.readySubtitle || defaultGameTexts.readySubtitle,
-          spinButtonText: data.spinButtonText || defaultGameTexts.spinButtonText,
-          spinningTitle: data.spinningTitle || defaultGameTexts.spinningTitle,
-          spinningSubtitle: data.spinningSubtitle || defaultGameTexts.spinningSubtitle,
-          alreadyPlayedTitle: data.alreadyPlayedTitle || defaultGameTexts.alreadyPlayedTitle,
-          alreadyPlayedSubtitle: data.alreadyPlayedSubtitle || defaultGameTexts.alreadyPlayedSubtitle,
-          errorTitle: data.errorTitle || defaultGameTexts.errorTitle,
-          errorRetryButtonText: data.errorRetryButtonText || defaultGameTexts.errorRetryButtonText,
-          formNameLabel: data.formNameLabel || defaultGameTexts.formNameLabel,
-          formNamePlaceholder: data.formNamePlaceholder || defaultGameTexts.formNamePlaceholder,
-          formEmailLabel: data.formEmailLabel || defaultGameTexts.formEmailLabel,
-          formEmailPlaceholder: data.formEmailPlaceholder || defaultGameTexts.formEmailPlaceholder,
-          formBirthdateLabel: data.formBirthdateLabel || defaultGameTexts.formBirthdateLabel,
-          formBirthdatePlaceholder: data.formBirthdatePlaceholder || defaultGameTexts.formBirthdatePlaceholder,
-          formPhoneLabel: data.formPhoneLabel || defaultGameTexts.formPhoneLabel,
-          formPhonePlaceholder: data.formPhonePlaceholder || defaultGameTexts.formPhonePlaceholder,
-          instagramCheckboxLabel: data.instagramCheckboxLabel || defaultGameTexts.instagramCheckboxLabel,
-          nameValidationMessage: data.nameValidationMessage || defaultGameTexts.nameValidationMessage,
-          emailValidationMessage: data.emailValidationMessage || defaultGameTexts.emailValidationMessage,
-          phoneValidationMessage: data.phoneValidationMessage || defaultGameTexts.phoneValidationMessage,
-          birthdateValidationMessage: data.birthdateValidationMessage || defaultGameTexts.birthdateValidationMessage,
-          instagramValidationMessage: data.instagramValidationMessage || defaultGameTexts.instagramValidationMessage,
-          configErrorMessage: data.configErrorMessage || defaultGameTexts.configErrorMessage,
-          notFoundMessage: data.notFoundMessage || defaultGameTexts.notFoundMessage,
-          loadErrorMessage: data.loadErrorMessage || defaultGameTexts.loadErrorMessage,
-          dbUnavailableMessage: data.dbUnavailableMessage || defaultGameTexts.dbUnavailableMessage,
+          tvWinMessage: mergedTexts.tvWinMessage,
+          tvWinSubtitle: mergedTexts.tvWinSubtitle,
+          tvLoseMessage: mergedTexts.tvLoseMessage,
+          tvLoseSubtitle: mergedTexts.tvLoseSubtitle,
+          tvSpinningMessage: mergedTexts.tvSpinningMessage,
+          tvIdleTitle: mergedTexts.tvIdleTitle,
+          tvIdleDescription: mergedTexts.tvIdleDescription,
+          tvDemoBadgeText: mergedTexts.tvDemoBadgeText,
+          tvDemoButtonText: mergedTexts.tvDemoButtonText,
+          tvFooterByline: mergedTexts.tvFooterByline,
+          tvBuildLabel: mergedTexts.tvBuildLabel,
+          mobileWinMessage: mergedTexts.mobileWinMessage,
+          mobileWinSubtitle: mergedTexts.mobileWinSubtitle,
+          mobileLoseMessage: mergedTexts.mobileLoseMessage,
+          mobileLoseSubtitle: mergedTexts.mobileLoseSubtitle,
+          mobileCloseHint: mergedTexts.mobileCloseHint,
+          registrationDescription: mergedTexts.registrationDescription,
+          registrationSubmitText: mergedTexts.registrationSubmitText,
+          demoModeTitle: mergedTexts.demoModeTitle,
+          demoModeDescription: mergedTexts.demoModeDescription,
+          validatingTitle: mergedTexts.validatingTitle,
+          readyTitle: mergedTexts.readyTitle,
+          readySubtitle: mergedTexts.readySubtitle,
+          spinButtonText: mergedTexts.spinButtonText,
+          spinningTitle: mergedTexts.spinningTitle,
+          spinningSubtitle: mergedTexts.spinningSubtitle,
+          alreadyPlayedTitle: mergedTexts.alreadyPlayedTitle,
+          alreadyPlayedSubtitle: mergedTexts.alreadyPlayedSubtitle,
+          errorTitle: mergedTexts.errorTitle,
+          errorRetryButtonText: mergedTexts.errorRetryButtonText,
+          formNameLabel: mergedTexts.formNameLabel,
+          formNamePlaceholder: mergedTexts.formNamePlaceholder,
+          formEmailLabel: mergedTexts.formEmailLabel,
+          formEmailPlaceholder: mergedTexts.formEmailPlaceholder,
+          formBirthdateLabel: mergedTexts.formBirthdateLabel,
+          formBirthdatePlaceholder: mergedTexts.formBirthdatePlaceholder,
+          formPhoneLabel: mergedTexts.formPhoneLabel,
+          formPhonePlaceholder: mergedTexts.formPhonePlaceholder,
+          instagramCheckboxLabel: mergedTexts.instagramCheckboxLabel,
+          nameValidationMessage: mergedTexts.nameValidationMessage,
+          emailValidationMessage: mergedTexts.emailValidationMessage,
+          phoneValidationMessage: mergedTexts.phoneValidationMessage,
+          birthdateValidationMessage: mergedTexts.birthdateValidationMessage,
+          instagramValidationMessage: mergedTexts.instagramValidationMessage,
+          configErrorMessage: mergedTexts.configErrorMessage,
+          notFoundMessage: mergedTexts.notFoundMessage,
+          loadErrorMessage: mergedTexts.loadErrorMessage,
+          dbUnavailableMessage: mergedTexts.dbUnavailableMessage,
           config: {
             borderImage: data.config?.borderImage || data.borderImage || 'https://i.imgur.com/J62nHj9.png',
             borderScale: data.config?.borderScale || data.borderScale || 1,
@@ -687,7 +698,63 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
 
       const formData = JSON.parse(JSON.stringify(data));
       const dirtyFields = Object.keys(form.formState.dirtyFields);
-      
+      const language = formData.language || 'es';
+      const textBundle = {
+        registrationTitle: formData.registrationTitle,
+        registrationSubtitle: formData.registrationSubtitle,
+        registrationPageTitle: formData.registrationPageTitle,
+        registrationPageSubtitle: formData.registrationPageSubtitle,
+        registrationDescription: formData.registrationDescription,
+        registrationSubmitText: formData.registrationSubmitText,
+        successMessage: formData.successMessage,
+        demoModeTitle: formData.demoModeTitle,
+        demoModeDescription: formData.demoModeDescription,
+        validatingTitle: formData.validatingTitle,
+        readyTitle: formData.readyTitle,
+        readySubtitle: formData.readySubtitle,
+        spinButtonText: formData.spinButtonText,
+        spinningTitle: formData.spinningTitle,
+        spinningSubtitle: formData.spinningSubtitle,
+        tvWinMessage: formData.tvWinMessage,
+        tvWinSubtitle: formData.tvWinSubtitle,
+        tvLoseMessage: formData.tvLoseMessage,
+        tvLoseSubtitle: formData.tvLoseSubtitle,
+        tvSpinningMessage: formData.tvSpinningMessage,
+        tvIdleTitle: formData.tvIdleTitle,
+        tvIdleDescription: formData.tvIdleDescription,
+        tvDemoBadgeText: formData.tvDemoBadgeText,
+        tvDemoButtonText: formData.tvDemoButtonText,
+        tvFooterByline: formData.tvFooterByline,
+        tvBuildLabel: formData.tvBuildLabel,
+        mobileWinMessage: formData.mobileWinMessage,
+        mobileWinSubtitle: formData.mobileWinSubtitle,
+        mobileLoseMessage: formData.mobileLoseMessage,
+        mobileLoseSubtitle: formData.mobileLoseSubtitle,
+        mobileCloseHint: formData.mobileCloseHint,
+        alreadyPlayedTitle: formData.alreadyPlayedTitle,
+        alreadyPlayedSubtitle: formData.alreadyPlayedSubtitle,
+        errorTitle: formData.errorTitle,
+        errorRetryButtonText: formData.errorRetryButtonText,
+        formNameLabel: formData.formNameLabel,
+        formNamePlaceholder: formData.formNamePlaceholder,
+        formEmailLabel: formData.formEmailLabel,
+        formEmailPlaceholder: formData.formEmailPlaceholder,
+        formBirthdateLabel: formData.formBirthdateLabel,
+        formBirthdatePlaceholder: formData.formBirthdatePlaceholder,
+        formPhoneLabel: formData.formPhoneLabel,
+        formPhonePlaceholder: formData.formPhonePlaceholder,
+        instagramCheckboxLabel: formData.instagramCheckboxLabel,
+        nameValidationMessage: formData.nameValidationMessage,
+        emailValidationMessage: formData.emailValidationMessage,
+        phoneValidationMessage: formData.phoneValidationMessage,
+        birthdateValidationMessage: formData.birthdateValidationMessage,
+        instagramValidationMessage: formData.instagramValidationMessage,
+        configErrorMessage: formData.configErrorMessage,
+        notFoundMessage: formData.notFoundMessage,
+        loadErrorMessage: formData.loadErrorMessage,
+        dbUnavailableMessage: formData.dbUnavailableMessage,
+      } as Partial<Game>;
+
       // Solo incluir los campos que realmente han cambiado
       const updateData: Partial<Game> = {};
       dirtyFields.forEach(field => {
@@ -695,13 +762,16 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
           updateData.exemptedEmails = emailList;
         } else if (field !== 'segmentsJson') {
           if (field === 'config') {
-            // Asegurarnos de que las imágenes y escalas se guardan correctamente
             updateData.config = formData.config;
           } else {
             updateData[field] = formData[field];
           }
         }
       });
+
+      updateData.language = language as any;
+      updateData[`texts_${language}`] = textBundle as any;
+      Object.assign(updateData, textBundle);
 
       await updateDoc(gameRef, updateData);
 
@@ -855,6 +925,29 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                 <FormControl>
                                   <Input {...field} disabled={loading || !userRole.isSuperAdmin} />
                                 </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="language"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Idioma del juego</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecciona un idioma" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="es">Español</SelectItem>
+                                      <SelectItem value="en">English</SelectItem>
+                                      <SelectItem value="pt">Português</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormDescription>Define el idioma único de este juego.</FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}

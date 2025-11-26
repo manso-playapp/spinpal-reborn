@@ -19,7 +19,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Checkbox } from '../ui/checkbox';
 import Link from 'next/link';
 import { Separator } from '../ui/separator';
-import { defaultGameTexts, extractGameTextOverrides, mergeGameTexts, GameTextConfig } from '@/lib/textDefaults';
+import { extractGameTextOverrides, mergeGameTexts, GameTextConfig, getDefaultTexts } from '@/lib/textDefaults';
 
 
 // Always include all possible fields, with optional as needed
@@ -43,12 +43,23 @@ interface GameData {
     segments: any[];
     instagramProfile?: string;
     texts: GameTextConfig;
+    language: 'es' | 'en' | 'pt';
 }
 
 interface SpinResult {
     name: string;
     isRealPrize: boolean;
 }
+
+const getLocalizedPrizeName = (segment: any, lang: 'es' | 'en' | 'pt') => {
+    return (
+        segment?.[`formalName_${lang}`] ||
+        segment?.[`name_${lang}`] ||
+        segment?.formalName ||
+        segment?.name ||
+        ''
+    );
+};
 
 // 1. REGISTRO (FORM) -> 2. GIRO (READY) -> 3. SUERTE (SPINNING) -> 4. CIERRE (SUCCESS)
 type UiState = 'LOADING' | 'FORM' | 'SUBMITTING' | 'ALREADY_PLAYED' | 'ERROR' | 'READY' | 'SPINNING' | 'SUCCESS';
@@ -58,14 +69,14 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     const { toast } = useToast();
     const [uiState, setUiState] = useState<UiState>('LOADING');
     const [gameData, setGameData] = useState<GameData | null>(null);
-    const [errorMessage, setErrorMessage] = useState(defaultGameTexts.loadErrorMessage);
+    const [errorMessage, setErrorMessage] = useState(getDefaultTexts().loadErrorMessage);
     const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
     const [customerId, setCustomerId] = useState<string | null>(null);
-    const texts = useMemo(() => mergeGameTexts(gameData?.texts || {}), [gameData]);
+    const texts = useMemo(() => mergeGameTexts(gameData?.texts || {}, gameData?.language || 'es'), [gameData]);
     
 
     // dynamicSchema is always the same shape, but we add conditional validation with .superRefine
-    const [dynamicSchema, setDynamicSchema] = useState<z.ZodTypeAny>(() => getBaseSchema(defaultGameTexts));
+    const [dynamicSchema, setDynamicSchema] = useState<z.ZodTypeAny>(() => getBaseSchema(getDefaultTexts()));
 
     const form = useForm<RegistrationFormValues>({
         resolver: zodResolver(dynamicSchema),
@@ -74,7 +85,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
 
             useEffect(() => {
                     if (!db) {
-                            setErrorMessage(defaultGameTexts.dbUnavailableMessage);
+                            setErrorMessage(getDefaultTexts().dbUnavailableMessage);
                             setUiState('ERROR');
                             return;
                     }
@@ -82,8 +93,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     const unsubscribe = onSnapshot(gameRef, (docSnap) => {
                             if (docSnap.exists()) {
                                     const data = docSnap.data();
-                                    const textOverrides = extractGameTextOverrides(data);
-                                    const mergedTexts = mergeGameTexts(textOverrides);
+                                    const lang = (data.language as 'es' | 'en' | 'pt') || 'es';
+                                    const textsFromDb = data[`texts_${lang}`] || extractGameTextOverrides(data);
+                                    const mergedTexts = mergeGameTexts(textsFromDb, lang);
                                     const isPhoneRequired = !!data.isPhoneRequired;
                                     const isBirthdateRequired = data.isBirthdateRequired !== false;
                                     const segments = data.segments || [];
@@ -104,6 +116,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                             segments: segments,
                                             instagramProfile: instagramProfile,
                                             texts: mergedTexts,
+                                            language: lang,
                                     };
                                     setGameData(newGameData);
 
@@ -138,12 +151,12 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     }
 
                             } else {
-                setErrorMessage(defaultGameTexts.notFoundMessage);
+                setErrorMessage(getDefaultTexts().notFoundMessage);
                 setUiState('ERROR');
             }
         }, (error) => {
             console.error("Error fetching game data:", error);
-            setErrorMessage(defaultGameTexts.loadErrorMessage);
+            setErrorMessage(getDefaultTexts().loadErrorMessage);
             setUiState('ERROR');
         });
 
@@ -229,7 +242,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
             if (!winningSegment || typeof winningSegment.id !== 'string') throw new Error('No se pudo determinar un premio ganador válido.');
             const winningSegmentIndex = gameData.segments.findIndex((s) => s.id === winningSegment.id);
 
-            const prizeNameToDisplay = (winningSegment && (winningSegment.formalName || winningSegment.name)) || '';
+            const lang = gameData.language || 'es';
+            const prizeNameToDisplay = getLocalizedPrizeName(winningSegment, lang);
             const result = { name: prizeNameToDisplay, isRealPrize: !!winningSegment.isRealPrize };
             setSpinResult(result);
 
@@ -265,7 +279,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                     fetch('/api/notify-prize', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ gameId, customerId, prizeName: prizeNameToDisplay })
+                        body: JSON.stringify({ gameId, customerId, prizeName: prizeNameToDisplay, language: gameData.language })
                     }).catch(() => {});
                 } catch (_) {
                     // No bloquear el flujo por errores de red

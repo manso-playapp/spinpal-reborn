@@ -84,13 +84,18 @@ async function getGameData(id: string) {
     return null;
   }
   const data = gameSnap.data();
-  const mergedTexts = mergeGameTexts(extractGameTextOverrides(data));
+  const lang = (data.language as 'es' | 'en' | 'pt') || 'es';
+  const mergedTexts = mergeGameTexts(data[`texts_${lang}`] || extractGameTextOverrides(data), lang);
   return { 
     id: gameSnap.id, 
     name: data.name || "Juego sin nombre",
+    language: lang,
     registrationTitle: mergedTexts.registrationTitle,
     registrationSubtitle: mergedTexts.registrationSubtitle,
     texts: mergedTexts,
+    texts_es: data.texts_es || null,
+    texts_en: data.texts_en || null,
+    texts_pt: data.texts_pt || null,
     mobileBackgroundImage: data.mobileBackgroundImage || '',
     mobileBackgroundVideo: data.mobileBackgroundVideo || '',
     mobileBackgroundFit: data.mobileBackgroundFit || 'cover',
