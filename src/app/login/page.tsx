@@ -19,10 +19,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useAdminI18n } from '@/context/AdminI18nContext';
-import { AdminI18nProvider } from '@/context/AdminI18nContext';
+import { useAdminI18n, AdminI18nProvider } from '@/context/AdminI18nContext';
 
-export default function LoginPage() {
+function LoginInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -81,58 +80,64 @@ export default function LoginPage() {
   };
 
   return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-sm shadow-lg">
+        <form onSubmit={handleLogin}>
+          <CardHeader>
+            <CardTitle className="font-headline text-2xl">{tLogin('loginTitle')}</CardTitle>
+            <CardDescription>
+              {tLogin('loginSubtitle')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!auth && (
+                 <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>{tLogin('loginConfigTitle')}</AlertTitle>
+                    <AlertDescription>
+                        {tLogin('loginConfigDescription')} <Link href="/admin/conexiones" className="font-bold underline">Conexiones</Link>
+                    </AlertDescription>
+                </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">{tLogin('loginEmailLabel')}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder={tLogin('loginEmailPlaceholder')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading || !auth}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{tLogin('loginPasswordLabel')}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading || !auth}
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={loading || !auth}>
+              {loading ? tLogin('loginLoading') : tLogin('loginSubmit')}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <AdminI18nProvider>
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-sm shadow-lg">
-          <form onSubmit={handleLogin}>
-            <CardHeader>
-              <CardTitle className="font-headline text-2xl">{tLogin('loginTitle')}</CardTitle>
-              <CardDescription>
-                {tLogin('loginSubtitle')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!auth && (
-                   <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>{tLogin('loginConfigTitle')}</AlertTitle>
-                      <AlertDescription>
-                          {tLogin('loginConfigDescription')} <Link href="/admin/conexiones" className="font-bold underline">Conexiones</Link>
-                      </AlertDescription>
-                  </Alert>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">{tLogin('loginEmailLabel')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={tLogin('loginEmailPlaceholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading || !auth}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">{tLogin('loginPasswordLabel')}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  disabled={loading || !auth}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={loading || !auth}>
-                {loading ? tLogin('loginLoading') : tLogin('loginSubmit')}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
+      <LoginInner />
     </AdminI18nProvider>
   );
 }
