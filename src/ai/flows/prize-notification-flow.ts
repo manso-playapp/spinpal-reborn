@@ -8,6 +8,7 @@
  * - PrizeNotificationOutput - The return type for the sendPrizeNotification function.
  */
 
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
