@@ -402,7 +402,6 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
   const applyDefaultsForLang = (lang: 'es' | 'en' | 'pt') => {
     const defaults = getDefaultTexts(lang);
     textFields.forEach((fieldName) => {
-      // @ts-expect-error dynamic field names
       form.setValue(fieldName, defaults[fieldName]);
     });
   };
