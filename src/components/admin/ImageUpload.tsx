@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,21 @@ export function ImageUpload({ fieldName }: ImageUploadProps) {
   const { toast } = useToast();
   const imageUrl = watch(fieldName);
   const [isValidating, setIsValidating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [inputValue, setInputValue] = useState(imageUrl || '');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setInputValue(imageUrl || '');
+  }, [imageUrl]);
+
+  const inferFolder = () => {
+    if (fieldName.includes('border')) return 'border';
+    if (fieldName.includes('center')) return 'center';
+    if (fieldName.includes('mobile')) return 'mobile';
+    if (fieldName.includes('background')) return 'background';
+    return 'raw';
+  };
 
   const validateAndSetImage = async (url: string) => {
     // Si la URL está vacía, simplemente limpiamos el campo sin mostrar error
@@ -60,15 +75,90 @@ export function ImageUpload({ fieldName }: ImageUploadProps) {
     setValue(fieldName, '', { shouldDirty: true, shouldValidate: true });
   };
 
+  const handleFileUpload = async (file: File) => {
+    const maxSizeMB = 8;
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: 'destructive', title: 'Archivo no válido', description: 'Solo se permiten imágenes (png, jpg, webp, svg).' });
+      return;
+    }
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'Archivo muy grande', description: `Máximo ${maxSizeMB} MB.` });
+      return;
+    }
+
+    setIsUploading(true);
+    const fileNameSafe = file.name.replace(/\s+/g, '-').toLowerCase();
+    const contentType = file.type || 'application/octet-stream';
+    const folder = inferFolder();
+
+    try {
+      const res = await fetch('/api/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: fileNameSafe, contentType, folder }),
+      });
+
+      if (!res.ok) {
+        throw new Error('No se pudo generar la URL de carga');
+      }
+
+      const { signedUrl, publicUrl } = await res.json();
+      const uploadRes = await fetch(signedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': contentType },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Falló la subida a Supabase');
+      }
+
+      setValue(fieldName, publicUrl, { shouldDirty: true, shouldValidate: true });
+      toast({ title: 'Imagen subida', description: 'Se guardó la URL pública.' });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({ variant: 'destructive', title: 'No se pudo subir la imagen', description: error?.message || 'Intenta nuevamente.' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+    // reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <Input
-          value={imageUrl || ''}
-          onChange={(e) => validateAndSetImage(e.target.value)}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onBlur={() => validateAndSetImage(inputValue)}
           placeholder="Pega una URL externa de imagen"
-          disabled={isValidating}
+          disabled={isValidating || isUploading}
         />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onFileChange}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isUploading}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {isUploading ? 'Subiendo...' : 'Subir'}
+        </Button>
       </div>
       {imageUrl && (
         <div className="relative group w-48 h-48 border rounded-md p-2 bg-muted/50 flex items-center justify-center">

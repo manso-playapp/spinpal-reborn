@@ -280,7 +280,7 @@ export default function GameClientPage({ initialGame }: { initialGame: GameData 
         case 'IDLE':
         default:
              return (
-                <Card className="shadow-lg bg-black/10 backdrop-blur-sm border-white/20 text-white animate-in fade-in">
+                <Card className="shadow-lg bg-black/50 backdrop-blur-md border-white/20 text-white animate-in fade-in">
                     <CardHeader>
                     <CardTitle className="font-headline text-2xl flex items-center justify-center">
                         {texts.tvIdleTitle}
