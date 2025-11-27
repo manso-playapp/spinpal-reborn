@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabaseAdmin.storage
     .from(bucket)
-    .createSignedUploadUrl(path, 60); // 60s para usarla
+    .createSignedUploadUrl(path, { expiresIn: 60, upsert: false }); // 60s para usarla
 
   if (error || !data) {
     return NextResponse.json({ error: error?.message || 'Failed to create signed upload URL' }, { status: 500 });
