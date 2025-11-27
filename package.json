@@ -42,6 +42,7 @@
     "@radix-ui/react-tabs": "latest",
     "@radix-ui/react-toast": "latest",
     "@radix-ui/react-tooltip": "latest",
+    "@supabase/supabase-js": "^2.86.0",
     "@tanstack/react-table": "latest",
     "class-variance-authority": "latest",
     "clsx": "latest",

@@ -20,11 +20,13 @@ import GameClientPage from '@/app/game/GameClientPage';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, DocumentData } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
+import { mergeGameTexts, extractGameTextOverrides } from '@/lib/textDefaults';
 
 interface GameData extends DocumentData {
   id: string;
   name: string;
   status: string;
+  language?: 'es' | 'en' | 'pt';
   segments: any[];
   backgroundImage: string;
   backgroundVideo?: string;
@@ -43,6 +45,11 @@ interface GameData extends DocumentData {
     strokeWidth?: number;
     strokeColor?: string;
   };
+  texts_es?: any;
+  texts_en?: any;
+  texts_pt?: any;
+  registrationTitle?: string;
+  registrationSubtitle?: string;
 }
 
 async function getGameData(id: string): Promise<GameData | null> {
@@ -62,6 +69,8 @@ async function getGameData(id: string): Promise<GameData | null> {
     }
 
     const data = gameSnap.data();
+    const lang = (data.language as 'es' | 'en' | 'pt') || 'es';
+    const mergedTexts = mergeGameTexts(data[`texts_${lang}`] || extractGameTextOverrides(data), lang);
     
     // Asegurarnos de que las URLs son absolutas y completas
     const ensureAbsoluteUrl = (url: string) => {
@@ -83,6 +92,7 @@ async function getGameData(id: string): Promise<GameData | null> {
       id: gameSnap.id,
       name: data.name || 'Juego sin nombre',
       status: data.status || 'demo',
+      language: lang,
       segments: data.segments || [],
       backgroundImage: data.backgroundImage || '',
       backgroundVideo: data.backgroundVideo || '',
@@ -100,7 +110,12 @@ async function getGameData(id: string): Promise<GameData | null> {
         centerScale: data.config?.centerScale || 1,
         strokeWidth: data.config?.strokeWidth ?? 1,
         strokeColor: data.config?.strokeColor || '#000000',
-      }
+      },
+      texts_es: data.texts_es || null,
+      texts_en: data.texts_en || null,
+      texts_pt: data.texts_pt || null,
+      registrationTitle: mergedTexts.registrationTitle,
+      registrationSubtitle: mergedTexts.registrationSubtitle,
     };
 
     return sanitizedData;
