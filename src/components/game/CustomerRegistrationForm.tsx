@@ -24,9 +24,9 @@ import { extractGameTextOverrides, mergeGameTexts, GameTextConfig, getDefaultTex
 
 // Always include all possible fields, with optional as needed
 
-const getBaseSchema = (texts: GameTextConfig) => z.object({
+const getBaseSchema = (texts: GameTextConfig, collectData = true) => z.object({
     name: z.string().min(2, { message: texts.nameValidationMessage }),
-    email: z.string().email({ message: texts.emailValidationMessage }),
+    email: collectData ? z.string().email({ message: texts.emailValidationMessage }) : z.string().optional(),
     phone: z.string().optional(),
     birthdate: z.string().optional(),
     confirmFollow: z.boolean().optional(),
@@ -37,6 +37,7 @@ type RegistrationFormValues = z.infer<ReturnType<typeof getBaseSchema>>;
 interface GameData {
     isDemoMode: boolean;
     exemptedEmails: string[];
+    collectData: boolean;
     isPhoneRequired: boolean;
     isBirthdateRequired: boolean;
     successMessage: string;
@@ -59,6 +60,15 @@ const getLocalizedPrizeName = (segment: any, lang: 'es' | 'en' | 'pt') => {
         segment?.name ||
         ''
     );
+};
+
+// Sin toma de datos no hay email para detectar repetidos: se marca el dispositivo.
+const deviceKey = (gameId: string) => `spinpal-played-${gameId}`;
+const hasPlayedOnDevice = (gameId: string) => {
+    try { return !!localStorage.getItem(deviceKey(gameId)); } catch { return false; }
+};
+const markPlayedOnDevice = (gameId: string) => {
+    try { localStorage.setItem(deviceKey(gameId), '1'); } catch { /* sin storage: no se bloquea */ }
 };
 
 // 1. REGISTRO (FORM) -> 2. GIRO (READY) -> 3. SUERTE (SPINNING) -> 4. CIERRE (SUCCESS)
@@ -96,8 +106,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     const lang = (data.language as 'es' | 'en' | 'pt') || 'es';
                                     const textsFromDb = data[`texts_${lang}`] || extractGameTextOverrides(data);
                                     const mergedTexts = mergeGameTexts(textsFromDb, lang);
-                                    const isPhoneRequired = !!data.isPhoneRequired;
-                                    const isBirthdateRequired = data.isBirthdateRequired !== false;
+                                    const collectData = data.collectData !== false;
+                                    const isPhoneRequired = collectData && !!data.isPhoneRequired;
+                                    const isBirthdateRequired = collectData && data.isBirthdateRequired !== false;
                                     const segments = data.segments || [];
                                     const instagramProfile = data.instagramProfile || '';
 
@@ -110,6 +121,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     const newGameData: GameData = {
                                             isDemoMode: data.status === 'demo',
                                             exemptedEmails: data.exemptedEmails || [],
+                                            collectData,
                                             isPhoneRequired: isPhoneRequired,
                                             isBirthdateRequired,
                                             successMessage: mergedTexts.successMessage,
@@ -121,7 +133,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     setGameData(newGameData);
 
                                     // Always use the same shape, but add conditional validation
-                                    const conditionalSchema = getBaseSchema(mergedTexts).superRefine((values, ctx) => {
+                                    const conditionalSchema = getBaseSchema(mergedTexts, collectData).superRefine((values, ctx) => {
                                         if (isPhoneRequired && (!values.phone || values.phone.length < 6)) {
                                             ctx.addIssue({
                                                 code: z.ZodIssueCode.custom,
@@ -147,7 +159,8 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     setDynamicSchema(conditionalSchema);
 
                                     if (uiState === 'LOADING') {
-                                            setUiState('FORM');
+                                            const playedOnDevice = !collectData && data.status !== 'demo' && hasPlayedOnDevice(gameId);
+                                            setUiState(playedOnDevice ? 'ALREADY_PLAYED' : 'FORM');
                                     }
 
                             } else {
@@ -168,9 +181,9 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     const handleRegistration = async (formData: RegistrationFormValues) => {
         if (!gameData || !db) return;
         setUiState('SUBMITTING');
-        const submittedEmail = formData.email.toLowerCase().trim();
+        const submittedEmail = (formData.email || '').toLowerCase().trim();
 
-        if (!gameData.isDemoMode && !gameData.exemptedEmails.includes(submittedEmail)) {
+        if (gameData.collectData && !gameData.isDemoMode && !gameData.exemptedEmails.includes(submittedEmail)) {
             const q = query(collection(db, 'games', gameId, 'customers'), where("email", "==", submittedEmail), limit(1));
             const querySnapshot = await getDocs(q);
             if (!querySnapshot.empty) {
@@ -187,8 +200,10 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 birthdate: formData.birthdate || '',
                 registeredAt: serverTimestamp(),
                 hasPlayed: false,
+                collectData: gameData.collectData,
             });
             
+            if (!gameData.collectData && !gameData.isDemoMode) markPlayedOnDevice(gameId);
             setCustomerId(newCustomerRef.id);
             setUiState('READY'); // -> Pasa a la pantalla de GIRO (Paso 2)
 
@@ -273,7 +288,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 throw new Error(result.message || 'Error al actualizar el giro.');
             }
 
-            if (winningSegment.isRealPrize) {
+            if (winningSegment.isRealPrize && gameData.collectData) {
                 // Disparar notificación de premio vía API (server-side)
                 try {
                     fetch('/api/notify-prize', {
@@ -336,9 +351,11 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     <FormField control={form.control} name="name" render={({ field }) => (
                                         <FormItem><FormLabel>{texts.formNameLabel}</FormLabel><FormControl><Input placeholder={texts.formNamePlaceholder} {...field} /></FormControl><FormMessage /></FormItem>
                                     )} />
-                                    <FormField control={form.control} name="email" render={({ field }) => (
-                                        <FormItem><FormLabel>{texts.formEmailLabel}</FormLabel><FormControl><Input type="email" placeholder={texts.formEmailPlaceholder} {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
+                                    {gameData?.collectData && (
+                                        <FormField control={form.control} name="email" render={({ field }) => (
+                                            <FormItem><FormLabel>{texts.formEmailLabel}</FormLabel><FormControl><Input type="email" placeholder={texts.formEmailPlaceholder} {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    )}
                                     {gameData?.isBirthdateRequired && (
                                         <FormField control={form.control} name="birthdate" render={({ field }) => (
                                             <FormItem>

@@ -174,6 +174,7 @@ const formSchema = z.object({
   mobileBackgroundVideo: z.string().url({ message: 'Por favor, introduce una URL válida.' }).or(z.literal('')).optional(),
   registrationTitle: z.string().optional(),
   registrationSubtitle: z.string().optional(),
+  collectData: z.boolean().optional(),
   isPhoneRequired: z.boolean().optional(),
   isBirthdateRequired: z.boolean().optional(),
   successMessage: z.string().optional(),
@@ -258,6 +259,7 @@ interface Game {
   mobileBackgroundFit?: 'cover' | 'contain' | 'fill' | 'none';
   registrationTitle?: string;
   registrationSubtitle?: string;
+  collectData?: boolean;
   isPhoneRequired?: boolean;
   isBirthdateRequired?: boolean;
   successMessage?: string;
@@ -444,6 +446,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
       registrationSubtitle: initialTexts.registrationSubtitle,
       registrationPageTitle: initialTexts.registrationPageTitle,
       registrationPageSubtitle: initialTexts.registrationPageSubtitle,
+      collectData: initialGame.collectData ?? true,
       isPhoneRequired: initialGame.isPhoneRequired || false,
       isBirthdateRequired: initialGame.isBirthdateRequired ?? true,
       successMessage: initialTexts.successMessage,
@@ -550,6 +553,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
           registrationSubtitle: mergedTexts.registrationSubtitle,
           registrationPageTitle: mergedTexts.registrationPageTitle,
           registrationPageSubtitle: mergedTexts.registrationPageSubtitle,
+          collectData: data.collectData ?? true,
           isPhoneRequired: data.isPhoneRequired || false,
           isBirthdateRequired: data.isBirthdateRequired ?? true,
           successMessage: mergedTexts.successMessage,
@@ -1245,6 +1249,27 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                           />
                           <FormField
                             control={form.control}
+                            name="collectData"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                  <FormLabel className="text-base">Tomar datos</FormLabel>
+                                  <FormDescription>
+                                    Si lo desactivas, solo se pide el nombre, no se envían mails y la jugada queda en la lista de participantes.
+                                  </FormDescription>
+                                </div>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value ?? true}
+                                    onCheckedChange={field.onChange}
+                                    disabled={loading}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
                             name="isPhoneRequired"
                             render={({ field }) => (
                               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
@@ -1258,7 +1283,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                   <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
-                                    disabled={loading}
+                                    disabled={loading || form.watch('collectData') === false}
                                   />
                                 </FormControl>
                               </FormItem>
@@ -1279,7 +1304,7 @@ export default function EditGameForm({ game: initialGame }: { game: Game }) {
                                   <Switch
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
-                                    disabled={loading}
+                                    disabled={loading || form.watch('collectData') === false}
                                   />
                                 </FormControl>
                               </FormItem>

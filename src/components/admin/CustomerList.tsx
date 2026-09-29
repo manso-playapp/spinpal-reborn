@@ -54,6 +54,7 @@ interface Customer {
   hasPlayed: boolean;
   registeredAt: any;
   prizeWonName?: string;
+  resultName?: string;
   prizeWonAt?: any;
 }
 
@@ -210,7 +211,9 @@ export default function CustomerList({ gameId, gameName }: { gameId: string, gam
     {
         accessorKey: "prizeWonName",
         header: "Premio Ganado",
-        cell: ({ row }) => <div>{row.original.prizeWonName || '-'}</div>,
+        cell: ({ row }) => row.original.prizeWonName
+          ? <div>{row.original.prizeWonName}</div>
+          : <div className="text-muted-foreground">{row.original.resultName || '-'}</div>,
     },
     {
       id: "actions",

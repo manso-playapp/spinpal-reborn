@@ -155,6 +155,7 @@ export default function CreateGameForm() {
         clientEmail: data.clientEmail,
         status: data.status,
         managementType: data.managementType,
+        collectData: true,
         isBirthdateRequired: true,
         plays: 0,
         prizesAwarded: 0,

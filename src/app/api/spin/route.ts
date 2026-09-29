@@ -47,7 +47,12 @@ export async function POST(req: NextRequest) {
 
       tx.update(gameRef, updates);
 
-      const customerUpdate: Record<string, any> = { hasPlayed: true };
+      const customerUpdate: Record<string, any> = {
+        hasPlayed: true,
+        resultName: prizeName || '',
+        isRealPrize: !!isRealPrize,
+        playedAt: FieldValue.serverTimestamp(),
+      };
       if (isRealPrize && prizeName) {
         customerUpdate.prizeWonName = prizeName;
         customerUpdate.prizeWonAt = FieldValue.serverTimestamp();
