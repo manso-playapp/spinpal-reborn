@@ -110,7 +110,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     const isPhoneRequired = collectData && !!data.isPhoneRequired;
                                     const isBirthdateRequired = collectData && data.isBirthdateRequired !== false;
                                     const segments = data.segments || [];
-                                    const instagramProfile = data.instagramProfile || '';
+                                    const instagramProfile = collectData ? (data.instagramProfile || '') : '';
 
                                     if (!Array.isArray(segments) || segments.length < 2 || !segments.every(s => s && typeof s.id === 'string')) {
                                             setErrorMessage(mergedTexts.configErrorMessage);
