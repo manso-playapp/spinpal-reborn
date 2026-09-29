@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { X, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '@/lib/firebase/config';
 
 interface ImageUploadProps {
   fieldName: string;
@@ -92,26 +94,13 @@ export function ImageUpload({ fieldName }: ImageUploadProps) {
     const folder = inferFolder();
 
     try {
-      const res = await fetch('/api/upload-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: fileNameSafe, contentType, folder }),
-      });
-
-      if (!res.ok) {
-        throw new Error('No se pudo generar la URL de carga');
+      if (!storage) {
+        throw new Error('Firebase Storage no está configurado');
       }
 
-      const { signedUrl, publicUrl } = await res.json();
-      const uploadRes = await fetch(signedUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': contentType },
-        body: file,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error('Falló la subida a Supabase');
-      }
+      const storageRef = ref(storage, `games/assets/${folder}/${Date.now()}-${fileNameSafe}`);
+      await uploadBytes(storageRef, file, { contentType });
+      const publicUrl = await getDownloadURL(storageRef);
 
       setValue(fieldName, publicUrl, { shouldDirty: true, shouldValidate: true });
       toast({ title: 'Imagen subida', description: 'Se guardó la URL pública.' });
