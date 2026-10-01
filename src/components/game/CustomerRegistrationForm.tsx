@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -62,15 +62,6 @@ const getLocalizedPrizeName = (segment: any, lang: 'es' | 'en' | 'pt') => {
     );
 };
 
-// Sin toma de datos no hay email para detectar repetidos: se marca el dispositivo.
-const deviceKey = (gameId: string) => `spinpal-played-${gameId}`;
-const hasPlayedOnDevice = (gameId: string) => {
-    try { return !!localStorage.getItem(deviceKey(gameId)); } catch { return false; }
-};
-const markPlayedOnDevice = (gameId: string) => {
-    try { localStorage.setItem(deviceKey(gameId), '1'); } catch { /* sin storage: no se bloquea */ }
-};
-
 // 1. REGISTRO (FORM) -> 2. GIRO (READY) -> 3. SUERTE (SPINNING) -> 4. CIERRE (SUCCESS)
 type UiState = 'LOADING' | 'FORM' | 'SUBMITTING' | 'ALREADY_PLAYED' | 'ERROR' | 'READY' | 'SPINNING' | 'SUCCESS';
 
@@ -88,8 +79,12 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
     // dynamicSchema is always the same shape, but we add conditional validation with .superRefine
     const [dynamicSchema, setDynamicSchema] = useState<z.ZodTypeAny>(() => getBaseSchema(getDefaultTexts()));
 
+    const schemaRef = useRef<z.ZodTypeAny>(dynamicSchema);
+    schemaRef.current = dynamicSchema;
+
     const form = useForm<RegistrationFormValues>({
-        resolver: zodResolver(dynamicSchema),
+        // Se lee el schema vigente en cada validación (el de collectData llega después del primer render).
+        resolver: (values, context, options) => zodResolver(schemaRef.current)(values, context, options),
         defaultValues: { name: '', email: '', phone: '', birthdate: '', confirmFollow: false },
     });
 
@@ -159,8 +154,7 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                                     setDynamicSchema(conditionalSchema);
 
                                     if (uiState === 'LOADING') {
-                                            const playedOnDevice = !collectData && data.status !== 'demo' && hasPlayedOnDevice(gameId);
-                                            setUiState(playedOnDevice ? 'ALREADY_PLAYED' : 'FORM');
+                                            setUiState('FORM');
                                     }
 
                             } else {
@@ -203,7 +197,6 @@ export default function CustomerRegistrationForm({ gameId }: { gameId: string })
                 collectData: gameData.collectData,
             });
             
-            if (!gameData.collectData && !gameData.isDemoMode) markPlayedOnDevice(gameId);
             setCustomerId(newCustomerRef.id);
             setUiState('READY'); // -> Pasa a la pantalla de GIRO (Paso 2)
 
