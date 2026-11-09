@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { X, Image as ImageIcon } from 'lucide-react';
+import { X, Image as ImageIcon, ImageOff } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -22,10 +22,12 @@ export function ImageUpload({ fieldName }: ImageUploadProps) {
   const [isValidating, setIsValidating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [inputValue, setInputValue] = useState(imageUrl || '');
+  const [loadFailed, setLoadFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setInputValue(imageUrl || '');
+    setLoadFailed(false);
   }, [imageUrl]);
 
   const inferFolder = () => {
@@ -151,23 +153,27 @@ export function ImageUpload({ fieldName }: ImageUploadProps) {
       </div>
       {imageUrl && (
         <div className="relative group w-48 h-48 border rounded-md p-2 bg-muted/50 flex items-center justify-center">
-            <div className="relative w-full h-full">
-              <Image
-                  src={imageUrl}
-                  alt="Vista previa"
-                  fill
-                  className="object-contain rounded-sm"
-                  unoptimized
-                  onError={() => {
-                      console.warn('Error al cargar la imagen:', imageUrl);
-                      toast({
-                          variant: "destructive",
-                          title: "Error de imagen",
-                          description: "No se puede cargar la imagen. Verifica que la URL sea correcta.",
-                      });
-                  }}
-              />
-            </div>
+            {loadFailed ? (
+              <div className="flex flex-col items-center justify-center text-center text-destructive text-xs gap-1">
+                <ImageOff className="h-8 w-8" />
+                <span className="font-medium">Imagen no disponible</span>
+                <span className="text-muted-foreground">El archivo ya no existe en esa URL. Sube la imagen de nuevo con &quot;Subir&quot;.</span>
+              </div>
+            ) : (
+              <div className="relative w-full h-full">
+                <Image
+                    src={imageUrl}
+                    alt="Vista previa"
+                    fill
+                    className="object-contain rounded-sm"
+                    unoptimized
+                    onError={() => {
+                        console.warn('Error al cargar la imagen:', imageUrl);
+                        setLoadFailed(true);
+                    }}
+                />
+              </div>
+            )}
             <Button
                 type="button"
                 variant="destructive"
