@@ -44,6 +44,10 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'spinpal-reborn.vercel.app',
+      },
+      {
+        protocol: 'https',
         hostname: 'firebasestorage.googleapis.com',
       },
       {
